@@ -261,6 +261,113 @@ void main() {
           ),
         );
       });
+
+      // Phase 1.9 code review cleanup (Agent A finding #4): parity with
+      // CommsChannelFirestore validation — empty projectId must be
+      // rejected separately from path-traversal.
+      test('rejects empty projectId', () async {
+        await seedShop();
+        await expectLater(
+          adapter.openConversation(shopId: shopId, projectId: ''),
+          throwsA(
+            isA<CommsChannelException>().having(
+              (e) => e.code,
+              'code',
+              CommsChannelErrorCode.notFound,
+            ),
+          ),
+        );
+      });
+    });
+
+    // -------------------------------------------------------------------------
+    // Devanagari round-trip through Uri.encodeComponent
+    // -------------------------------------------------------------------------
+
+    // Phase 1.9 code review cleanup (Agent C finding #5): verify the
+    // Devanagari body round-trips through URL encoding intact. If
+    // Uri.encodeComponent were to silently break a Devanagari conjunct
+    // (e.g., `क्षम` consisting of multiple codepoints), the wa.me link
+    // would render the prefilled message with missing or mangled
+    // characters on the receiving phone.
+    group('Devanagari round-trip through URL encoding', () {
+      test('Devanagari prefilled body decodes back to the original', () async {
+        await seedShop();
+        await seedProject();
+
+        final handle = await adapter.openConversation(
+          shopId: shopId,
+          projectId: projectId,
+        ) as ExternalConversationHandle;
+
+        // `launchUri.queryParameters` returns the already-decoded value of
+        // the `text` parameter (Dart's Uri class auto-decodes on parse).
+        // So this string IS the round-tripped body — if the encoded form
+        // had broken Devanagari conjuncts, Dart's parser would have thrown
+        // `Illegal percent encoding in URI` before we got here.
+        final decodedText = handle.launchUri.queryParameters['text']!;
+
+        // The decoded text must be EXACTLY the prefilled body the adapter
+        // claims to have built. No lossy encoding, no mangled conjuncts.
+        expect(
+          decodedText,
+          equals(handle.prefilledMessageHindi),
+          reason: 'Uri.encodeComponent round-trip via queryParameters must '
+              'preserve Devanagari losslessly so the wa.me link renders '
+              'the same message on the receiving phone as we authored',
+        );
+
+        // Additional specific Devanagari characters to verify survived:
+        expect(decodedText, contains('नमस्ते'));
+        expect(decodedText, contains('ऑर्डर'));
+        expect(decodedText, contains('₹'));
+      });
+
+      test('INR rupee sign survives URL encoding', () async {
+        await seedShop();
+        await seedProject(totalAmount: 22000);
+
+        final handle = await adapter.openConversation(
+          shopId: shopId,
+          projectId: projectId,
+        ) as ExternalConversationHandle;
+
+        // ₹ is Unicode code point U+20B9. Round-trips via Uri parser.
+        final decoded = handle.launchUri.queryParameters['text']!;
+
+        expect(decoded, contains('₹22,000'));
+      });
+
+      test('raw encoded URL has percent-encoded Devanagari', () async {
+        // Also verify the RAW encoded form (via .toString()) contains the
+        // percent-encoded byte sequences — this proves the encoding happened
+        // in the first place, not just that the round-trip is lossless.
+        await seedShop();
+        await seedProject();
+
+        final handle = await adapter.openConversation(
+          shopId: shopId,
+          projectId: projectId,
+        ) as ExternalConversationHandle;
+
+        final rawUrl = handle.launchUri.toString();
+
+        // Raw URL should have %-encoded bytes, not bare Devanagari glyphs.
+        expect(
+          rawUrl,
+          contains('%'),
+          reason: 'raw encoded URL must percent-encode non-ASCII',
+        );
+        // Should NOT contain bare Devanagari glyphs (those would break
+        // WhatsApp's URL parser on the receiving phone).
+        expect(
+          rawUrl,
+          isNot(contains('नमस्ते')),
+          reason: 'raw URL must not contain bare Devanagari glyphs',
+        );
+        // The rupee sign should be percent-encoded as %E2%82%B9.
+        expect(rawUrl, contains('%E2%82%B9'));
+      });
     });
 
     // -------------------------------------------------------------------------

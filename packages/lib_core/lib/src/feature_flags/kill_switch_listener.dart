@@ -34,21 +34,47 @@ import 'runtime_feature_flags.dart';
 /// );
 /// await listener.start();
 ///
+/// // Note: the probe parameter is FutureOr<bool> Function() so you can
+/// // pass a sync closure directly — no `async =>` wrapper needed.
 /// final mediaStore = MediaStoreFactory.build(
 ///   remoteConfig: remoteConfig,
 ///   firebaseStorage: FirebaseStorage.instance,
 ///   cloudinaryCloudName: 'yugma-prod',
-///   isUploadKillSwitchActive: () async => listener.isCloudinaryBlocked,
+///   isUploadKillSwitchActive: () => listener.isCloudinaryBlocked,
 /// );
 ///
 /// final commsChannel = CommsChannelFactory.build(
 ///   remoteConfig: remoteConfig,
 ///   firestore: FirebaseFirestore.instance,
-///   isWriteKillSwitchActive: () async => listener.isFirestoreBlocked,
+///   isWriteKillSwitchActive: () => listener.isFirestoreBlocked,
 /// );
 /// // ... later, on app shutdown:
 /// await listener.stop();
 /// ```
+///
+/// **Error recovery posture (Phase 1.9 code review cleanup — Agent A
+/// finding #2):** if the Firestore `onSnapshot` subscription errors
+/// (transient 3G blip, emulator restart, rule change), the listener
+/// keeps emitting the last-known-good `_current` snapshot AND logs the
+/// error. This is DELIBERATELY fail-open-on-transient-error because:
+///
+/// 1. Kill-switch FLIPS are rare manual operator actions (approximately
+///    monthly under normal Blaze budget cap conditions). The initial
+///    snapshot, which we successfully read, is very likely still valid.
+/// 2. Tier-3 3G connectivity is flaky — a fail-closed posture would
+///    block every adapter upload on every transient blip, which breaks
+///    the normal UX far more often than a kill-switch flip does.
+/// 3. The typical kill-switch operator workflow (Cloud Function writes
+///    the flag from a Pub/Sub budget alert) produces an immediate
+///    onSnapshot, so the window between "flag set server-side" and
+///    "client observes new state" is bounded by Firestore's propagation
+///    latency (tens of ms under normal conditions), not by this
+///    listener's error state.
+///
+/// The [lastSnapshotAt] field exposes the age of the cached state so
+/// future refinements (Sprint 4+) can add a staleness check if needed.
+/// Callers that want stronger guarantees can read [lastSnapshotAt] and
+/// apply their own staleness threshold before honoring the probe.
 class KillSwitchListener {
   /// Create a listener scoped to a single shop. One listener per shopId
   /// per app lifecycle — the app is single-tenant at runtime (PRD I6.4).
@@ -70,6 +96,8 @@ class KillSwitchListener {
 
   RuntimeFeatureFlags _current = RuntimeFeatureFlags.safeDefaults;
 
+  DateTime? _lastSnapshotAt;
+
   // ---------------------------------------------------------------------------
   // Current snapshot accessors — used by adapter probes
   // ---------------------------------------------------------------------------
@@ -79,6 +107,24 @@ class KillSwitchListener {
   /// app startup (before the first onSnapshot emission) get safe defaults
   /// instead of null / throw / crash.
   RuntimeFeatureFlags get current => _current;
+
+  /// Wall-clock time the last successful onSnapshot emission was received.
+  /// Null before [start] completes its first snapshot. Advances on every
+  /// subsequent successful snapshot (errors do NOT advance this).
+  ///
+  /// Phase 1.9 code review cleanup (Agent A finding #2): exposes the
+  /// cached state's age so callers can apply their own staleness
+  /// threshold if they need fail-closed semantics. Example:
+  /// ```dart
+  /// final ageMinutes = DateTime.now().difference(listener.lastSnapshotAt ?? DateTime.now()).inMinutes;
+  /// if (ageMinutes > 10) {
+  ///   // treat as stale — refuse the upload out of an abundance of caution
+  /// }
+  /// ```
+  /// Sprint 4+ refinement: the adapter factories' probe signature may
+  /// add an optional `maxStalenessMinutes` parameter that reads this
+  /// field internally.
+  DateTime? get lastSnapshotAt => _lastSnapshotAt;
 
   /// Broadcast stream of flag snapshots. Subscribe to react to flips in
   /// real time — typically used by state management layers (Riverpod /
@@ -143,6 +189,7 @@ class KillSwitchListener {
             'no featureFlags/runtime doc for $_shopId yet — using safe defaults',
           );
           _current = RuntimeFeatureFlags.safeDefaults;
+          _lastSnapshotAt = DateTime.now();
         } else {
           try {
             final raw = snapshot.data()!;
@@ -151,6 +198,7 @@ class KillSwitchListener {
               // Normalize Firestore Timestamp → ISO string for Freezed JSON.
               'updatedAt': _normalizeTimestamp(raw['updatedAt']),
             });
+            _lastSnapshotAt = DateTime.now();
             _log.fine(
               'runtime flags updated for $_shopId: '
               'killSwitch=${_current.killSwitchActive} '
@@ -161,8 +209,9 @@ class KillSwitchListener {
             _log.warning(
               'failed to parse featureFlags/runtime for $_shopId: $e\n$st',
             );
-            // Keep previous _current — do not downgrade to safeDefaults on
-            // parse error because that could wipe out a kill-switch state.
+            // Keep previous _current AND previous _lastSnapshotAt — do
+            // not advance the timestamp on parse failure because that
+            // would hide staleness from the Sprint 4+ refinement.
           }
         }
         if (!_controller.isClosed) {
@@ -173,9 +222,10 @@ class KillSwitchListener {
         _log.warning(
           'featureFlags/runtime onSnapshot error for $_shopId: $error\n$st',
         );
-        // Emit the current (possibly stale) value rather than error —
-        // adapters should keep operating on their last-known-good state
-        // rather than crash on a transient Firestore error.
+        // Deliberate fail-open-on-transient-error posture — see class
+        // doc comment for rationale. _lastSnapshotAt is NOT advanced
+        // here so staleness checks correctly reflect the age of the
+        // last successful snapshot, not the age of the last error.
       },
     );
 

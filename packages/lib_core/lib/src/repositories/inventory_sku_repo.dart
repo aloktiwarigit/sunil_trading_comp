@@ -57,6 +57,21 @@ class InventorySkuRepo {
           .collection('inventory');
 
   /// Read one SKU by ID. 1 read against the session budget.
+  ///
+  /// **Dual-use contract (Phase 1.9 code review clarification — Agent B
+  /// finding #1):** this method returns the SKU regardless of its
+  /// `isActive` state. Soft-deleted SKUs (isActive=false) are STILL
+  /// returned by `getById` and `getByIds` — filtering belongs to the
+  /// caller per PRD B1.4 edge case #3: "SKU is removed from inventory
+  /// but still in the shortlist: filter out at read time".
+  ///
+  /// - `customer_app` callers (B1.4 resolving shortlist IDs, B1.5 SKU
+  ///   detail) MUST filter `.where((s) => s.isActive)` before rendering.
+  /// - `shopkeeper_app` callers may need visibility on soft-deleted SKUs
+  ///   (to restore, to audit past Projects, to see historical pricing)
+  ///   and SHOULD NOT filter.
+  ///
+  /// This contract keeps the repo free of policy — it's a pure data layer.
   Future<InventorySku?> getById(String skuId) async {
     try {
       final snap = await _collection().doc(skuId).get();
@@ -95,6 +110,16 @@ class InventorySkuRepo {
   /// 10 per Firestore `whereIn` limit — fits well within the 6-SKU cap).
   ///
   /// **Read budget:** N reads where N = skuIds.length (typically ≤6).
+  ///
+  /// **Dual-use contract (same as [getById] — Agent B finding #2):**
+  /// soft-deleted (isActive=false) SKUs ARE included in the result list.
+  /// B1.4 customer-side must filter `.where((s) => s.isActive)` before
+  /// rendering. Shopkeeper-side typically does not filter.
+  ///
+  /// **Order preservation:** result order matches the input [skuIds] order
+  /// exactly, even though Firestore `whereIn` returns results in arbitrary
+  /// order. This is load-bearing for B1.4 — the customer sees SKUs in the
+  /// shopkeeper's curated order, not alphabetized.
   Future<List<InventorySku>> getByIds(List<String> skuIds) async {
     if (skuIds.isEmpty) return const <InventorySku>[];
     if (skuIds.length > 10) {

@@ -47,10 +47,17 @@ service cloud.firestore {
 
     function isShopOperator(shopId) {
       return isShopMember(shopId) && isGoogleSignedIn() &&
-        (callerRole() == 'shopkeeper'
-         || callerRole() == 'son'
+        (callerRole() == 'bhaiya'
+         || callerRole() == 'beta'
          || callerRole() == 'munshi');
     }
+
+    // Phase 1.9 code review cleanup (Agent A finding #3, my pre-flag from
+    // Phase 1.2 + 1.5): the operator role canonical vocabulary per SAD §5
+    // + PRD + Brief is `bhaiya / beta / munshi`. Sprint 1.4 rules drifted
+    // to `shopkeeper / son / munshi` — now aligned. The `signupNewOperator`
+    // Cloud Function (ships Sprint 5+ per S4.2) must issue custom claims
+    // with the same canonical names.
 
     function hasShopId(data) {
       return 'shopId' in data && data.shopId is string && data.shopId.size() > 0;
@@ -154,9 +161,110 @@ service cloud.firestore {
 
       // ---------------------------------------------------------------------
       // Sub-collections expand in Sprints 2–6 as stories ship:
-      //   inventory/, projects/, customers/, chatThreads/, voiceNotes/,
-      //   udhaarLedger/, customerMemory/, curatedShortlists/, decisionCircles/
+      //   projects/, customers/, chatThreads/, customerMemory/, decisionCircles/
+      //
+      // Phase 1.9 code review cleanup (Agent A finding #1): the Phase 1.5
+      // shared models repos target these four sub-collections:
+      //   inventory/, operators/, voiceNotes/, curatedShortlists/
+      // Each needs an explicit match clause — otherwise they fall through
+      // to the catch-all `allow read, write: if false` at line 122-124 and
+      // every repo call fails with permission-denied at runtime. Baseline
+      // rules below honor the documented access model; per-story stories
+      // (B1.4, B1.5, B1.6, B1.12, S4.1, S4.3, S4.4, S4.5) may refine.
       // ---------------------------------------------------------------------
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/operators/{uid} — per PRD S4.1 + S4.2.
+      // Phase 1.9 add.
+      // ---------------------------------------------------------------------
+      // Read: any signed-in operator of the shop (they may need to see
+      //       other operators' roles for the S4.12 Settings list).
+      // Create/update/delete: bhaiya-only (PRD S4.2 AC + SAD §5 permissions).
+      // The `signupNewOperator` Cloud Function bypasses rules via admin SDK
+      // for the very first operator (PRD PQ-C locked answer).
+
+      match /operators/{operatorUid} {
+        allow read: if isShopOperator(shopId);
+        allow create, update: if isShopOperator(shopId)
+                              && callerRole() == 'bhaiya'
+                              && shopIdMatches(shopId)
+                              && shopIsWritable(shopId);
+        // Self-delete forbidden — enforces the "can't remove yourself as
+        // bhaiya" posture in SAD §6 rule table. Bhaiya can delete OTHER
+        // operators but not their own doc.
+        allow delete: if isShopOperator(shopId)
+                      && callerRole() == 'bhaiya'
+                      && request.auth.uid != operatorUid
+                      && shopIsWritable(shopId);
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/inventory/{skuId} — per PRD B1.4/B1.5/S4.3/S4.4/S4.5.
+      // Phase 1.9 add.
+      // ---------------------------------------------------------------------
+      // Read: public to any shop member (customer + operator) — SKUs are
+      //       the catalog and must be visible to the customer app without
+      //       extra auth gates.
+      // Write: operator-only. B1.5 AC #7 notes `negotiableDownTo` is
+      //       operator-only — the rule permits the field (the model has
+      //       it) but customer reads never surface it in UI because the
+      //       customer_app layer filters at render time.
+
+      match /inventory/{skuId} {
+        allow read: if isShopMember(shopId);
+        allow create, update: if isShopOperator(shopId)
+                              && shopIdMatches(shopId)
+                              && shopIsWritable(shopId);
+        // Soft-delete only per PRD PQ-D — `isActive: false` via update.
+        // Hard-delete forbidden in v1.
+        allow delete: if false;
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/voiceNotes/{voiceNoteId} — per PRD B1.6/B1.7/B1.8/B1.10.
+      // Phase 1.9 add.
+      // ---------------------------------------------------------------------
+      // Read: public to any shop member — customers hear voice notes
+      //       inline on B1.3 greeting, B1.5 SKU detail, B1.7 chat messages,
+      //       B1.10 away banner. The audio file itself is in Cloud Storage
+      //       and is governed by storage.rules (Sprint 3+ delta).
+      // Write: operator-only. Only bhaiya + beta record voice notes per
+      //       VoiceNoteAuthorRole enum. Munshi cannot.
+
+      match /voiceNotes/{voiceNoteId} {
+        allow read: if isShopMember(shopId);
+        allow create, update: if isShopOperator(shopId)
+                              && callerRole() != 'munshi'
+                              && shopIdMatches(shopId)
+                              && shopIsWritable(shopId);
+        // Voice notes are append-only per SAD §5 — no delete path.
+        allow delete: if false;
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/curatedShortlists/{shortlistId} — per PRD B1.4/B1.12.
+      // Phase 1.9 add.
+      // ---------------------------------------------------------------------
+      // Read: public to any shop member — customers browse shortlists on
+      //       B1.4.
+      // Write: operator-only (bhaiya + beta can curate; munshi cannot).
+      //       Finite cap of 6 per UX Spec §4.3 is enforced in the Dart
+      //       CuratedShortlistRepo, not here — the rule layer doesn't know
+      //       about the SKU count invariant (would require a list-length
+      //       check on `request.resource.data.skuIdsInOrder` which is
+      //       possible but adds rule complexity). Defense-in-depth via
+      //       repo + security rule would require a future `hasAtMost(6)`
+      //       helper; queued as Phase 2+ refinement.
+
+      match /curatedShortlists/{shortlistId} {
+        allow read: if isShopMember(shopId);
+        allow create, update: if isShopOperator(shopId)
+                              && callerRole() != 'munshi'
+                              && shopIdMatches(shopId)
+                              && shopIsWritable(shopId);
+        // Soft-delete via `isActive: false` update — hard delete forbidden.
+        allow delete: if false;
+      }
 
       // Sprint 1 stub for udhaarLedger — present so the cross-tenant test
       // can assert the forbidden-field guard works from day one. Writes

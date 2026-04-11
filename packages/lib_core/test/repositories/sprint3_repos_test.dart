@@ -95,14 +95,16 @@ void main() {
 
     test('listAll returns all operators for the current shop', () async {
       for (var i = 0; i < 3; i++) {
-        await repo.create(Operator(
-          uid: 'uid_$i',
-          shopId: shopId,
-          role: i == 0 ? OperatorRole.bhaiya : OperatorRole.beta,
-          displayName: 'Op $i',
-          email: 'op$i@example.com',
-          joinedAt: DateTime.parse('2026-04-11T00:00:00Z'),
-        ));
+        await repo.create(
+          Operator(
+            uid: 'uid_$i',
+            shopId: shopId,
+            role: i == 0 ? OperatorRole.bhaiya : OperatorRole.beta,
+            displayName: 'Op $i',
+            email: 'op$i@example.com',
+            joinedAt: DateTime.parse('2026-04-11T00:00:00Z'),
+          ),
+        );
       }
 
       final all = await repo.listAll();
@@ -116,14 +118,16 @@ void main() {
 
     test('touchLastActive writes a timestamp without touching other fields',
         () async {
-      await repo.create(Operator(
-        uid: 'u',
-        shopId: shopId,
-        role: OperatorRole.bhaiya,
-        displayName: 'Original',
-        email: 'o@x.com',
-        joinedAt: DateTime.parse('2026-04-11T00:00:00Z'),
-      ));
+      await repo.create(
+        Operator(
+          uid: 'u',
+          shopId: shopId,
+          role: OperatorRole.bhaiya,
+          displayName: 'Original',
+          email: 'o@x.com',
+          joinedAt: DateTime.parse('2026-04-11T00:00:00Z'),
+        ),
+      );
 
       await repo.touchLastActive('u');
 
@@ -262,11 +266,13 @@ void main() {
     });
 
     test('upsert + getById round-trips with curated SKU order', () async {
-      await repo.upsert(build(
-        id: 'sl_shaadi',
-        occasion: ShortlistOccasion.shaadi,
-        skus: const <String>['sku_a', 'sku_b', 'sku_c'],
-      ));
+      await repo.upsert(
+        build(
+          id: 'sl_shaadi',
+          occasion: ShortlistOccasion.shaadi,
+          skus: const <String>['sku_a', 'sku_b', 'sku_c'],
+        ),
+      );
 
       final fetched = await repo.getById('sl_shaadi');
       expect(fetched, isNotNull);
@@ -298,11 +304,13 @@ void main() {
 
     test('reorderSkus is atomic — final state matches requested order',
         () async {
-      await repo.upsert(build(
-        id: 'sl_budget',
-        occasion: ShortlistOccasion.budget,
-        skus: const <String>['sku_a', 'sku_b', 'sku_c'],
-      ));
+      await repo.upsert(
+        build(
+          id: 'sl_budget',
+          occasion: ShortlistOccasion.budget,
+          skus: const <String>['sku_a', 'sku_b', 'sku_c'],
+        ),
+      );
 
       await repo.reorderSkus('sl_budget', <String>['sku_c', 'sku_a', 'sku_b']);
 
@@ -314,11 +322,13 @@ void main() {
     });
 
     test('reorderSkus enforces finite cap', () async {
-      await repo.upsert(build(
-        id: 'sl_dahej',
-        occasion: ShortlistOccasion.dahej,
-        skus: const <String>['sku_a'],
-      ));
+      await repo.upsert(
+        build(
+          id: 'sl_dahej',
+          occasion: ShortlistOccasion.dahej,
+          skus: const <String>['sku_a'],
+        ),
+      );
 
       await expectLater(
         repo.reorderSkus(
@@ -335,11 +345,60 @@ void main() {
       );
     });
 
-    test('listAll returns only active shortlists', () async {
-      await repo.upsert(build(
-        id: 'sl_active',
+    // Phase 1.9 code review cleanup (Agent B finding #3): reject
+    // duplicate SKU IDs in both upsert and reorderSkus. A shortlist
+    // that renders the same almirah twice is a UX bug even if the
+    // drag-to-reorder UI in B1.12 happens to produce it.
+    test('upsert rejects duplicate SKU IDs', () async {
+      final dupes = build(
+        id: 'sl_shaadi_dupe',
         occasion: ShortlistOccasion.shaadi,
-      ));
+        skus: const <String>['sku_a', 'sku_b', 'sku_a'],
+      );
+
+      await expectLater(
+        repo.upsert(dupes),
+        throwsA(
+          isA<CuratedShortlistRepoException>().having(
+            (e) => e.code,
+            'code',
+            'duplicate-sku-ids',
+          ),
+        ),
+      );
+    });
+
+    test('reorderSkus rejects duplicate SKU IDs', () async {
+      await repo.upsert(
+        build(
+          id: 'sl_naya_ghar',
+          occasion: ShortlistOccasion.nayaGhar,
+          skus: const <String>['sku_a', 'sku_b', 'sku_c'],
+        ),
+      );
+
+      await expectLater(
+        repo.reorderSkus(
+          'sl_naya_ghar',
+          const <String>['sku_b', 'sku_a', 'sku_b'],
+        ),
+        throwsA(
+          isA<CuratedShortlistRepoException>().having(
+            (e) => e.code,
+            'code',
+            'duplicate-sku-ids',
+          ),
+        ),
+      );
+    });
+
+    test('listAll returns only active shortlists', () async {
+      await repo.upsert(
+        build(
+          id: 'sl_active',
+          occasion: ShortlistOccasion.shaadi,
+        ),
+      );
       // Manually write an inactive shortlist.
       await firestore
           .collection('shops')
@@ -441,21 +500,27 @@ void main() {
     });
 
     test('listByAttachment returns only matching voice notes', () async {
-      await repo.create(build(
-        id: 'vn_sku_a',
-        attachment: VoiceNoteAttachment.sku,
-        refId: 'sku_wanted',
-      ));
-      await repo.create(build(
-        id: 'vn_sku_b',
-        attachment: VoiceNoteAttachment.sku,
-        refId: 'sku_other',
-      ));
-      await repo.create(build(
-        id: 'vn_landing',
-        attachment: VoiceNoteAttachment.shopLanding,
-        refId: 'shop_sunil',
-      ));
+      await repo.create(
+        build(
+          id: 'vn_sku_a',
+          attachment: VoiceNoteAttachment.sku,
+          refId: 'sku_wanted',
+        ),
+      );
+      await repo.create(
+        build(
+          id: 'vn_sku_b',
+          attachment: VoiceNoteAttachment.sku,
+          refId: 'sku_other',
+        ),
+      );
+      await repo.create(
+        build(
+          id: 'vn_landing',
+          attachment: VoiceNoteAttachment.shopLanding,
+          refId: 'shop_sunil',
+        ),
+      );
 
       final notes = await repo.listByAttachment(
         attachmentType: VoiceNoteAttachment.sku,

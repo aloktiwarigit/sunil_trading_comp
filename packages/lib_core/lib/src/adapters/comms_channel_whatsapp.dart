@@ -59,16 +59,32 @@ class CommsChannelWhatsApp implements CommsChannel {
     required String shopId,
     required String projectId,
   }) async {
-    if (shopId.isEmpty || shopId.contains('/') || shopId.contains('..')) {
-      throw CommsChannelException(
+    // Phase 1.9 code review cleanup (Agent A finding #4): explicit empty
+    // string rejection FIRST — before the `/` + `..` path traversal checks.
+    // Matches the CommsChannelFirestore validation exactly so both backends
+    // reject the same set of malformed inputs.
+    if (shopId.isEmpty) {
+      throw const CommsChannelException(
         CommsChannelErrorCode.unauthorized,
-        'invalid shopId: $shopId',
+        'shopId must not be empty',
       );
     }
-    if (projectId.isEmpty || projectId.contains('/') || projectId.contains('..')) {
+    if (shopId.contains('/') || shopId.contains('..')) {
+      throw CommsChannelException(
+        CommsChannelErrorCode.unauthorized,
+        'shopId contains illegal characters: $shopId',
+      );
+    }
+    if (projectId.isEmpty) {
+      throw const CommsChannelException(
+        CommsChannelErrorCode.notFound,
+        'projectId must not be empty',
+      );
+    }
+    if (projectId.contains('/') || projectId.contains('..')) {
       throw CommsChannelException(
         CommsChannelErrorCode.notFound,
-        'invalid projectId: $projectId',
+        'projectId contains illegal characters: $projectId',
       );
     }
 

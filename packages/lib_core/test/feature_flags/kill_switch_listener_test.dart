@@ -59,6 +59,67 @@ void main() {
         expect(listener.mediaStoreStrategy, equals('cloudinary_firebase'));
         expect(listener.isOtpAtCommitEnabled, isTrue);
       });
+
+      test('lastSnapshotAt is null before first emission', () {
+        expect(listener.lastSnapshotAt, isNull);
+      });
+    });
+
+    // -------------------------------------------------------------------------
+    // lastSnapshotAt staleness tracking (Phase 1.9 code review cleanup —
+    // Agent A finding #2)
+    // -------------------------------------------------------------------------
+
+    group('lastSnapshotAt staleness tracking', () {
+      test('advances on successful snapshot', () async {
+        await runtimeDocRef().set(<String, dynamic>{
+          'cloudinaryUploadsBlocked': false,
+        });
+
+        final before = DateTime.now();
+        await listener.start();
+        await Future<void>.delayed(Duration.zero);
+        final after = DateTime.now();
+
+        expect(listener.lastSnapshotAt, isNotNull);
+        expect(
+          listener.lastSnapshotAt!.isAfter(before) ||
+              listener.lastSnapshotAt!.isAtSameMomentAs(before),
+          isTrue,
+        );
+        expect(
+          listener.lastSnapshotAt!.isBefore(after) ||
+              listener.lastSnapshotAt!.isAtSameMomentAs(after),
+          isTrue,
+        );
+      });
+
+      test('advances again on subsequent flip', () async {
+        await runtimeDocRef().set(<String, dynamic>{
+          'cloudinaryUploadsBlocked': false,
+        });
+
+        await listener.start();
+        await Future<void>.delayed(Duration.zero);
+        final firstSnapshotAt = listener.lastSnapshotAt;
+        expect(firstSnapshotAt, isNotNull);
+
+        // Add a small delay so the second timestamp is distinguishable.
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        await runtimeDocRef().update(<String, dynamic>{
+          'cloudinaryUploadsBlocked': true,
+        });
+        await Future<void>.delayed(Duration.zero);
+
+        final secondSnapshotAt = listener.lastSnapshotAt;
+        expect(secondSnapshotAt, isNotNull);
+        expect(
+          secondSnapshotAt!.isAfter(firstSnapshotAt!),
+          isTrue,
+          reason: 'lastSnapshotAt must advance on each successful snapshot',
+        );
+      });
     });
 
     // -------------------------------------------------------------------------

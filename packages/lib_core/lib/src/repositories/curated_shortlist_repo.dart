@@ -111,12 +111,35 @@ class CuratedShortlistRepo {
   }
 
   /// Create or fully replace a shortlist. Operator-only at rule layer.
+  ///
+  /// **Phase 1.9 code review cleanup (Agent B finding #3):** also rejects
+  /// duplicate SKU IDs in the skuIdsInOrder array. A duplicate would render
+  /// the same almirah twice in B1.4 which is a UX bug even if the drag-to-
+  /// reorder UI in B1.12 happens to produce it. This is defense-in-depth
+  /// above any UI-layer guard.
+  ///
+  /// **Phase 1.9 code review cleanup (Agent B finding #4 — design clarification):**
+  /// this method does NOT validate that the referenced SKU IDs exist in the
+  /// `inventory` collection. Dangling-ref handling is a B1.4-side concern per
+  /// PRD B1.4 edge case #3: "SKU is removed from inventory but still in the
+  /// shortlist: filter out at read time". The customer app resolves the
+  /// shortlist → SKU list via InventorySkuRepo.getByIds then filters. The
+  /// shopkeeper's curation intent is preserved even when a SKU is softly
+  /// deleted after curation.
   Future<void> upsert(CuratedShortlist shortlist) async {
     if (shortlist.skuIdsInOrder.length > finiteCap) {
       throw CuratedShortlistRepoException(
         'finite-cap-exceeded',
         'CuratedShortlist.skuIdsInOrder exceeds finite cap of $finiteCap '
         'per UX Spec §4.3 — got ${shortlist.skuIdsInOrder.length}',
+      );
+    }
+    if (shortlist.skuIdsInOrder.toSet().length !=
+        shortlist.skuIdsInOrder.length) {
+      throw const CuratedShortlistRepoException(
+        'duplicate-sku-ids',
+        'CuratedShortlist.skuIdsInOrder contains duplicate SKU IDs — '
+        'the B1.4 shortlist would render the same almirah twice',
       );
     }
     try {
@@ -141,6 +164,12 @@ class CuratedShortlistRepo {
   /// reorder. Writes the new `skuIdsInOrder` array in a single set() so
   /// the customer-side watcher sees the reorder as one update, not as a
   /// partial add + delete sequence.
+  ///
+  /// **Phase 1.9 code review cleanup (Agent B finding #3):** also rejects
+  /// duplicate SKU IDs. The B1.12 drag handler shouldn't produce duplicates
+  /// under normal operation, but a misfiring handler (or a test that
+  /// exercises the flow with bad data) could. Rejecting at the repo layer
+  /// prevents a shortlist from ever rendering the same almirah twice.
   Future<void> reorderSkus(
     String shortlistId,
     List<String> newOrder,
@@ -149,6 +178,13 @@ class CuratedShortlistRepo {
       throw CuratedShortlistRepoException(
         'finite-cap-exceeded',
         'reorderSkus would exceed finite cap of $finiteCap — got ${newOrder.length}',
+      );
+    }
+    if (newOrder.toSet().length != newOrder.length) {
+      throw const CuratedShortlistRepoException(
+        'duplicate-sku-ids',
+        'reorderSkus received duplicate SKU IDs — the B1.4 shortlist '
+        'would render the same almirah twice',
       );
     }
     try {

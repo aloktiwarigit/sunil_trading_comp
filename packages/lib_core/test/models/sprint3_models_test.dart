@@ -90,10 +90,16 @@ void main() {
 
     test('default permissions are restrictive (beta-safe)', () {
       const perms = OperatorPermissions();
-      expect(perms.canEditInventory, isTrue,
-          reason: 'beta should be able to edit inventory by default');
-      expect(perms.canManageOperators, isFalse,
-          reason: 'beta must not be able to manage operators');
+      expect(
+        perms.canEditInventory,
+        isTrue,
+        reason: 'beta should be able to edit inventory by default',
+      );
+      expect(
+        perms.canManageOperators,
+        isFalse,
+        reason: 'beta must not be able to manage operators',
+      );
       expect(perms.canApproveDiscounts, isFalse);
       expect(perms.canDeleteOrders, isFalse);
     });

@@ -14,11 +14,15 @@
 //      Indian-lakh-format numbers on both locales.
 // =============================================================================
 
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lib_core/src/locale/locale_resolver.dart';
 import 'package:lib_core/src/locale/strings_base.dart';
 import 'package:lib_core/src/locale/strings_en.dart';
 import 'package:lib_core/src/locale/strings_hi.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockRemoteConfig extends Mock implements FirebaseRemoteConfig {}
 
 /// Produces a Map of every string getter name → rendered string for a
 /// given implementation. Used by the forbidden-vocab scanner and by the
@@ -338,6 +342,61 @@ void main() {
       expect(hi.udhaarBalance(750), isNot(contains(',')));
     });
 
+    // Phase 1.9 code review cleanup (Agent C finding #4 defensive): lock
+    // in the Indian-lakh boundary math at every decade + lakh + crore
+    // transition. Agent C flagged 10,000 as a suspected bug — walking
+    // through the algorithm shows it's correct, but these defensive tests
+    // make any future regression loud.
+    test('Indian lakh formatter: 1 → "1" (no comma)', () {
+      expect(hi.udhaarBalance(1), contains(' ₹1'));
+      expect(hi.udhaarBalance(1), isNot(contains(',')));
+    });
+
+    test('Indian lakh formatter: 999 → "999" (last three digits, no comma)', () {
+      expect(hi.udhaarBalance(999), contains('999'));
+      expect(hi.udhaarBalance(999), isNot(contains(',')));
+    });
+
+    test('Indian lakh formatter: 1000 → "1,000" (first thousand boundary)', () {
+      expect(hi.udhaarBalance(1000), contains('1,000'));
+      expect(en.udhaarBalance(1000), contains('1,000'));
+    });
+
+    test('Indian lakh formatter: 9999 → "9,999"', () {
+      expect(hi.udhaarBalance(9999), contains('9,999'));
+    });
+
+    test('Indian lakh formatter: 10000 → "10,000" (five-digit boundary)', () {
+      // Agent C flagged this case — walkthrough: rest="10", i=0 write '1',
+      // i=1 check (2-1)%2=1 ≠ 0 → no comma, write '0' → "10" → "10,000".
+      // Correct. This test locks it in defensively.
+      expect(hi.udhaarBalance(10000), contains('10,000'));
+      expect(en.udhaarBalance(10000), contains('10,000'));
+    });
+
+    test('Indian lakh formatter: 99999 → "99,999"', () {
+      expect(hi.udhaarBalance(99999), contains('99,999'));
+    });
+
+    test('Indian lakh formatter: 100000 → "1,00,000" (first lakh boundary)',
+        () {
+      expect(hi.udhaarBalance(100000), contains('1,00,000'));
+      expect(en.udhaarBalance(100000), contains('1,00,000'));
+    });
+
+    test('Indian lakh formatter: 1000000 → "10,00,000" (ten-lakh)', () {
+      expect(hi.udhaarBalance(1000000), contains('10,00,000'));
+    });
+
+    test('Indian lakh formatter: 1500000 → "15,00,000"', () {
+      expect(hi.udhaarBalance(1500000), contains('15,00,000'));
+    });
+
+    test('Indian lakh formatter: 10000000 → "1,00,00,000" (one crore)', () {
+      expect(hi.udhaarBalance(10000000), contains('1,00,00,000'));
+      expect(en.udhaarBalance(10000000), contains('1,00,00,000'));
+    });
+
     test('shopDeactivatingBanner substitutes retention days', () {
       expect(hi.shopDeactivatingBanner(30), contains('30'));
       expect(en.shopDeactivatingBanner(30), contains('30'));
@@ -385,6 +444,76 @@ void main() {
     test('forCode with unknown code falls back to AppStringsHi', () {
       expect(LocaleResolver.forCode('fr'), isA<AppStringsHi>());
       expect(LocaleResolver.forCode(''), isA<AppStringsHi>());
+    });
+
+    // Phase 1.9 code review cleanup (Agent C finding #2): the original
+    // test suite only covered the pure `forCode` path. The full `resolve`
+    // method integrates with Remote Config — these tests exercise the
+    // user-override-beats-Remote-Config precedence and the Remote Config
+    // fallback path when the flag returns unexpected values.
+    group('resolve with Remote Config', () {
+      late _MockRemoteConfig mockConfig;
+
+      setUp(() {
+        mockConfig = _MockRemoteConfig();
+      });
+
+      test('Remote Config "hi" → AppStringsHi', () {
+        when(() => mockConfig.getString('default_locale')).thenReturn('hi');
+        final resolved = LocaleResolver.resolve(remoteConfig: mockConfig);
+        expect(resolved, isA<AppStringsHi>());
+      });
+
+      test('Remote Config "en" → AppStringsEn (END STATE B fallback)', () {
+        when(() => mockConfig.getString('default_locale')).thenReturn('en');
+        final resolved = LocaleResolver.resolve(remoteConfig: mockConfig);
+        expect(resolved, isA<AppStringsEn>());
+      });
+
+      test('Remote Config empty string → AppStringsHi (Brief default)', () {
+        when(() => mockConfig.getString('default_locale')).thenReturn('');
+        final resolved = LocaleResolver.resolve(remoteConfig: mockConfig);
+        expect(resolved, isA<AppStringsHi>());
+      });
+
+      test('Remote Config unknown code → AppStringsHi with warning', () {
+        when(() => mockConfig.getString('default_locale')).thenReturn('es');
+        final resolved = LocaleResolver.resolve(remoteConfig: mockConfig);
+        expect(resolved, isA<AppStringsHi>());
+      });
+
+      test(
+        'user override "en" beats Remote Config "hi"',
+        () {
+          when(() => mockConfig.getString('default_locale')).thenReturn('hi');
+          final resolved = LocaleResolver.resolve(
+            remoteConfig: mockConfig,
+            userOverride: 'en',
+          );
+          expect(resolved, isA<AppStringsEn>());
+        },
+      );
+
+      test(
+        'user override "hi" beats Remote Config "en" (customer re-enables Hindi)',
+        () {
+          when(() => mockConfig.getString('default_locale')).thenReturn('en');
+          final resolved = LocaleResolver.resolve(
+            remoteConfig: mockConfig,
+            userOverride: 'hi',
+          );
+          expect(resolved, isA<AppStringsHi>());
+        },
+      );
+
+      test('empty user override falls through to Remote Config', () {
+        when(() => mockConfig.getString('default_locale')).thenReturn('en');
+        final resolved = LocaleResolver.resolve(
+          remoteConfig: mockConfig,
+          userOverride: '',
+        );
+        expect(resolved, isA<AppStringsEn>());
+      });
     });
   });
 }

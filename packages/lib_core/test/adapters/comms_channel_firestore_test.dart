@@ -401,6 +401,75 @@ void main() {
         final messages = await stream.first;
         expect(messages, isEmpty);
       });
+
+      // Phase 1.9 code review cleanup (Agent C finding #1): the original
+      // test only checked the initial emission. Verify the stream also
+      // re-emits when a new message is written after subscription — this
+      // is the core real-time-chat invariant callers depend on.
+      test('re-emits when a new message is written after subscription',
+          () async {
+        // Seed one message BEFORE subscription so the initial emission
+        // is deterministic.
+        final col = firestore
+            .collection('shops')
+            .doc(shopId)
+            .collection('chatThreads')
+            .doc(projectId)
+            .collection('messages');
+
+        await col.doc('m1').set(<String, dynamic>{
+          'messageId': 'm1',
+          'shopId': shopId,
+          'threadId': projectId,
+          'projectId': projectId,
+          'authorUid': customerUid,
+          'authorRole': 'customer',
+          'type': 'text',
+          'textBody': 'first',
+          'sentAt': Timestamp.fromDate(DateTime.parse('2026-04-11T10:00:00Z')),
+          'readByUids': <String>[customerUid],
+        });
+
+        final stream = adapter.observeMessages(
+          shopId: shopId,
+          projectId: projectId,
+        );
+
+        // Collect the first 2 emissions: initial (1 message) + after the
+        // second write (2 messages). A bug in the real-time listener would
+        // show up as either no second emission or a second emission that
+        // doesn't include the new message.
+        final emittedLengths = <int>[];
+        final sub = stream.listen((messages) {
+          emittedLengths.add(messages.length);
+        });
+
+        // Let the initial snapshot fire.
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Write a second message via the adapter (exercises the full
+        // write path, not just direct Firestore).
+        await adapter.sendText(
+          shopId: shopId,
+          projectId: projectId,
+          authorUid: bhaiyaUid,
+          authorRole: MessageAuthorRole.bhaiya,
+          text: 'second',
+        );
+
+        // Let the second snapshot fire.
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        await sub.cancel();
+
+        expect(
+          emittedLengths,
+          contains(2),
+          reason: 'stream must re-emit with 2 messages after the second '
+              'send — the live-update contract is load-bearing for the '
+              'chat UI',
+        );
+      });
     });
   });
 }
