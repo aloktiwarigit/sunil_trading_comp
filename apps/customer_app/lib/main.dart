@@ -55,6 +55,19 @@ Future<void> main() async {
       // Step 5 — Observability
       await Observability.initialize();
 
+      // Step 5.5 — PRD I6.3: verify persisted session from refresh token.
+      // This is the founder hard requirement that returning users never
+      // see the OTP ceremony. If a user was previously signed in, Firebase
+      // SDK has already restored them by this point; SessionBootstrap just
+      // fires the analytics event and sets the Crashlytics user ID so
+      // any subsequent crash is tied to the UID (not the phone number —
+      // DPDP minimization).
+      await SessionBootstrap.verifyPersistedUser(
+        authProvider: authProvider,
+        analytics: Observability.analytics,
+        crashlytics: Observability.crashlytics,
+      );
+
       // Step 6 — Run the app inside a ProviderScope with the resolved
       // shopId + authProvider overridden.
       runApp(

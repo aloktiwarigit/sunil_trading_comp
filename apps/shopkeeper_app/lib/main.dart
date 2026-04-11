@@ -41,6 +41,15 @@ Future<void> main() async {
 
       await Observability.initialize();
 
+      // PRD I6.3 — verify persisted session (same rationale as customer_app).
+      // For ops users this means the bhaiya / son / munshi doesn't re-type
+      // Google Sign-In every morning.
+      await SessionBootstrap.verifyPersistedUser(
+        authProvider: authProvider,
+        analytics: Observability.analytics,
+        crashlytics: Observability.crashlytics,
+      );
+
       runApp(
         ProviderScope(
           overrides: [

@@ -30,4 +30,12 @@ class AnalyticsEvents {
 
   // ---------- Adapter swaps (R8 / R12 / R13 mitigation telemetry) ----------
   static const String featureFlagSwapTriggered = 'feature_flag_swap_triggered';
+
+  // ---------- Session persistence (PRD I6.3 Sprint 2.2) ----------
+  /// Fired by SessionBootstrap.verifyPersistedUser when the Firebase SDK
+  /// restores a refresh-token-persisted user on app launch. The Month 3
+  /// success gate uses the ratio of this event to app_open events to
+  /// measure silent-sign-in rate empirically.
+  static const String sessionRestoredFromRefreshToken =
+      'session_restored_from_refresh_token';
 }

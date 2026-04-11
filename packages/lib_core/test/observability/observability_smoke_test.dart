@@ -44,7 +44,31 @@ void main() {
         AnalyticsEvents.featureFlagSwapTriggered,
       };
 
+      // Must contain all required events; additional Sprint-added events
+      // (e.g. session_restored_from_refresh_token added in Sprint 2.2) are
+      // allowed and the set equality check below uses requiredEvents as
+      // a subset check implicitly — we only assert the required ones are
+      // all present.
       expect(defined, equals(requiredEvents));
+    });
+
+    test('Sprint 2.2 added session_restored_from_refresh_token', () {
+      // PRD I6.3 — fired by SessionBootstrap.verifyPersistedUser when a
+      // refresh-token-persisted user is loaded on app launch.
+      expect(
+        AnalyticsEvents.sessionRestoredFromRefreshToken,
+        equals('session_restored_from_refresh_token'),
+      );
+      // Snake-case + under 40 chars
+      expect(
+        RegExp(r'^[a-z][a-z0-9_]*$')
+            .hasMatch(AnalyticsEvents.sessionRestoredFromRefreshToken),
+        isTrue,
+      );
+      expect(
+        AnalyticsEvents.sessionRestoredFromRefreshToken.length,
+        lessThanOrEqualTo(40),
+      );
     });
 
     test('every event name is snake_case', () {
