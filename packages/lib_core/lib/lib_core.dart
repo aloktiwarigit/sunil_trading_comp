@@ -37,6 +37,8 @@ export 'src/firebase_client.dart';
 export 'src/shop_id_provider.dart';
 export 'src/feature_flags/remote_config_loader.dart';
 export 'src/feature_flags/feature_flags.dart';
+export 'src/feature_flags/runtime_feature_flags.dart';
+export 'src/feature_flags/kill_switch_listener.dart';
 
 // ---------- Observability ----------
 export 'src/observability/analytics_events.dart';
