@@ -1,0 +1,18 @@
+# =============================================================================
+# lib_core build config
+#
+# Globally enables `explicit_to_json` for json_serializable so nested
+# Freezed classes (e.g., OperatorPermissions, SkuDimensions) are
+# recursively converted to Maps when a parent's toJson() is called.
+#
+# Without this, a nested Freezed field passes through as-is — which
+# breaks Firestore writes because fake_cloud_firestore / cloud_firestore
+# both reject non-Map values at document validation.
+# =============================================================================
+
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          explicit_to_json: true

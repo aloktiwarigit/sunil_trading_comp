@@ -58,6 +58,10 @@ export 'src/models/project.dart';
 export 'src/models/chat_thread.dart';
 export 'src/models/message.dart';
 export 'src/models/udhaar_ledger.dart';
+export 'src/models/operator.dart';
+export 'src/models/inventory_sku.dart';
+export 'src/models/curated_shortlist.dart';
+export 'src/models/voice_note.dart';
 
 // ---------- Partition patches (see library-level doc comment above) ----------
 export 'src/models/project_patch.dart';
@@ -69,6 +73,10 @@ export 'src/repositories/project_repo.dart';
 export 'src/repositories/chat_thread_repo.dart';
 export 'src/repositories/udhaar_ledger_repo.dart';
 export 'src/repositories/customer_repo.dart';
+export 'src/repositories/operator_repo.dart';
+export 'src/repositories/inventory_sku_repo.dart';
+export 'src/repositories/curated_shortlist_repo.dart';
+export 'src/repositories/voice_note_repo.dart';
 
 // ---------- Services (orchestration over adapters + repositories) ----------
 export 'src/services/phone_upgrade_coordinator.dart';
