@@ -93,11 +93,10 @@ service cloud.firestore {
           && (isAnonymous() || isPhoneVerified());
     }
 
-    function isBhaiyaOf(shopId) {
-      return isShopMember(shopId)
-          && isGoogleSignedIn()
-          && callerRole() == 'shopkeeper';
-    }
+    // isBhaiyaOf(shopId) helper is intentionally NOT defined until a rule
+    // actually needs to distinguish bhaiya from other operator roles
+    // (currently isShopOperator covers all 3 roles uniformly). Add in
+    // Sprint 3+ when S4.19 shop deactivation introduces bhaiya-only access.
 
     // -------------------------------------------------------------------------
     // Forbidden vocabulary on Udhaar Ledger (ADR-010, RBI-defensive)

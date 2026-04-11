@@ -32,7 +32,9 @@ pubspec.lock
 **/android/app/release/
 *.jks
 *.keystore
-**/android/app/google-services.json
+# google-services.json is committed — keys are public-by-design for Firebase client SDKs.
+# Security comes from App Check + Firestore rules, not API key secrecy.
+# Override for staging/prod at build time via --dart-define-from-file.
 
 # -------- iOS --------
 **/ios/Pods/
@@ -42,8 +44,8 @@ pubspec.lock
 **/ios/Flutter/App.framework
 **/ios/Flutter/Generated.xcconfig
 **/ios/Flutter/ephemeral/
-**/ios/Runner/GoogleService-Info.plist
 **/ios/Runner/GeneratedPluginRegistrant.*
+# GoogleService-Info.plist is committed — same reasoning as google-services.json above.
 
 # -------- Node / Astro / Cloud Functions --------
 node_modules/
