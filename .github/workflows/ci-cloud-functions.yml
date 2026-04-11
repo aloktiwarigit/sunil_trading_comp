@@ -1,0 +1,64 @@
+# =============================================================================
+# ci-cloud-functions.yml — TypeScript Cloud Functions lint + build + test.
+#
+# Runs on: PR + push filtered to functions/ changes.
+# Scope (SAD v1.0.4 §7): 8 functions total across dev/staging/prod:
+#   1. killSwitchOnBudgetAlert
+#   2. generateWaMeLink
+#   3. sendUdhaarReminder (with v1.0.4 RBI guardrails)
+#   4. multiTenantAuditJob
+#   5. firebasePhoneAuthQuotaMonitor
+#   6. joinDecisionCircle
+#   7. mediaCostMonitor (v1.0.4 — new, audit gap #3)
+#   8. shopDeactivationSweep (v1.0.4 — new, ADR-013 / DPDP)
+# =============================================================================
+
+name: Cloud Functions CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - '.github/workflows/ci-cloud-functions.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+
+jobs:
+  build-and-test:
+    name: Lint + build + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Sprint 1 note: functions/ doesn't exist yet — scaffolded in Sprint 5–6
+    # as Cloud Functions stories land. This job no-ops until the directory
+    # appears. Remove the `if` once the first function (likely killSwitch) ships.
+    if: ${{ hashFiles('functions/package.json') != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install dependencies
+        working-directory: functions
+        run: npm ci
+
+      - name: Lint
+        working-directory: functions
+        run: npm run lint
+
+      - name: Build
+        working-directory: functions
+        run: npm run build
+
+      - name: Unit tests
+        working-directory: functions
+        run: npm test --if-present

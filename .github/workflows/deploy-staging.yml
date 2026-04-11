@@ -1,0 +1,90 @@
+# =============================================================================
+# deploy-staging.yml — deploy everything to yugma-dukaan-staging.
+#
+# Triggers: manual `workflow_dispatch` + post-merge to main.
+# Deploys:
+#   - Firestore rules + indexes
+#   - Cloud Functions (TS)
+#   - Astro marketing site to Firebase Hosting target "marketing"
+#
+# Mobile app deploys (customer_app + shopkeeper_app) happen via Codemagic
+# (free Flutter tier) per SAD §1 — NOT from this workflow.
+# =============================================================================
+
+name: Deploy — staging
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+      - 'firestore.indexes.json'
+      - 'storage.rules'
+      - 'functions/**'
+      - 'sites/marketing/**'
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to yugma-dukaan-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools@latest
+
+      - name: Authenticate to Firebase
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.FIREBASE_STAGING_SA_KEY }}
+        run: |
+          echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" > /tmp/sa-key.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json" >> $GITHUB_ENV
+
+      - name: Install function deps
+        if: ${{ hashFiles('functions/package.json') != '' }}
+        working-directory: functions
+        run: npm ci
+
+      - name: Build functions
+        if: ${{ hashFiles('functions/package.json') != '' }}
+        working-directory: functions
+        run: npm run build
+
+      - name: Deploy Firestore rules + indexes
+        run: firebase deploy --only firestore:rules,firestore:indexes --project staging
+
+      - name: Deploy Storage rules
+        run: firebase deploy --only storage --project staging
+
+      - name: Deploy Cloud Functions
+        if: ${{ hashFiles('functions/package.json') != '' }}
+        run: firebase deploy --only functions --project staging
+
+      - name: Build marketing site
+        if: ${{ hashFiles('sites/marketing/package.json') != '' }}
+        working-directory: sites/marketing
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy marketing hosting target
+        if: ${{ hashFiles('sites/marketing/package.json') != '' }}
+        run: firebase deploy --only hosting:marketing --project staging
+
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f /tmp/sa-key.json

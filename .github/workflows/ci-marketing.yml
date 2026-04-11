@@ -1,0 +1,70 @@
+# =============================================================================
+# ci-marketing.yml — build the Astro static marketing site.
+#
+# Runs on: PR + push filtered to sites/marketing/ changes.
+# Per ADR-011: marketing site is pure static Astro, NOT Flutter Web.
+# Target: <100 KB initial bundle with Devanagari subset preloaded.
+# =============================================================================
+
+name: Marketing site CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'sites/marketing/**'
+      - '.github/workflows/ci-marketing.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'sites/marketing/**'
+
+jobs:
+  build:
+    name: Build Astro static site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Sprint 1 note: sites/marketing/ doesn't exist yet — it's scaffolded in
+    # Sprint 5–6 with epic E5 M5.x stories. This job is a no-op stub until
+    # the directory appears. Remove this `if` once M5.1 lands.
+    if: ${{ hashFiles('sites/marketing/package.json') != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: sites/marketing/package-lock.json
+
+      - name: Install dependencies
+        working-directory: sites/marketing
+        run: npm ci
+
+      - name: Lint
+        working-directory: sites/marketing
+        run: npm run lint --if-present
+
+      - name: Astro build
+        working-directory: sites/marketing
+        run: npm run build
+
+      - name: Check bundle size (<100 KB initial paint per ADR-011)
+        working-directory: sites/marketing
+        run: |
+          if [ -d dist ]; then
+            SIZE=$(du -sb dist/index.html 2>/dev/null | awk '{print $1}' || echo 0)
+            echo "index.html size: $SIZE bytes"
+            if [ "$SIZE" -gt 102400 ]; then
+              echo "::warning::index.html exceeds 100 KB target per ADR-011"
+            fi
+          fi
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: marketing-dist
+          path: sites/marketing/dist/

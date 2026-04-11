@@ -1,0 +1,82 @@
+# =============================================================================
+# ci-flutter.yml — analyze + test + smoke-build the Flutter targets.
+#
+# Runs on: PR to main + push to main, filtered to apps/ + packages/ changes.
+# Scope: lib_core + customer_app + shopkeeper_app (not marketing, not functions).
+# =============================================================================
+
+name: Flutter CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'melos.yaml'
+      - 'analysis_options.yaml'
+      - '.github/workflows/ci-flutter.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'melos.yaml'
+      - 'analysis_options.yaml'
+
+jobs:
+  analyze-and-test:
+    name: Analyze + test (lib_core + apps)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Verify Flutter installation
+        run: flutter --version
+
+      - name: Install melos
+        run: dart pub global activate melos
+
+      - name: Add pub global bin to PATH
+        run: echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Run build_runner (Freezed + json_serializable + riverpod_generator)
+        run: melos run build_runner
+
+      - name: Static analysis
+        run: melos run analyze
+
+      - name: Format check
+        run: melos run format
+
+      - name: Run all unit tests
+        run: melos run test
+
+      - name: Smoke-build customer_app APK (debug)
+        working-directory: apps/customer_app
+        run: flutter build apk --debug --no-pub
+
+      - name: Smoke-build shopkeeper_app APK (debug)
+        working-directory: apps/shopkeeper_app
+        run: flutter build apk --debug --no-pub
+
+      - name: Upload analysis artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-ci-artifacts
+          path: |
+            **/build/reports/
+            **/test/coverage/
