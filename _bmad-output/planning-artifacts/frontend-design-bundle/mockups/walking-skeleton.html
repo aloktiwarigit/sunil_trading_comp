@@ -1,0 +1,3865 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>सुनील ट्रेडिंग कंपनी — Walking Skeleton Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&family=Mukta:wght@300;400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,300..900,0..100&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────
+   YUGMA DUKAAN — DESIGN TOKENS
+   "Workshop Almanac" aesthetic
+   ───────────────────────────────────────────── */
+:root {
+  /* Color — sheesham, brass, oxblood, aged cream */
+  --c-primary: #6B3410;
+  --c-primary-deep: #4A2308;
+  --c-secondary: #8B4513;
+  --c-accent: #B8860B;
+  --c-accent-glow: #D4A547;
+  --c-commit: #7B1F1F;
+  --c-commit-glow: #9B2A2A;
+
+  --c-bg: #FAF3E7;
+  --c-bg-warmer: #F5EBD7;
+  --c-surface: #FFFAF0;
+  --c-surface-elevated: #FFFFFF;
+  --c-paper-line: #E8DCC4;
+  --c-divider: rgba(107, 52, 16, 0.12);
+
+  --c-text-primary: #1F1611;
+  --c-text-secondary: #4A3826;
+  --c-text-muted: #7A6655;
+  --c-text-on-primary: #FAF3E7;
+
+  --c-success: #3D5C2A;
+  --c-warning: #8B6914;
+  --c-error: #7B1F1F;
+  --c-info: #2C4A5C;
+
+  /* Typography */
+  --font-deva-display: 'Tiro Devanagari Hindi', serif;
+  --font-deva-body: 'Mukta', sans-serif;
+  --font-en-display: 'Fraunces', serif;
+  --font-en-body: 'EB Garamond', serif;
+  --font-mono: 'DM Mono', monospace;
+
+  /* Type scale — optimized for Devanagari on cheap Android */
+  --fs-display: 32px;
+  --fs-h1: 26px;
+  --fs-h2: 22px;
+  --fs-h3: 18px;
+  --fs-body-lg: 17px;
+  --fs-body: 15px;
+  --fs-body-sm: 14px;
+  --fs-caption: 13px;
+  --fs-label: 12px;
+
+  /* Line heights — Devanagari needs more space than Latin */
+  --lh-tight: 1.25;
+  --lh-snug: 1.4;
+  --lh-normal: 1.6;
+  --lh-loose: 1.85;
+
+  /* Spacing — 4dp grid */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+
+  /* Radius */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-pill: 9999px;
+
+  /* Elevation — wood shadow tones, not generic gray */
+  --shadow-card: 0 1px 3px rgba(74, 35, 8, 0.10), 0 4px 12px rgba(74, 35, 8, 0.06);
+  --shadow-elevated: 0 2px 6px rgba(74, 35, 8, 0.12), 0 8px 24px rgba(74, 35, 8, 0.10);
+  --shadow-pressed: 0 1px 2px rgba(74, 35, 8, 0.20) inset;
+  --shadow-brass-glow: 0 0 0 2px rgba(184, 134, 11, 0.20), 0 4px 16px rgba(184, 134, 11, 0.18);
+
+  /* Tap target minimums per accessibility spec */
+  --tap-min: 48px;
+  --tap-elder: 56px;
+}
+
+/* ─────────────────────────────────────────────
+   PAGE FOUNDATION
+   ───────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+body {
+  font-family: var(--font-deva-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--c-text-primary);
+  background:
+    radial-gradient(ellipse at top left, #F5EBD7 0%, transparent 60%),
+    radial-gradient(ellipse at bottom right, #F5EBD7 0%, transparent 60%),
+    var(--c-bg);
+  background-attachment: fixed;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Subtle paper-grain texture overlay — the entire app sits on aged ledger paper */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.42 0 0 0 0 0.20 0 0 0 0 0.06 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ─────────────────────────────────────────────
+   TOP NAVIGATION (mockup index)
+   ───────────────────────────────────────────── */
+.preview-header {
+  position: relative;
+  z-index: 10;
+  padding: var(--s-8) var(--s-6);
+  border-bottom: 2px solid var(--c-primary);
+  background: var(--c-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.preview-title {
+  font-family: var(--font-deva-display);
+  font-size: 36px;
+  line-height: var(--lh-tight);
+  color: var(--c-primary);
+  margin-bottom: var(--s-2);
+}
+
+.preview-subtitle {
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--c-text-secondary);
+  font-variation-settings: "SOFT" 50;
+}
+
+.preview-nav {
+  margin-top: var(--s-6);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.preview-nav a {
+  display: inline-block;
+  padding: var(--s-2) var(--s-4);
+  border: 1.5px solid var(--c-primary);
+  border-radius: var(--r-md);
+  background: var(--c-bg-warmer);
+  color: var(--c-primary);
+  text-decoration: none;
+  font-family: var(--font-deva-body);
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  transition: all 200ms ease;
+}
+
+.preview-nav a:hover {
+  background: var(--c-primary);
+  color: var(--c-text-on-primary);
+  transform: translateY(-1px);
+}
+
+.preview-meta {
+  margin-top: var(--s-4);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  color: var(--c-text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* ─────────────────────────────────────────────
+   MOCKUP GRID
+   ───────────────────────────────────────────── */
+.mockup-grid {
+  position: relative;
+  z-index: 2;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--s-8) var(--s-6);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: var(--s-8);
+}
+
+.screen-wrapper {
+  background: var(--c-surface);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-elevated);
+  border: 1px solid var(--c-divider);
+  position: relative;
+}
+
+.screen-label {
+  padding: var(--s-3) var(--s-4);
+  background: var(--c-primary);
+  color: var(--c-text-on-primary);
+  font-family: var(--font-deva-body);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.screen-label-id {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  opacity: 0.7;
+}
+
+/* ─────────────────────────────────────────────
+   PHONE FRAME — for mockup screens
+   ───────────────────────────────────────────── */
+.phone-frame {
+  width: 100%;
+  aspect-ratio: 9 / 19.5;
+  background: var(--c-bg);
+  position: relative;
+  overflow: hidden;
+  border-bottom-left-radius: var(--r-xl);
+  border-bottom-right-radius: var(--r-xl);
+}
+
+.phone-statusbar {
+  height: 28px;
+  background: rgba(31, 22, 17, 0.85);
+  color: #FAF3E7;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--s-4);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.phone-content {
+  height: calc(100% - 28px);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─────────────────────────────────────────────
+   SHOPKEEPER PRESENCE DOCK — replaces bottom nav
+   "The shopkeeper IS the product" — never lets him leave the screen
+   ───────────────────────────────────────────── */
+.presence-dock {
+  background: linear-gradient(180deg, var(--c-surface-elevated) 0%, var(--c-surface) 100%);
+  border-bottom: 2px solid var(--c-divider);
+  padding: var(--s-3) var(--s-4);
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  position: relative;
+  box-shadow: 0 1px 0 rgba(184, 134, 11, 0.15);
+}
+
+.presence-dock::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: var(--s-4);
+  right: var(--s-4);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--c-accent), transparent);
+}
+
+.presence-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-pill);
+  background:
+    linear-gradient(135deg, #C4986C 0%, #8B5A2B 100%);
+  border: 2px solid var(--c-accent);
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-deva-display);
+  font-size: 22px;
+  color: var(--c-text-on-primary);
+}
+
+.presence-avatar::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--c-accent);
+  opacity: 0.4;
+}
+
+.presence-status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--c-success);
+  border: 2px solid var(--c-surface);
+}
+
+.presence-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.presence-name {
+  font-family: var(--font-deva-display);
+  font-size: 17px;
+  line-height: var(--lh-tight);
+  color: var(--c-primary);
+  margin-bottom: 2px;
+}
+
+.presence-status {
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  color: var(--c-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.presence-voice-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-pill);
+  background: var(--c-accent);
+  color: var(--c-primary-deep);
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-card);
+  transition: all 200ms ease;
+}
+
+.presence-voice-btn:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-brass-glow);
+}
+
+/* ─────────────────────────────────────────────
+   COMMON CONTENT BLOCKS
+   ───────────────────────────────────────────── */
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-4);
+}
+
+.section-label {
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  color: var(--c-primary);
+  letter-spacing: 0.02em;
+  margin-bottom: var(--s-3);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.section-label::before,
+.section-label::after {
+  content: '';
+  height: 1.5px;
+  background: var(--c-accent);
+  flex: 1;
+  max-width: 24px;
+  border-radius: 1px;
+}
+
+.section-label::before { display: none; }
+
+.brass-divider {
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--c-accent) 30%, var(--c-accent) 70%, transparent);
+  margin: var(--s-4) 0;
+  position: relative;
+}
+
+.brass-divider::after {
+  content: '◈';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--c-bg);
+  padding: 0 var(--s-2);
+  color: var(--c-accent);
+  font-size: 10px;
+}
+
+/* ─────────────────────────────────────────────
+   1. FIRST-TIME ONBOARDING SPLASH
+   ───────────────────────────────────────────── */
+.screen-splash {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(184, 134, 11, 0.15) 0%, transparent 60%),
+    var(--c-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-8);
+  position: relative;
+}
+
+.splash-frame {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #C4986C 0%, #6B3410 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-deva-display);
+  font-size: 48px;
+  color: var(--c-text-on-primary);
+  margin-bottom: var(--s-6);
+  border: 4px solid var(--c-accent);
+  box-shadow: 0 0 0 12px rgba(184, 134, 11, 0.10), 0 0 0 24px rgba(184, 134, 11, 0.04);
+  position: relative;
+}
+
+.splash-frame::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  border-radius: 50%;
+  border: 1px solid var(--c-accent);
+  opacity: 0.3;
+}
+
+.splash-shop-name {
+  font-family: var(--font-deva-display);
+  font-size: 32px;
+  line-height: var(--lh-tight);
+  color: var(--c-primary);
+  text-align: center;
+  margin-bottom: var(--s-2);
+}
+
+.splash-est {
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--c-text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: var(--s-6);
+}
+
+.splash-tagline {
+  font-family: var(--font-deva-body);
+  font-size: 16px;
+  color: var(--c-text-secondary);
+  text-align: center;
+  line-height: var(--lh-normal);
+  max-width: 280px;
+  margin-bottom: var(--s-8);
+}
+
+.splash-loading {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-muted);
+  letter-spacing: 0.1em;
+}
+
+.splash-loading::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  margin-left: 6px;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* ─────────────────────────────────────────────
+   2. ANONYMOUS LANDING (Bharosa Foundation)
+   ───────────────────────────────────────────── */
+.landing-hero {
+  height: 220px;
+  background:
+    linear-gradient(180deg, transparent 30%, rgba(31, 22, 17, 0.65) 100%),
+    linear-gradient(135deg, #8B5A2B, #4A2308);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--s-4);
+}
+
+.landing-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.85 0 0 0 0 0.6 0 0 0 0.15 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+.landing-shopkeeper-frame {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #D4A574, #6B3410);
+  border: 3px solid var(--c-accent);
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-deva-display);
+  font-size: 36px;
+  color: var(--c-text-on-primary);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  z-index: 2;
+}
+
+.landing-name {
+  font-family: var(--font-deva-display);
+  font-size: 22px;
+  color: var(--c-text-on-primary);
+  text-align: center;
+  z-index: 2;
+  position: relative;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  margin-bottom: 4px;
+}
+
+.landing-tagline {
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  color: rgba(250, 243, 231, 0.85);
+  text-align: center;
+  z-index: 2;
+  position: relative;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.landing-meta-bar {
+  background: var(--c-surface);
+  padding: var(--s-3) var(--s-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1.5px solid var(--c-divider);
+}
+
+.landing-meta-item {
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  color: var(--c-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.landing-meta-item strong {
+  font-family: var(--font-mono);
+  color: var(--c-primary);
+  font-weight: 500;
+}
+
+.landing-greeting {
+  background: var(--c-bg-warmer);
+  border-left: 3px solid var(--c-accent);
+  padding: var(--s-4);
+  margin: var(--s-4);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.landing-greeting-play {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-primary-deep);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+
+.landing-greeting-text {
+  flex: 1;
+  font-family: var(--font-deva-body);
+  font-size: 13px;
+  color: var(--c-text-secondary);
+  font-style: italic;
+}
+
+.landing-greeting-text strong {
+  display: block;
+  font-style: normal;
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  color: var(--c-primary);
+  margin-bottom: 2px;
+}
+
+/* ─────────────────────────────────────────────
+   3. CURATED SHORTLISTS — finite, not paginated
+   ───────────────────────────────────────────── */
+.shortlist-tabs {
+  display: flex;
+  gap: var(--s-2);
+  padding: 0 var(--s-4) var(--s-3);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.shortlist-tabs::-webkit-scrollbar { display: none; }
+
+.shortlist-tab {
+  padding: var(--s-2) var(--s-4);
+  background: var(--c-bg-warmer);
+  border: 1.5px solid var(--c-divider);
+  border-radius: var(--r-pill);
+  font-family: var(--font-deva-body);
+  font-size: 13px;
+  color: var(--c-text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.shortlist-tab.active {
+  background: var(--c-primary);
+  color: var(--c-text-on-primary);
+  border-color: var(--c-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.shortlist-header {
+  padding: 0 var(--s-4) var(--s-3);
+}
+
+.shortlist-title {
+  font-family: var(--font-deva-display);
+  font-size: 20px;
+  color: var(--c-primary);
+  margin-bottom: 2px;
+}
+
+.shortlist-curator-tag {
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--c-accent);
+  letter-spacing: 0.02em;
+}
+
+.sku-card {
+  background: var(--c-surface);
+  border-radius: var(--r-lg);
+  margin: 0 var(--s-4) var(--s-3);
+  border: 1px solid var(--c-divider);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  display: flex;
+}
+
+.sku-card-image {
+  width: 110px;
+  height: 110px;
+  background: linear-gradient(135deg, #6B3410, #2C1810);
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: var(--c-accent-glow);
+}
+
+.sku-card-image::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: var(--c-accent);
+  color: var(--c-primary-deep);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-deva-body);
+  font-size: 9px;
+  font-weight: 600;
+  z-index: 2;
+}
+
+.sku-card-image[data-tag="top-pick"]::before { content: 'सुनील भैया की पसंद'; }
+
+.sku-card-body {
+  flex: 1;
+  padding: var(--s-3);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.sku-name {
+  font-family: var(--font-deva-display);
+  font-size: 15px;
+  line-height: var(--lh-snug);
+  color: var(--c-text-primary);
+  margin-bottom: 2px;
+}
+
+.sku-name-en {
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--c-text-muted);
+  font-variation-settings: "SOFT" 50;
+  margin-bottom: var(--s-2);
+}
+
+.sku-meta {
+  display: flex;
+  gap: var(--s-2);
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  color: var(--c-text-muted);
+  margin-bottom: var(--s-2);
+}
+
+.sku-price {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c-primary);
+}
+
+.sku-price-negotiable {
+  font-family: var(--font-deva-body);
+  font-size: 10px;
+  color: var(--c-accent);
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+/* ─────────────────────────────────────────────
+   4. SKU DETAIL — Golden Hour photo dominant
+   ───────────────────────────────────────────── */
+.sku-detail-photo {
+  height: 280px;
+  background:
+    linear-gradient(180deg, transparent 60%, rgba(31, 22, 17, 0.4) 100%),
+    radial-gradient(ellipse at 30% 40%, #D4A574 0%, #6B3410 50%, #2C1810 100%);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--s-3);
+}
+
+.sku-asli-toggle {
+  align-self: flex-end;
+  background: rgba(31, 22, 17, 0.7);
+  color: var(--c-accent);
+  padding: 6px var(--s-3);
+  border-radius: var(--r-pill);
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  border: 1px solid var(--c-accent);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.sku-detail-info {
+  padding: var(--s-4);
+}
+
+.sku-detail-title {
+  font-family: var(--font-deva-display);
+  font-size: 22px;
+  color: var(--c-primary);
+  line-height: var(--lh-tight);
+  margin-bottom: var(--s-2);
+}
+
+.sku-detail-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+  padding-bottom: var(--s-3);
+  border-bottom: 1.5px solid var(--c-divider);
+}
+
+.sku-detail-price {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--c-primary);
+}
+
+.sku-detail-tags {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-3);
+}
+
+.sku-tag {
+  background: var(--c-bg-warmer);
+  padding: 3px var(--s-2);
+  border-radius: var(--r-sm);
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  color: var(--c-text-secondary);
+  border: 1px solid var(--c-divider);
+}
+
+.sku-voicenote {
+  background: var(--c-bg-warmer);
+  border: 1.5px solid var(--c-accent);
+  border-radius: var(--r-md);
+  padding: var(--s-3);
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+
+.sku-voicenote-play {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-primary-deep);
+  border: none;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.sku-voicenote-info {
+  flex: 1;
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  color: var(--c-text-secondary);
+}
+
+.sku-voicenote-info strong {
+  display: block;
+  font-family: var(--font-deva-display);
+  color: var(--c-primary);
+  margin-bottom: 2px;
+}
+
+.sku-detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-2);
+}
+
+.btn-primary, .btn-secondary {
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  border: none;
+  cursor: pointer;
+  transition: all 200ms ease;
+  min-height: var(--tap-min);
+}
+
+.btn-primary {
+  background: var(--c-primary);
+  color: var(--c-text-on-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.btn-secondary {
+  background: var(--c-bg-warmer);
+  color: var(--c-primary);
+  border: 1.5px solid var(--c-primary);
+}
+
+/* ─────────────────────────────────────────────
+   5. PROJECT DRAFT VIEW
+   ───────────────────────────────────────────── */
+.project-header {
+  padding: var(--s-4);
+  background: var(--c-bg-warmer);
+  border-bottom: 1.5px solid var(--c-divider);
+}
+
+.project-title {
+  font-family: var(--font-deva-display);
+  font-size: 18px;
+  color: var(--c-primary);
+  margin-bottom: 4px;
+}
+
+.project-state-pill {
+  display: inline-block;
+  padding: 3px var(--s-3);
+  background: var(--c-accent);
+  color: var(--c-primary-deep);
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--r-pill);
+}
+
+.line-item {
+  display: flex;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--c-divider);
+  align-items: center;
+}
+
+.line-item-thumb {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #6B3410, #2C1810);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-accent);
+  flex-shrink: 0;
+}
+
+.line-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.line-item-name {
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  color: var(--c-text-primary);
+  line-height: var(--lh-snug);
+  margin-bottom: 2px;
+}
+
+.line-item-price {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--c-primary);
+}
+
+.line-item-qty {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.qty-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c-primary);
+  background: var(--c-surface);
+  color: var(--c-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.qty-num {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--c-text-primary);
+  min-width: 20px;
+  text-align: center;
+}
+
+.project-total {
+  padding: var(--s-4);
+  border-top: 2px solid var(--c-accent);
+  background: var(--c-bg-warmer);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.project-total-label {
+  font-family: var(--font-deva-display);
+  font-size: 16px;
+  color: var(--c-primary);
+}
+
+.project-total-amount {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--c-primary);
+}
+
+/* ─────────────────────────────────────────────
+   6. CHAT THREAD — "Sunil-bhaiya Ka Kamra"
+   Balance scale layout: customer left, shopkeeper right, brass thread between
+   ───────────────────────────────────────────── */
+.chat-header {
+  background: var(--c-bg-warmer);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1.5px solid var(--c-divider);
+  text-align: center;
+}
+
+.chat-title {
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  color: var(--c-primary);
+}
+
+.chat-subtitle {
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--c-text-muted);
+  margin-top: 2px;
+}
+
+.chat-scroll {
+  flex: 1;
+  padding: var(--s-4) var(--s-3);
+  position: relative;
+  overflow-y: auto;
+}
+
+.chat-scroll::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: linear-gradient(180deg, transparent, var(--c-accent) 10%, var(--c-accent) 90%, transparent);
+  opacity: 0.4;
+  transform: translateX(-50%);
+}
+
+.chat-bubble {
+  max-width: 75%;
+  margin-bottom: var(--s-3);
+  padding: var(--s-3) var(--s-3);
+  border-radius: var(--r-lg);
+  font-family: var(--font-deva-body);
+  font-size: 13px;
+  line-height: var(--lh-normal);
+  position: relative;
+}
+
+.chat-bubble.customer {
+  background: var(--c-bg-warmer);
+  border: 1px solid var(--c-divider);
+  margin-right: auto;
+  border-bottom-left-radius: 4px;
+  color: var(--c-text-primary);
+}
+
+.chat-bubble.shopkeeper {
+  background: var(--c-primary);
+  color: var(--c-text-on-primary);
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble.shopkeeper::before {
+  content: 'सुनील भैया';
+  position: absolute;
+  top: -16px;
+  right: 0;
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 10px;
+  color: var(--c-accent);
+  font-variation-settings: "SOFT" 50;
+}
+
+.chat-time {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  opacity: 0.6;
+  margin-top: 4px;
+  display: block;
+}
+
+.chat-voicenote {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) 0;
+}
+
+.chat-voicenote-play {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: var(--c-primary-deep);
+  border: none;
+  font-size: 12px;
+}
+
+.chat-voicenote-bars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.chat-voicenote-bars span {
+  width: 3px;
+  background: var(--c-accent);
+  border-radius: 2px;
+}
+
+.chat-input-row {
+  background: var(--c-surface);
+  border-top: 1.5px solid var(--c-divider);
+  padding: var(--s-3);
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.chat-input {
+  flex: 1;
+  background: var(--c-bg-warmer);
+  border: 1.5px solid var(--c-divider);
+  border-radius: var(--r-pill);
+  padding: var(--s-2) var(--s-4);
+  font-family: var(--font-deva-body);
+  font-size: 13px;
+  color: var(--c-text-secondary);
+  min-height: var(--tap-min);
+}
+
+.chat-input-send {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--c-primary);
+  color: var(--c-text-on-primary);
+  border: none;
+  font-size: 16px;
+}
+
+/* ─────────────────────────────────────────────
+   7. COMMIT WITH PHONE OTP
+   ───────────────────────────────────────────── */
+.commit-screen {
+  padding: var(--s-6) var(--s-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(123, 31, 31, 0.06) 0%, transparent 50%),
+    var(--c-bg);
+  flex: 1;
+}
+
+.commit-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--c-commit), #5B1010);
+  color: var(--c-bg);
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--s-4);
+  border: 3px solid var(--c-commit-glow);
+  box-shadow: 0 0 0 8px rgba(123, 31, 31, 0.10);
+}
+
+.commit-title {
+  font-family: var(--font-deva-display);
+  font-size: 22px;
+  color: var(--c-commit);
+  margin-bottom: var(--s-3);
+  line-height: var(--lh-tight);
+}
+
+.commit-subtitle {
+  font-family: var(--font-deva-body);
+  font-size: 14px;
+  color: var(--c-text-secondary);
+  margin-bottom: var(--s-6);
+  max-width: 280px;
+  line-height: var(--lh-normal);
+}
+
+.otp-input-row {
+  display: flex;
+  gap: var(--s-2);
+  margin-bottom: var(--s-6);
+}
+
+.otp-input {
+  width: 44px;
+  height: 56px;
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-primary);
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  text-align: center;
+  color: var(--c-primary);
+}
+
+.otp-input:focus { border-color: var(--c-accent); outline: none; box-shadow: var(--shadow-brass-glow); }
+
+.commit-btn {
+  background: var(--c-commit);
+  color: var(--c-bg);
+  font-family: var(--font-deva-display);
+  font-size: 16px;
+  padding: var(--s-3) var(--s-8);
+  border: none;
+  border-radius: var(--r-md);
+  width: 100%;
+  min-height: 52px;
+  box-shadow: 0 4px 12px rgba(123, 31, 31, 0.25);
+}
+
+.commit-help {
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--c-text-muted);
+  margin-top: var(--s-4);
+}
+
+/* ─────────────────────────────────────────────
+   8. UPI PAYMENT
+   ───────────────────────────────────────────── */
+.payment-amount-card {
+  background: linear-gradient(135deg, var(--c-bg-warmer), var(--c-surface));
+  margin: var(--s-4);
+  padding: var(--s-6);
+  border-radius: var(--r-lg);
+  border: 1.5px solid var(--c-accent);
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+
+.payment-label {
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  color: var(--c-text-muted);
+  margin-bottom: var(--s-2);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.payment-amount {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--c-primary);
+  margin-bottom: var(--s-2);
+}
+
+.payment-shop {
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  color: var(--c-text-secondary);
+}
+
+.upi-btn {
+  margin: var(--s-4);
+  background: var(--c-primary);
+  color: var(--c-text-on-primary);
+  border: none;
+  border-radius: var(--r-lg);
+  padding: var(--s-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  font-family: var(--font-deva-display);
+  font-size: 17px;
+  width: calc(100% - var(--s-8));
+  min-height: 60px;
+  box-shadow: var(--shadow-elevated);
+}
+
+.upi-icons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.upi-icon {
+  width: 24px;
+  height: 24px;
+  background: var(--c-accent);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--c-primary-deep);
+  font-weight: 700;
+}
+
+.payment-other {
+  text-align: center;
+  margin-top: var(--s-4);
+}
+
+.payment-other a {
+  font-family: var(--font-deva-body);
+  font-size: 13px;
+  color: var(--c-text-muted);
+  border-bottom: 1px dashed var(--c-text-muted);
+}
+
+/* ─────────────────────────────────────────────
+   9. ORDER TRACKING
+   ───────────────────────────────────────────── */
+.tracking-header {
+  padding: var(--s-4);
+  background: var(--c-bg-warmer);
+  border-bottom: 1.5px solid var(--c-divider);
+}
+
+.tracking-id {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-muted);
+  margin-bottom: 4px;
+}
+
+.tracking-state-current {
+  font-family: var(--font-deva-display);
+  font-size: 18px;
+  color: var(--c-primary);
+}
+
+.timeline {
+  padding: var(--s-4);
+}
+
+.timeline-item {
+  display: flex;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+  position: relative;
+}
+
+.timeline-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 24px;
+  bottom: -16px;
+  width: 1.5px;
+  background: var(--c-divider);
+}
+
+.timeline-item.completed:not(:last-child)::after {
+  background: var(--c-accent);
+}
+
+.timeline-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--c-bg);
+  border: 1.5px solid var(--c-divider);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--c-text-muted);
+}
+
+.timeline-item.completed .timeline-dot {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: var(--c-primary-deep);
+}
+
+.timeline-content {
+  flex: 1;
+  padding-bottom: var(--s-2);
+}
+
+.timeline-state {
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  color: var(--c-text-primary);
+  margin-bottom: 2px;
+}
+
+.timeline-date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-text-muted);
+}
+
+.timeline-item.pending .timeline-state { color: var(--c-text-muted); }
+
+/* ─────────────────────────────────────────────
+   10. SHOPKEEPER OPS — Google sign-in
+   ───────────────────────────────────────────── */
+.ops-signin {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-8);
+  background:
+    linear-gradient(180deg, var(--c-bg-warmer) 0%, var(--c-bg) 100%);
+}
+
+.ops-signin-logo {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--c-primary), var(--c-primary-deep));
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--s-6);
+  font-family: var(--font-deva-display);
+  font-size: 36px;
+  color: var(--c-accent);
+  box-shadow: var(--shadow-elevated);
+  border: 2px solid var(--c-accent);
+}
+
+.ops-signin-name {
+  font-family: var(--font-deva-display);
+  font-size: 20px;
+  color: var(--c-primary);
+  margin-bottom: var(--s-2);
+  text-align: center;
+}
+
+.ops-signin-subtitle {
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--c-text-muted);
+  margin-bottom: var(--s-8);
+  text-align: center;
+}
+
+.ops-signin-help {
+  font-family: var(--font-deva-body);
+  font-size: 13px;
+  color: var(--c-text-secondary);
+  text-align: center;
+  margin-bottom: var(--s-6);
+  max-width: 260px;
+  line-height: var(--lh-normal);
+}
+
+.google-btn {
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-primary);
+  color: var(--c-primary);
+  font-family: var(--font-deva-display);
+  font-size: 15px;
+  padding: var(--s-4) var(--s-6);
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  max-width: 280px;
+  justify-content: center;
+  min-height: var(--tap-min);
+  box-shadow: var(--shadow-card);
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(45deg, #4285F4 0%, #4285F4 25%, #DB4437 25%, #DB4437 50%, #F4B400 50%, #F4B400 75%, #0F9D58 75%);
+  border-radius: 4px;
+}
+
+/* ─────────────────────────────────────────────
+   11. INVENTORY CREATE
+   ───────────────────────────────────────────── */
+.form-screen {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-4);
+}
+
+.form-header {
+  margin-bottom: var(--s-6);
+}
+
+.form-title {
+  font-family: var(--font-deva-display);
+  font-size: 22px;
+  color: var(--c-primary);
+  margin-bottom: 4px;
+}
+
+.form-subtitle {
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+
+.form-field {
+  margin-bottom: var(--s-4);
+}
+
+.form-label {
+  font-family: var(--font-deva-display);
+  font-size: 13px;
+  color: var(--c-primary);
+  margin-bottom: var(--s-2);
+  display: block;
+}
+
+.form-input {
+  width: 100%;
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-divider);
+  border-radius: var(--r-md);
+  padding: var(--s-3);
+  font-family: var(--font-deva-body);
+  font-size: 14px;
+  color: var(--c-text-primary);
+  min-height: var(--tap-min);
+}
+
+.form-input:focus {
+  border-color: var(--c-accent);
+  outline: none;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--s-2);
+}
+
+.photo-capture-btn {
+  width: 100%;
+  background: var(--c-bg-warmer);
+  border: 2px dashed var(--c-accent);
+  color: var(--c-primary);
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  padding: var(--s-6);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.photo-capture-icon {
+  font-size: 28px;
+  color: var(--c-accent);
+}
+
+/* ─────────────────────────────────────────────
+   12. GOLDEN HOUR PHOTO CAPTURE
+   ───────────────────────────────────────────── */
+.camera-view {
+  flex: 1;
+  background: #1F1611;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.camera-overlay {
+  flex: 1;
+  background:
+    radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(0,0,0,0.6) 70%),
+    linear-gradient(135deg, rgba(184, 134, 11, 0.15), transparent);
+  position: relative;
+}
+
+.camera-grid::before,
+.camera-grid::after {
+  content: '';
+  position: absolute;
+  background: rgba(184, 134, 11, 0.3);
+}
+
+.camera-grid::before {
+  top: 33%; bottom: 33%; left: 0; right: 0; height: 1px;
+  box-shadow: 0 calc(33vh - 33%) 0 rgba(184, 134, 11, 0.3);
+}
+
+.camera-light-guide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  text-align: center;
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  color: var(--c-accent);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+.camera-light-guide span {
+  display: block;
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 11px;
+  color: rgba(212, 165, 71, 0.7);
+  margin-top: 4px;
+}
+
+.camera-controls {
+  background: rgba(31, 22, 17, 0.9);
+  padding: var(--s-4);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.camera-shutter {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  border: 4px solid var(--c-bg);
+  box-shadow: 0 0 0 2px var(--c-accent);
+}
+
+.camera-side-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(184, 134, 11, 0.2);
+  color: var(--c-accent);
+  border: 1px solid var(--c-accent);
+  font-size: 18px;
+}
+
+/* ─────────────────────────────────────────────
+   13. ORDER LIST (ops)
+   ───────────────────────────────────────────── */
+.ops-orders-header {
+  padding: var(--s-4);
+  background: var(--c-bg-warmer);
+  border-bottom: 1.5px solid var(--c-divider);
+}
+
+.ops-orders-title {
+  font-family: var(--font-deva-display);
+  font-size: 20px;
+  color: var(--c-primary);
+}
+
+.ops-orders-subtitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-muted);
+  margin-top: 2px;
+}
+
+.order-card {
+  padding: var(--s-3) var(--s-4);
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-divider);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s-3);
+}
+
+.order-card-customer {
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  color: var(--c-text-primary);
+  margin-bottom: 2px;
+}
+
+.order-card-meta {
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  color: var(--c-text-muted);
+}
+
+.order-card-amount {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-primary);
+  text-align: right;
+}
+
+.order-state {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-deva-body);
+  font-size: 9px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.order-state.committed { background: var(--c-bg-warmer); color: var(--c-warning); border: 1px solid var(--c-warning); }
+.order-state.paid { background: rgba(61, 92, 42, 0.1); color: var(--c-success); border: 1px solid var(--c-success); }
+.order-state.delivering { background: rgba(184, 134, 11, 0.15); color: var(--c-accent); border: 1px solid var(--c-accent); }
+
+/* ─────────────────────────────────────────────
+   14. PROJECT DETAIL OPS
+   ───────────────────────────────────────────── */
+.ops-project-card {
+  padding: var(--s-4);
+  background: var(--c-surface);
+  border-bottom: 1.5px solid var(--c-divider);
+}
+
+.ops-customer-block {
+  background: var(--c-bg-warmer);
+  border-left: 3px solid var(--c-accent);
+  padding: var(--s-3);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  margin: var(--s-3) var(--s-4);
+}
+
+.ops-customer-name {
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  color: var(--c-primary);
+  margin-bottom: 4px;
+}
+
+.ops-memory-snippet {
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--c-text-secondary);
+  line-height: var(--lh-normal);
+}
+
+.ops-actions {
+  padding: var(--s-3) var(--s-4);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-2);
+}
+
+.ops-action-btn {
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-primary);
+  color: var(--c-primary);
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  padding: var(--s-3);
+  border-radius: var(--r-md);
+  min-height: var(--tap-min);
+}
+
+/* ─────────────────────────────────────────────
+   15-16. MARKETING SITE — landing + visit
+   Astro static, NOT Flutter Web
+   ───────────────────────────────────────────── */
+.marketing-screen {
+  font-family: var(--font-deva-body);
+  background: var(--c-bg);
+}
+
+.marketing-hero {
+  height: 240px;
+  background:
+    linear-gradient(180deg, transparent 50%, rgba(31, 22, 17, 0.8) 100%),
+    radial-gradient(ellipse at center, #8B5A2B, #2C1810);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--s-4);
+  text-align: center;
+}
+
+.marketing-shopkeeper {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #D4A574, #6B3410);
+  border: 3px solid var(--c-accent);
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-deva-display);
+  font-size: 40px;
+  color: var(--c-text-on-primary);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.marketing-name {
+  font-family: var(--font-deva-display);
+  font-size: 28px;
+  color: var(--c-text-on-primary);
+  position: relative;
+  z-index: 2;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.marketing-tagline {
+  font-family: var(--font-en-display);
+  font-style: italic;
+  font-size: 13px;
+  color: rgba(250, 243, 231, 0.85);
+  position: relative;
+  z-index: 2;
+}
+
+.marketing-cta-row {
+  background: var(--c-surface);
+  padding: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  border-bottom: 1.5px solid var(--c-divider);
+}
+
+.marketing-cta-primary {
+  background: #25D366;
+  color: white;
+  font-family: var(--font-deva-display);
+  font-size: 16px;
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: var(--tap-min);
+  box-shadow: var(--shadow-card);
+}
+
+.marketing-cta-secondary {
+  background: var(--c-primary);
+  color: var(--c-text-on-primary);
+  font-family: var(--font-deva-display);
+  font-size: 15px;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  border: none;
+  min-height: var(--tap-min);
+}
+
+.marketing-shop-info {
+  padding: var(--s-4);
+}
+
+.marketing-info-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--c-divider);
+}
+
+.marketing-info-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--c-bg-warmer);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-accent);
+  flex-shrink: 0;
+}
+
+.marketing-info-text {
+  font-family: var(--font-deva-body);
+  font-size: 13px;
+  color: var(--c-text-secondary);
+}
+
+.marketing-info-text strong {
+  display: block;
+  font-family: var(--font-deva-display);
+  color: var(--c-primary);
+  margin-bottom: 2px;
+}
+
+.marketing-map {
+  height: 180px;
+  background:
+    linear-gradient(135deg, #E8DCC4, #D4C29C),
+    radial-gradient(circle at 60% 40%, rgba(184, 134, 11, 0.3), transparent);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marketing-map::before {
+  content: '📍';
+  font-size: 32px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+/* ─────────────────────────────────────────────
+   ELDER TIER — applied via wrapper class
+   1.4x text, slower animations, larger tap targets
+   ───────────────────────────────────────────── */
+.elder-tier {
+  --fs-display: 45px;
+  --fs-h1: 36px;
+  --fs-h2: 31px;
+  --fs-h3: 25px;
+  --fs-body-lg: 24px;
+  --fs-body: 21px;
+  --fs-body-sm: 20px;
+  --fs-caption: 18px;
+  --fs-label: 17px;
+  --tap-min: 56px;
+}
+
+.elder-tier .chat-bubble { font-size: 18px; max-width: 85%; }
+.elder-tier .sku-name { font-size: 20px; }
+.elder-tier .sku-price { font-size: 22px; }
+.elder-tier .presence-name { font-size: 23px; }
+
+/* ─────────────────────────────────────────────
+   LEGEND / FOOTER
+   ───────────────────────────────────────────── */
+.legend {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: var(--s-12) auto;
+  padding: var(--s-8);
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-divider);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.legend h2 {
+  font-family: var(--font-deva-display);
+  font-size: 28px;
+  color: var(--c-primary);
+  margin-bottom: var(--s-4);
+}
+
+.legend p {
+  font-family: var(--font-en-body);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--c-text-secondary);
+  margin-bottom: var(--s-3);
+}
+
+.legend ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: var(--s-6);
+}
+
+.legend li {
+  font-family: var(--font-en-body);
+  font-size: 14px;
+  color: var(--c-text-secondary);
+  padding: var(--s-2) 0 var(--s-2) var(--s-6);
+  border-bottom: 1px dashed var(--c-divider);
+  position: relative;
+}
+
+.legend li::before {
+  content: '◈';
+  position: absolute;
+  left: 0;
+  top: var(--s-2);
+  color: var(--c-accent);
+}
+
+.token-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--s-3);
+  margin: var(--s-4) 0;
+}
+
+.token-swatch {
+  border: 1px solid var(--c-divider);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.token-color {
+  height: 60px;
+}
+
+.token-info {
+  padding: var(--s-2) var(--s-3);
+  background: var(--c-surface);
+}
+
+.token-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-secondary);
+  margin-bottom: 2px;
+}
+
+.token-hex {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-text-muted);
+}
+
+/* ─────────────────────────────────────────────
+   v1.1 — NEW SURFACES (Phase 5 backfill)
+   B1.13 invoice · C3.12 banner+FAQ · S4.17 NPS card ·
+   S4.19 3-tap deactivation · S4.16 media tile · S4.10 reminders
+   All styles reuse existing tokens. No new colors / fonts / spacing.
+   ───────────────────────────────────────────── */
+
+/* ── B1.13 Invoice ── */
+.invoice-paper {
+  background: var(--c-bg);
+  padding: var(--s-5) var(--s-4);
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.invoice-header-row {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+}
+.invoice-logo-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--c-surface);
+  border: 2px solid var(--c-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-deva-display);
+  font-size: 24px;
+  color: var(--c-primary);
+  flex-shrink: 0;
+}
+.invoice-brand {
+  font-family: var(--font-deva-display);
+  font-size: 24px;
+  line-height: var(--lh-tight);
+  color: var(--c-primary);
+}
+.invoice-addr {
+  font-family: var(--font-en-body);
+  font-size: 9px;
+  color: var(--c-text-secondary);
+  margin-top: 2px;
+}
+.invoice-meta-line {
+  font-family: var(--font-deva-body);
+  font-size: 10px;
+  color: var(--c-text-muted);
+  margin-top: 2px;
+}
+.invoice-vpa-line {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--c-text-muted);
+  margin-top: 2px;
+}
+.invoice-divider {
+  height: 1.5px;
+  background: var(--c-divider);
+  margin: var(--s-3) 0;
+}
+.invoice-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  color: var(--c-text-secondary);
+}
+.invoice-meta-row .id {
+  font-family: var(--font-mono);
+  color: var(--c-text-primary);
+}
+.invoice-lines {
+  margin-top: var(--s-3);
+}
+.invoice-line {
+  display: grid;
+  grid-template-columns: 5fr 1fr 2fr 2fr;
+  gap: var(--s-2);
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  padding: 3px 0;
+  color: var(--c-text-primary);
+}
+.invoice-line.header {
+  font-weight: 600;
+}
+.invoice-line .num {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+.invoice-totals {
+  margin-top: var(--s-3);
+  text-align: right;
+}
+.invoice-total-amt {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--c-primary);
+}
+.invoice-total-amt .label {
+  font-family: var(--font-deva-body);
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--c-text-secondary);
+}
+.invoice-payment {
+  font-family: var(--font-deva-body);
+  font-size: 10px;
+  color: var(--c-text-muted);
+  text-align: right;
+  margin-top: 2px;
+}
+.invoice-baki {
+  margin-top: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  background: var(--c-bg-warmer);
+  border-left: 3px solid var(--c-commit);
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  color: var(--c-commit);
+  text-align: right;
+  font-weight: 600;
+}
+.invoice-baki .num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.invoice-footer {
+  margin-top: auto;
+  padding-top: var(--s-5);
+  text-align: center;
+}
+.invoice-thankyou {
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  color: var(--c-text-primary);
+}
+.invoice-signature {
+  margin-top: var(--s-5);
+  font-family: var(--font-deva-body);
+  font-size: 22px;
+  font-style: italic;
+  color: var(--c-primary);
+  display: inline-block;
+  border-bottom: 1.5px solid var(--c-accent);
+  padding-bottom: 2px;
+}
+.invoice-cancelled-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-family: var(--font-deva-display);
+  font-size: 120px;
+  color: var(--c-commit);
+  opacity: 0.15;
+  font-weight: 700;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ── C3.12 Banner + FAQ ── */
+.lifecycle-banner {
+  padding: var(--s-3) var(--s-4);
+  background: var(--c-bg-warmer);
+  border-bottom: 1.5px solid var(--c-accent);
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+}
+.lifecycle-banner.warmer { background: #F4D9A3; }
+.lifecycle-banner-icon {
+  color: var(--c-accent);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.lifecycle-banner-text {
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  line-height: var(--lh-snug);
+  color: var(--c-text-primary);
+  flex: 1;
+}
+.lifecycle-banner-cta {
+  padding: var(--s-2) var(--s-3);
+  background: var(--c-accent);
+  color: var(--c-primary-deep);
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--r-md);
+  border: none;
+  flex-shrink: 0;
+}
+.faq-section {
+  margin-bottom: var(--s-5);
+}
+.faq-title {
+  font-family: var(--font-deva-display);
+  font-size: 16px;
+  color: var(--c-primary);
+  margin-bottom: var(--s-2);
+}
+.faq-body {
+  font-family: var(--font-deva-body);
+  font-size: 13px;
+  line-height: var(--lh-normal);
+  color: var(--c-text-primary);
+}
+
+/* ── S4.17 NPS Card ── */
+.nps-card {
+  margin: var(--s-4);
+  padding: var(--s-4);
+  background: var(--c-surface);
+  border: 1px solid var(--c-divider);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+.nps-headline {
+  font-family: var(--font-deva-display);
+  font-size: 17px;
+  color: var(--c-primary);
+  margin-bottom: var(--s-3);
+}
+.nps-dots {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--s-2);
+}
+.nps-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c-divider);
+  background: var(--c-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--c-text-muted);
+}
+.nps-dot.filled {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: var(--c-primary-deep);
+}
+.nps-anchors {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-deva-body);
+  font-size: 9px;
+  color: var(--c-text-muted);
+  margin-bottom: var(--s-3);
+}
+.nps-textarea-link {
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  color: var(--c-accent);
+  text-decoration: underline;
+  margin-bottom: var(--s-3);
+}
+.nps-buttons {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--s-3);
+}
+.nps-snooze {
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  color: var(--c-text-muted);
+}
+.nps-submit {
+  padding: var(--s-2) var(--s-4);
+  background: var(--c-primary);
+  color: var(--c-text-on-primary);
+  font-family: var(--font-deva-display);
+  font-size: 13px;
+  border-radius: var(--r-md);
+  border: none;
+}
+
+/* ── S4.19 3-tap flow ── */
+.ops-tap-page {
+  padding: var(--s-4);
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.ops-tap-title {
+  font-family: var(--font-deva-display);
+  font-size: 17px;
+  color: var(--c-primary);
+  margin-bottom: var(--s-3);
+}
+.ops-section {
+  margin-bottom: var(--s-4);
+}
+.ops-section-h {
+  font-family: var(--font-deva-display);
+  font-size: 14px;
+  color: var(--c-primary);
+  margin-bottom: var(--s-1);
+}
+.ops-section-b {
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  line-height: var(--lh-normal);
+  color: var(--c-text-primary);
+}
+.ops-tap-footer-btns {
+  display: flex;
+  gap: var(--s-2);
+  padding: var(--s-3) 0 0;
+  margin-top: auto;
+}
+.ops-btn-primary {
+  flex: 1;
+  padding: var(--s-3);
+  background: var(--c-primary);
+  color: var(--c-text-on-primary);
+  font-family: var(--font-deva-display);
+  font-size: 13px;
+  border-radius: var(--r-md);
+  border: none;
+  text-align: center;
+}
+.ops-btn-primary.commit { background: var(--c-commit); }
+.ops-btn-secondary {
+  flex: 1;
+  padding: var(--s-3);
+  background: transparent;
+  color: var(--c-text-primary);
+  font-family: var(--font-deva-display);
+  font-size: 13px;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--c-divider);
+  text-align: center;
+}
+.reason-tile {
+  padding: var(--s-4);
+  background: var(--c-surface);
+  border: 1px solid var(--c-divider);
+  border-radius: var(--r-md);
+  margin-bottom: var(--s-2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-deva-body);
+  font-size: 14px;
+  color: var(--c-text-primary);
+  min-height: 56px;
+}
+.reason-tile .chev { color: var(--c-text-muted); }
+.confirm-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--c-surface);
+  border-top-left-radius: var(--r-xl);
+  border-top-right-radius: var(--r-xl);
+  padding: var(--s-5);
+  box-shadow: 0 -8px 24px rgba(74, 35, 8, 0.15);
+}
+.confirm-title {
+  font-family: var(--font-deva-display);
+  font-size: 17px;
+  color: var(--c-primary);
+  margin-bottom: var(--s-3);
+}
+.confirm-reversibility {
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  color: var(--c-text-secondary);
+  text-align: center;
+  margin-top: var(--s-3);
+  line-height: var(--lh-snug);
+}
+.reversibility-card {
+  margin: var(--s-4);
+  padding: var(--s-4);
+  background: #F4D9A3;
+  border: 1.5px solid var(--c-accent);
+  border-radius: var(--r-lg);
+}
+.reversibility-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--s-3);
+}
+.reversibility-card-title {
+  font-family: var(--font-deva-display);
+  font-size: 15px;
+  color: var(--c-primary);
+}
+.reversibility-card-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-primary-deep);
+}
+
+/* ── S4.16 Media tile ── */
+.media-tile {
+  margin: var(--s-4);
+  padding: var(--s-3);
+  background: var(--c-surface);
+  border: 1px solid var(--c-divider);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+}
+.media-banner {
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-sm);
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--c-text-primary);
+  margin-bottom: var(--s-2);
+}
+.media-banner.amber {
+  background: rgba(139, 105, 20, 0.15);
+  border-left: 3px solid var(--c-warning);
+}
+.media-banner.red {
+  background: rgba(123, 31, 31, 0.12);
+  border-left: 3px solid var(--c-commit);
+}
+.media-title {
+  font-family: var(--font-deva-body);
+  font-size: 13px;
+  color: var(--c-text-secondary);
+  font-weight: 500;
+}
+.media-primary {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  margin-top: var(--s-1);
+}
+.media-primary .num {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--c-primary);
+}
+.media-primary .denom {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--c-text-muted);
+}
+.media-primary .asterisk {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: var(--c-accent);
+  font-weight: 700;
+}
+.media-primary .delta {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-secondary);
+}
+.media-bar {
+  height: 6px;
+  background: var(--c-bg-warmer);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  margin-top: var(--s-2);
+}
+.media-bar-fill { height: 100%; }
+.media-bar-fill.green { background: var(--c-accent); }
+.media-bar-fill.amber { background: var(--c-warning); }
+.media-bar-fill.red { background: var(--c-commit); }
+.media-subtitle {
+  font-family: var(--font-deva-body);
+  font-size: 10px;
+  color: var(--c-text-muted);
+  margin-top: var(--s-2);
+}
+.media-footnote {
+  font-family: var(--font-deva-body);
+  font-size: 9px;
+  font-style: italic;
+  color: var(--c-text-muted);
+  margin-top: var(--s-1);
+}
+
+/* ── S4.10 Ledger reminder affordances ── */
+.ledger-affordance {
+  margin-top: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  background: var(--c-bg-warmer);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-divider);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.ledger-affordance-q {
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  color: var(--c-text-primary);
+  font-weight: 500;
+  flex: 1;
+}
+.ledger-toggle {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--c-divider);
+  position: relative;
+  flex-shrink: 0;
+}
+.ledger-toggle.on { background: var(--c-accent); }
+.ledger-toggle::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--c-surface);
+  transition: transform 200ms;
+}
+.ledger-toggle.on::before { transform: translateX(16px); }
+.reminder-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--s-2);
+  background: var(--c-bg);
+  border: 1px solid var(--c-text-muted);
+  border-radius: var(--r-sm);
+  margin-top: 4px;
+}
+.reminder-badge.capped { border-color: var(--c-accent); }
+.reminder-badge .lbl {
+  font-family: var(--font-deva-body);
+  font-size: 9px;
+  color: var(--c-text-muted);
+}
+.reminder-badge .count {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  margin-left: 2px;
+}
+.reminder-badge.capped .count { color: var(--c-accent); }
+.cadence-stepper {
+  margin-top: var(--s-3);
+  padding: var(--s-3);
+  background: var(--c-surface);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-divider);
+}
+.cadence-label {
+  font-family: var(--font-deva-body);
+  font-size: 11px;
+  color: var(--c-text-secondary);
+  margin-bottom: var(--s-2);
+}
+.cadence-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  justify-content: center;
+}
+.cadence-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--c-bg-warmer);
+  border: 1px solid var(--c-divider);
+  color: var(--c-primary);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cadence-value {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c-primary);
+  min-width: 60px;
+  text-align: center;
+}
+.cadence-range {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--s-1);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--c-text-muted);
+}
+.undo-toast {
+  position: absolute;
+  bottom: var(--s-4);
+  left: var(--s-4);
+  right: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  background: var(--c-text-primary);
+  color: var(--c-bg);
+  border-radius: var(--r-md);
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-elevated);
+}
+.undo-toast-btn {
+  font-family: var(--font-deva-body);
+  font-size: 12px;
+  color: var(--c-accent-glow);
+  text-decoration: underline;
+}
+
+</style>
+</head>
+<body>
+
+<header class="preview-header">
+  <h1 class="preview-title">सुनील ट्रेडिंग कंपनी — Walking Skeleton</h1>
+  <div class="preview-subtitle">A "Workshop Almanac" design system — 23 mockups for Yugma Dukaan v1 (v1.1 bundle — Phase 5 BMAD back-fill)</div>
+  <div class="preview-meta">
+    Aesthetic: deep sheesham wood + antique brass + aged cream paper · Typography: Tiro Devanagari Hindi / Mukta / Fraunces / EB Garamond · Target: Tier-3 cheap Android · Hindi-first source-of-truth · Multi-tenant via ShopThemeTokens
+  </div>
+  <nav class="preview-nav">
+    <a href="#s1">1. Splash</a>
+    <a href="#s2">2. Landing</a>
+    <a href="#s3">3. Voice greeting</a>
+    <a href="#s4">4. Shortlists</a>
+    <a href="#s5">5. SKU detail</a>
+    <a href="#s6">6. Project draft</a>
+    <a href="#s7">7. Chat thread</a>
+    <a href="#s8">8. Send message</a>
+    <a href="#s9">9. Commit + OTP</a>
+    <a href="#s10">10. UPI pay</a>
+    <a href="#s11">11. Order tracking</a>
+    <a href="#s12">12. Ops sign-in</a>
+    <a href="#s13">13. New SKU</a>
+    <a href="#s14">14. Golden Hour</a>
+    <a href="#s15">15. Order list</a>
+    <a href="#s16">16. Project detail (ops)</a>
+    <a href="#s17">17. Marketing site</a>
+    <a href="#elder">Elder tier preview</a>
+    <a href="#s18">18. B1.13 Receipt · paid</a>
+    <a href="#s18b">18b. B1.13 · cancelled / udhaar / fallback</a>
+    <a href="#s19">19. C3.12 Deactivation banner + FAQ</a>
+    <a href="#s20">20. S4.17 NPS card</a>
+    <a href="#s21">21. S4.19 3-tap deactivation + reversal</a>
+    <a href="#s22">22. S4.16 Media spend tile</a>
+    <a href="#s23">23. S4.10 Udhaar reminder affordances</a>
+  </nav>
+</header>
+
+<main class="mockup-grid">
+
+  <!-- 1. SPLASH -->
+  <div class="screen-wrapper" id="s1">
+    <div class="screen-label"><span>स्वागत स्क्रीन — Splash</span><span class="screen-label-id">B1.1 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content screen-splash">
+        <div class="splash-frame">सु</div>
+        <div class="splash-shop-name">सुनील ट्रेडिंग<br>कंपनी</div>
+        <div class="splash-est">EST. 2003 · HARRINGTONGANJ</div>
+        <div class="splash-tagline">हर शादी की पहली खुशी,<br>यहाँ से</div>
+        <div class="splash-loading">तैयार हो रहा है</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. ANONYMOUS LANDING -->
+  <div class="screen-wrapper" id="s2">
+    <div class="screen-label"><span>दुकान — Anonymous Landing</span><span class="screen-label-id">B1.2 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="landing-hero">
+          <div class="landing-shopkeeper-frame">सु</div>
+          <div class="landing-name">सुनील भैया</div>
+          <div class="landing-tagline">सुनील ट्रेडिंग कंपनी · हरिंगटनगंज, अयोध्या</div>
+        </div>
+        <div class="landing-meta-bar">
+          <div class="landing-meta-item">📜 <strong>22 साल</strong> · 2003 से</div>
+          <div class="landing-meta-item">🪪 GST <strong>09AAACR</strong></div>
+          <div class="landing-meta-item">📍 <strong>Map</strong></div>
+        </div>
+        <div class="scroll-area">
+          <div class="section-label">सुनील भैया की पसंद — आज के लिए</div>
+          <div style="display: flex; gap: var(--s-3); padding-bottom: var(--s-3);">
+            <div style="min-width: 100px; height: 100px; background: linear-gradient(135deg, #6B3410, #2C1810); border-radius: var(--r-md); border: 1px solid var(--c-accent); display: flex; align-items: end; padding: 6px; color: var(--c-accent-glow); font-size: 9px; font-family: var(--font-deva-body);">शादी</div>
+            <div style="min-width: 100px; height: 100px; background: linear-gradient(135deg, #8B4513, #4A2308); border-radius: var(--r-md); border: 1px solid var(--c-divider); display: flex; align-items: end; padding: 6px; color: var(--c-accent-glow); font-size: 9px; font-family: var(--font-deva-body);">नया घर</div>
+            <div style="min-width: 100px; height: 100px; background: linear-gradient(135deg, #6B3410, #2C1810); border-radius: var(--r-md); border: 1px solid var(--c-divider); display: flex; align-items: end; padding: 6px; color: var(--c-accent-glow); font-size: 9px; font-family: var(--font-deva-body);">दहेज</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. VOICE GREETING -->
+  <div class="screen-wrapper" id="s3">
+    <div class="screen-label"><span>स्वागत संदेश — Greeting Voice Note</span><span class="screen-label-id">B1.3 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="presence-dock">
+          <div class="presence-avatar">सु<div class="presence-status-dot"></div></div>
+          <div class="presence-info">
+            <div class="presence-name">सुनील भैया</div>
+            <div class="presence-status">● दुकान पर हैं · 11:42 AM</div>
+          </div>
+          <button class="presence-voice-btn">▶</button>
+        </div>
+        <div class="landing-greeting">
+          <button class="landing-greeting-play">▶</button>
+          <div class="landing-greeting-text">
+            <strong>नमस्ते जी, स्वागत है</strong>
+            "आइए, आज क्या ज़रूरत है? — शादी, नया घर, या कुछ और? बताइए।"
+            <div style="font-family: var(--font-mono); font-size: 9px; color: var(--c-text-muted); margin-top: 6px;">23 सेकंड · 11:30 AM</div>
+          </div>
+        </div>
+        <div class="brass-divider"></div>
+        <div style="padding: 0 var(--s-4) var(--s-4); font-family: var(--font-en-display); font-style: italic; font-size: 12px; color: var(--c-text-muted); text-align: center;">
+          "Tap to hear Sunil-bhaiya welcome you"<br>
+          <span style="font-family: var(--font-deva-body); font-size: 11px;">Auto-play with mute toggle · respects silent mode</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. SHORTLISTS -->
+  <div class="screen-wrapper" id="s4">
+    <div class="screen-label"><span>सुनील भैया की पसंद — Curated Shortlists</span><span class="screen-label-id">B1.4 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="presence-dock">
+          <div class="presence-avatar">सु<div class="presence-status-dot"></div></div>
+          <div class="presence-info">
+            <div class="presence-name">सुनील भैया</div>
+            <div class="presence-status">● दुकान पर हैं</div>
+          </div>
+          <button class="presence-voice-btn">▶</button>
+        </div>
+        <div class="shortlist-tabs">
+          <div class="shortlist-tab active">शादी</div>
+          <div class="shortlist-tab">नया घर</div>
+          <div class="shortlist-tab">दहेज</div>
+          <div class="shortlist-tab">बजट</div>
+          <div class="shortlist-tab">बदलने के लिए</div>
+        </div>
+        <div class="shortlist-header">
+          <div class="shortlist-title">शादी के लिए · 6 चुनी हुईं</div>
+          <div class="shortlist-curator-tag">finite · curated · not infinite</div>
+        </div>
+        <div class="sku-card">
+          <div class="sku-card-image" data-tag="top-pick">⌬</div>
+          <div class="sku-card-body">
+            <div>
+              <div class="sku-name">गोदरेज स्टोरवेल 4-दरवाज़ा</div>
+              <div class="sku-name-en">Godrej Storwel 4-Door</div>
+              <div class="sku-meta"><span>स्टील</span><span>·</span><span>5 ft</span></div>
+            </div>
+            <div class="sku-price">₹17,500<span class="sku-price-negotiable">मोल भाव</span></div>
+          </div>
+        </div>
+        <div class="sku-card">
+          <div class="sku-card-image">⌗</div>
+          <div class="sku-card-body">
+            <div>
+              <div class="sku-name">शीशम 3-दरवाज़ा वार्डरोब</div>
+              <div class="sku-name-en">Sheesham 3-Door Wardrobe</div>
+              <div class="sku-meta"><span>लकड़ी</span><span>·</span><span>6 ft</span></div>
+            </div>
+            <div class="sku-price">₹28,000<span class="sku-price-negotiable">मोल भाव</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. SKU DETAIL -->
+  <div class="screen-wrapper" id="s5">
+    <div class="screen-label"><span>SKU Detail · Golden Hour</span><span class="screen-label-id">B1.5 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="sku-detail-photo">
+          <button class="sku-asli-toggle">असली रूप दिखाइए</button>
+        </div>
+        <div class="sku-detail-info">
+          <div class="sku-detail-title">गोदरेज स्टोरवेल<br>4-दरवाज़ा</div>
+          <div class="sku-detail-price-row">
+            <div class="sku-detail-price">₹17,500</div>
+            <div style="font-family: var(--font-deva-body); font-size: 12px; color: var(--c-accent);">मोल भाव हो सकती है</div>
+          </div>
+          <div class="sku-detail-tags">
+            <div class="sku-tag">स्टील · Mazboot</div>
+            <div class="sku-tag">5 फीट · H × W × D</div>
+            <div class="sku-tag">2 ताले</div>
+          </div>
+          <div class="sku-voicenote">
+            <button class="sku-voicenote-play">▶</button>
+            <div class="sku-voicenote-info">
+              <strong>सुनील भैया कहते हैं</strong>
+              "इसकी लॉकिंग सिस्टम बहुत मज़बूत है — 10 साल चलेगी।"
+            </div>
+          </div>
+          <div class="sku-detail-actions">
+            <button class="btn-secondary">सूची में जोड़ें</button>
+            <button class="btn-primary">सुनील भैया से बात</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. PROJECT DRAFT -->
+  <div class="screen-wrapper" id="s6">
+    <div class="screen-label"><span>आपकी सूची — Project Draft</span><span class="screen-label-id">C3.1 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="presence-dock">
+          <div class="presence-avatar">सु<div class="presence-status-dot"></div></div>
+          <div class="presence-info">
+            <div class="presence-name">सुनील भैया</div>
+            <div class="presence-status">● दुकान पर हैं</div>
+          </div>
+          <button class="presence-voice-btn">▶</button>
+        </div>
+        <div class="project-header">
+          <div class="project-title">आपका ऑर्डर</div>
+          <div class="project-state-pill">draft · अभी पक्का नहीं</div>
+        </div>
+        <div style="flex: 1; overflow-y: auto;">
+          <div class="line-item">
+            <div class="line-item-thumb"></div>
+            <div class="line-item-info">
+              <div class="line-item-name">गोदरेज स्टोरवेल 4-दरवाज़ा</div>
+              <div class="line-item-price">₹17,500</div>
+            </div>
+            <div class="line-item-qty">
+              <button class="qty-btn">−</button>
+              <span class="qty-num">1</span>
+              <button class="qty-btn">+</button>
+            </div>
+          </div>
+          <div class="line-item">
+            <div class="line-item-thumb"></div>
+            <div class="line-item-info">
+              <div class="line-item-name">ड्रेसिंग टेबल</div>
+              <div class="line-item-price">₹8,500</div>
+            </div>
+            <div class="line-item-qty">
+              <button class="qty-btn">−</button>
+              <span class="qty-num">1</span>
+              <button class="qty-btn">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="project-total">
+          <div class="project-total-label">कुल</div>
+          <div class="project-total-amount">₹26,000</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. CHAT THREAD — balance scale -->
+  <div class="screen-wrapper" id="s7">
+    <div class="screen-label"><span>सुनील भैया का कमरा — Chat Thread</span><span class="screen-label-id">P2.4 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="chat-header">
+          <div class="chat-title">सुनील भैया का कमरा</div>
+          <div class="chat-subtitle">Order #4F2A · 2 items · ₹26,000</div>
+        </div>
+        <div class="chat-scroll">
+          <div class="chat-bubble customer">
+            नमस्ते सुनील भैया — पॉलिश का काम कब तक हो जाएगा?
+            <span class="chat-time">11:42 AM</span>
+          </div>
+          <div class="chat-bubble shopkeeper">
+            नमस्ते जी। 4 दिन में पॉलिश पूरी हो जाएगी, फिर डिलीवरी।
+            <span class="chat-time">11:43 AM · seen ✓</span>
+          </div>
+          <div class="chat-bubble shopkeeper">
+            <div class="chat-voicenote">
+              <button class="chat-voicenote-play">▶</button>
+              <div class="chat-voicenote-bars">
+                <span style="height: 8px;"></span>
+                <span style="height: 14px;"></span>
+                <span style="height: 18px;"></span>
+                <span style="height: 22px;"></span>
+                <span style="height: 16px;"></span>
+                <span style="height: 12px;"></span>
+                <span style="height: 20px;"></span>
+                <span style="height: 14px;"></span>
+                <span style="height: 18px;"></span>
+                <span style="height: 10px;"></span>
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 9px; color: rgba(250,243,231,0.7);">0:18</div>
+            </div>
+            <span class="chat-time">11:44 AM</span>
+          </div>
+          <div class="chat-bubble customer">
+            ठीक है भैया, धन्यवाद
+            <span class="chat-time">11:45 AM</span>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <div class="chat-input">यहाँ संदेश लिखिए...</div>
+          <button class="chat-input-send">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. CHAT INPUT IN ACTION -->
+  <div class="screen-wrapper" id="s8">
+    <div class="screen-label"><span>संदेश भेजिए — Send Text Message</span><span class="screen-label-id">P2.5 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="chat-header">
+          <div class="chat-title">सुनील भैया का कमरा</div>
+          <div class="chat-subtitle">अभी टाइप कर रहे हैं</div>
+        </div>
+        <div class="chat-scroll">
+          <div class="chat-bubble shopkeeper">
+            नमस्ते जी। 4 दिन में पॉलिश पूरी हो जाएगी।
+            <span class="chat-time">11:43 AM</span>
+          </div>
+        </div>
+        <div class="chat-input-row" style="background: var(--c-bg-warmer); border-top-color: var(--c-accent);">
+          <div class="chat-input" style="border-color: var(--c-accent); color: var(--c-text-primary); background: var(--c-surface);">
+            क्या डिलीवरी का समय बदला जा सकता है?<span style="background: var(--c-accent); width: 1.5px; height: 14px; display: inline-block; vertical-align: middle; margin-left: 2px; animation: pulse 1s infinite;"></span>
+          </div>
+          <button class="chat-input-send" style="background: var(--c-commit);">➤</button>
+        </div>
+        <div style="padding: var(--s-2) var(--s-4); font-family: var(--font-mono); font-size: 9px; color: var(--c-text-muted); text-align: center; background: var(--c-bg-warmer);">
+          Devanagari input · system Hindi keyboard
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. COMMIT WITH OTP -->
+  <div class="screen-wrapper" id="s9">
+    <div class="screen-label"><span>ऑर्डर पक्का कीजिए — Commit + OTP</span><span class="screen-label-id">C3.4 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content commit-screen">
+        <div class="commit-icon">◈</div>
+        <div class="commit-title">ऑर्डर पक्का<br>कीजिए</div>
+        <div class="commit-subtitle">सुनील भैया डिलीवरी के लिए संपर्क करेंगे — अपना नंबर verify कीजिए</div>
+        <div class="otp-input-row">
+          <input class="otp-input" value="2"/>
+          <input class="otp-input" value="3"/>
+          <input class="otp-input" value="4"/>
+          <input class="otp-input" value=""/>
+          <input class="otp-input" value=""/>
+          <input class="otp-input" value=""/>
+        </div>
+        <button class="commit-btn">पुष्टि कीजिए · ₹26,000</button>
+        <div class="commit-help">"Sunil-bhaiya needs your number to deliver"<br>—not "verify for security"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. UPI PAYMENT -->
+  <div class="screen-wrapper" id="s10">
+    <div class="screen-label"><span>भुगतान — UPI Payment</span><span class="screen-label-id">C3.5 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="presence-dock">
+          <div class="presence-avatar">सु<div class="presence-status-dot"></div></div>
+          <div class="presence-info">
+            <div class="presence-name">सुनील भैया को भेजिए</div>
+            <div class="presence-status">VPA: sunil@oksbi</div>
+          </div>
+        </div>
+        <div class="payment-amount-card">
+          <div class="payment-label">देय राशि</div>
+          <div class="payment-amount">₹26,000</div>
+          <div class="payment-shop">सुनील ट्रेडिंग कंपनी</div>
+        </div>
+        <button class="upi-btn">
+          UPI से दीजिए
+          <div class="upi-icons">
+            <div class="upi-icon">P</div>
+            <div class="upi-icon">G</div>
+            <div class="upi-icon">पे</div>
+          </div>
+        </button>
+        <div class="payment-other">
+          <a href="#">और तरीके — COD, Bank Transfer, उधार खाता</a>
+        </div>
+        <div style="padding: var(--s-3) var(--s-4); font-family: var(--font-mono); font-size: 9px; color: var(--c-text-muted); text-align: center; margin-top: var(--s-4);">
+          0% commission · UPI is mandated zero-MDR
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. ORDER TRACKING -->
+  <div class="screen-wrapper" id="s11">
+    <div class="screen-label"><span>ऑर्डर की स्थिति — Order Tracking</span><span class="screen-label-id">C3.10</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="presence-dock">
+          <div class="presence-avatar">सु<div class="presence-status-dot"></div></div>
+          <div class="presence-info">
+            <div class="presence-name">सुनील भैया</div>
+            <div class="presence-status">● दुकान पर हैं</div>
+          </div>
+        </div>
+        <div class="tracking-header">
+          <div class="tracking-id">Order #4F2A · ₹26,000</div>
+          <div class="tracking-state-current">पॉलिश में है</div>
+        </div>
+        <div class="timeline">
+          <div class="timeline-item completed">
+            <div class="timeline-dot">✓</div>
+            <div class="timeline-content">
+              <div class="timeline-state">पुष्टि की गयी</div>
+              <div class="timeline-date">11 अप्रैल · 11:45 AM</div>
+            </div>
+          </div>
+          <div class="timeline-item completed">
+            <div class="timeline-dot">✓</div>
+            <div class="timeline-content">
+              <div class="timeline-state">भुगतान हुआ — UPI</div>
+              <div class="timeline-date">11 अप्रैल · 11:47 AM</div>
+            </div>
+          </div>
+          <div class="timeline-item completed">
+            <div class="timeline-dot">●</div>
+            <div class="timeline-content">
+              <div class="timeline-state">पॉलिश में है</div>
+              <div class="timeline-date">12 अप्रैल · चल रहा है</div>
+            </div>
+          </div>
+          <div class="timeline-item pending">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-state">रवाना होगा</div>
+              <div class="timeline-date">~ 14 अप्रैल</div>
+            </div>
+          </div>
+          <div class="timeline-item pending">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-state">डिलीवर होगा</div>
+              <div class="timeline-date">~ 15 अप्रैल</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12. OPS GOOGLE SIGN-IN -->
+  <div class="screen-wrapper" id="s12">
+    <div class="screen-label"><span>दुकानदार लॉगिन — Ops Sign-In</span><span class="screen-label-id">S4.1 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content ops-signin">
+        <div class="ops-signin-logo">सु</div>
+        <div class="ops-signin-name">सुनील ट्रेडिंग कंपनी</div>
+        <div class="ops-signin-subtitle">Shopkeeper Operations</div>
+        <div class="ops-signin-help">अपने Google खाते से लॉगिन कीजिए — वही जो Play Store में है</div>
+        <button class="google-btn">
+          <div class="google-icon"></div>
+          Google से लॉगिन
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13. INVENTORY CREATE -->
+  <div class="screen-wrapper" id="s13">
+    <div class="screen-label"><span>नया SKU — Add Inventory</span><span class="screen-label-id">S4.3 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content form-screen">
+        <div class="form-header">
+          <div class="form-title">नया अल्मीरा जोड़िए</div>
+          <div class="form-subtitle">Add to inventory</div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">नाम (हिंदी में)</label>
+          <input class="form-input" value="गोदरेज स्टोरवेल 4-दरवाज़ा"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">श्रेणी</label>
+          <input class="form-input" value="स्टील अल्मीरा"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">माप (cm)</label>
+          <div class="form-row">
+            <input class="form-input" placeholder="ऊंचाई" value="152"/>
+            <input class="form-input" placeholder="चौड़ाई" value="92"/>
+            <input class="form-input" placeholder="गहराई" value="51"/>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">कीमत (₹)</label>
+          <input class="form-input" value="17500"/>
+        </div>
+        <div class="form-field">
+          <button class="photo-capture-btn">
+            <div class="photo-capture-icon">◈</div>
+            Golden Hour फोटो लीजिए
+            <span style="font-size: 11px; font-family: var(--font-en-display); font-style: italic;">2:30–3:30 PM optimal</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14. GOLDEN HOUR CAMERA -->
+  <div class="screen-wrapper" id="s14">
+    <div class="screen-label"><span>Golden Hour Photo</span><span class="screen-label-id">S4.5 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="camera-view">
+          <div class="camera-overlay camera-grid">
+            <div class="camera-light-guide">
+              ◈ रौशनी का कोण<br>
+              <span>OPTIMAL · 2:47 PM</span>
+            </div>
+          </div>
+          <div class="camera-controls">
+            <button class="camera-side-btn">⌨</button>
+            <button class="camera-shutter"></button>
+            <button class="camera-side-btn">⟳</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 15. ORDER LIST OPS -->
+  <div class="screen-wrapper" id="s15">
+    <div class="screen-label"><span>आज के ऑर्डर — Order List</span><span class="screen-label-id">S4.6</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="ops-orders-header">
+          <div class="ops-orders-title">आज के ऑर्डर</div>
+          <div class="ops-orders-subtitle">11 APRIL 2026 · 7 active</div>
+        </div>
+        <div style="flex: 1; overflow-y: auto;">
+          <div class="order-card">
+            <div>
+              <div class="order-card-customer">सुनीता देवी जी</div>
+              <div class="order-card-meta">2 items · 2 hours ago</div>
+              <div class="order-state committed">पुष्टि बाकी</div>
+            </div>
+            <div class="order-card-amount">₹26,000</div>
+          </div>
+          <div class="order-card">
+            <div>
+              <div class="order-card-customer">गीता बहन</div>
+              <div class="order-card-meta">1 item · UPI paid</div>
+              <div class="order-state paid">भुगतान हुआ</div>
+            </div>
+            <div class="order-card-amount">₹14,500</div>
+          </div>
+          <div class="order-card">
+            <div>
+              <div class="order-card-customer">रामेश्वर कुमार</div>
+              <div class="order-card-meta">3 items · पॉलिश में</div>
+              <div class="order-state delivering">डिलीवरी में</div>
+            </div>
+            <div class="order-card-amount">₹42,000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 16. PROJECT DETAIL OPS -->
+  <div class="screen-wrapper" id="s16">
+    <div class="screen-label"><span>ऑर्डर विवरण — Project Detail (Ops)</span><span class="screen-label-id">S4.7</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="ops-project-card">
+          <div class="project-state-pill">पुष्टि की गयी · ₹26,000</div>
+          <div class="project-title" style="margin-top: var(--s-2);">सुनीता देवी जी का ऑर्डर</div>
+          <div style="font-family: var(--font-mono); font-size: 11px; color: var(--c-text-muted);">2 items · 2 hours ago</div>
+        </div>
+        <div class="ops-customer-block">
+          <div class="ops-customer-name">सुनीता देवी जी · 91XXXX5678</div>
+          <div class="ops-memory-snippet">"Sunita-ji's mother-in-law bought our Storwel in 2019 — was very happy. She's the bahen of Geeta who came last week."</div>
+        </div>
+        <div style="padding: 0 var(--s-4) var(--s-3);">
+          <div class="line-item" style="padding-left: 0; padding-right: 0;">
+            <div class="line-item-thumb"></div>
+            <div class="line-item-info">
+              <div class="line-item-name">गोदरेज स्टोरवेल 4-दरवाज़ा</div>
+              <div class="line-item-price">₹17,500 × 1</div>
+            </div>
+          </div>
+          <div class="line-item" style="padding-left: 0; padding-right: 0;">
+            <div class="line-item-thumb"></div>
+            <div class="line-item-info">
+              <div class="line-item-name">ड्रेसिंग टेबल</div>
+              <div class="line-item-price">₹8,500 × 1</div>
+            </div>
+          </div>
+        </div>
+        <div class="ops-actions">
+          <button class="ops-action-btn">💬 संदेश</button>
+          <button class="ops-action-btn">🎤 आवाज़</button>
+          <button class="ops-action-btn">📦 डिलीवर</button>
+          <button class="ops-action-btn">📒 उधार</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 17. MARKETING SITE -->
+  <div class="screen-wrapper" id="s17">
+    <div class="screen-label"><span>Marketing Site (Astro static)</span><span class="screen-label-id">M5.1 / M5.4</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content marketing-screen">
+        <div class="marketing-hero">
+          <div class="marketing-shopkeeper">सु</div>
+          <div class="marketing-name">सुनील ट्रेडिंग कंपनी</div>
+          <div class="marketing-tagline">Where every wedding's first joy begins · Est. 2003</div>
+        </div>
+        <div class="marketing-cta-row">
+          <button class="marketing-cta-primary">सुनील भैया से अभी बात कीजिए</button>
+          <button class="marketing-cta-secondary">दुकान खोलिए · Open the shop</button>
+        </div>
+        <div class="marketing-shop-info">
+          <div class="marketing-info-row">
+            <div class="marketing-info-icon">📍</div>
+            <div class="marketing-info-text">
+              <strong>हरिंगटनगंज बाज़ार</strong>
+              अयोध्या, उत्तर प्रदेश 224001
+            </div>
+          </div>
+          <div class="marketing-info-row">
+            <div class="marketing-info-icon">⏰</div>
+            <div class="marketing-info-text">
+              <strong>समय</strong>
+              सुबह 9 से रात 9 · रोज़
+            </div>
+          </div>
+          <div class="marketing-info-row">
+            <div class="marketing-info-icon">📞</div>
+            <div class="marketing-info-text">
+              <strong>91-XXXX-5678</strong>
+              call · WhatsApp
+            </div>
+          </div>
+        </div>
+        <div class="marketing-map"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ELDER TIER PREVIEW -->
+  <div class="screen-wrapper elder-tier" id="elder">
+    <div class="screen-label" style="background: var(--c-commit);"><span>एल्डर मोड — Mummy-ji is looking</span><span class="screen-label-id">P2.3</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="presence-dock" style="padding: var(--s-4) var(--s-5);">
+          <div class="presence-avatar" style="width: 56px; height: 56px; font-size: 26px;">सु<div class="presence-status-dot"></div></div>
+          <div class="presence-info">
+            <div class="presence-name">सुनील भैया</div>
+            <div class="presence-status">● दुकान पर हैं</div>
+          </div>
+        </div>
+        <div style="padding: var(--s-5);">
+          <div class="sku-card" style="margin: 0 0 var(--s-4); flex-direction: column;">
+            <div class="sku-card-image" data-tag="top-pick" style="width: 100%; height: 160px;">⌬</div>
+            <div class="sku-card-body">
+              <div class="sku-name">गोदरेज स्टोरवेल</div>
+              <div class="sku-price">₹17,500</div>
+            </div>
+          </div>
+          <div style="text-align: center; font-family: var(--font-en-display); font-style: italic; font-size: 18px; color: var(--c-text-muted); margin-top: var(--s-6);">
+            1.4× larger text · 56dp tap targets · slower transitions · same brand colors
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- v1.1 — PHASE 5 ADDITIONS (Sally's mandatory handoff)    -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <!-- 18. B1.13 RECEIPT — paid (default tier) -->
+  <div class="screen-wrapper" id="s18">
+    <div class="screen-label"><span>रसीद — Paid Receipt (default tier)</span><span class="screen-label-id">B1.13 🦴</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="invoice-paper">
+          <div class="invoice-header-row">
+            <div class="invoice-logo-circle">सु</div>
+            <div style="flex: 1;">
+              <div class="invoice-brand">सुनील ट्रेडिंग कंपनी</div>
+              <div class="invoice-addr">Harringtonganj Furniture Market, Ayodhya</div>
+              <div class="invoice-meta-line">GST: 09AAACRXXXXX • since 2003</div>
+              <div class="invoice-vpa-line">VPA: sunil@oksbi • +91 XXXXX XXXXX</div>
+            </div>
+          </div>
+          <div class="invoice-divider"></div>
+          <div class="invoice-meta-row">
+            <div>
+              <div class="id">रसीद # U7F9K2</div>
+              <div style="margin-top: 3px;">ग्राहक: सुनीता जी</div>
+            </div>
+            <div>दिनांक: 11 अप्रैल 2026</div>
+          </div>
+          <div class="invoice-lines">
+            <div class="invoice-line header">
+              <div>सामान</div>
+              <div class="num">मात्रा</div>
+              <div class="num">दाम</div>
+              <div class="num">कुल</div>
+            </div>
+            <div class="invoice-divider" style="margin: 4px 0;"></div>
+            <div class="invoice-line">
+              <div>स्टील अल्मीरा 4-दरवाज़ा</div>
+              <div class="num">1</div>
+              <div class="num">₹13,500</div>
+              <div class="num">₹13,500</div>
+            </div>
+          </div>
+          <div class="invoice-divider"></div>
+          <div class="invoice-totals">
+            <div class="invoice-total-amt"><span class="label">कुल:</span> ₹13,500</div>
+            <div class="invoice-payment">भुगतान: UPI</div>
+          </div>
+          <div class="invoice-footer">
+            <div class="invoice-thankyou">धन्यवाद, आपका विश्वास हमारा भविष्य है</div>
+            <div class="invoice-signature">सुनील भैया</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 18b. B1.13 RECEIPT — cancelled watermark + udhaar-open + fallbacks -->
+  <div class="screen-wrapper" id="s18b">
+    <div class="screen-label"><span>रसीद — Cancelled / Udhaar-open / Fallback</span><span class="screen-label-id">B1.13 states #36–#39</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="invoice-paper">
+          <div class="invoice-cancelled-watermark">रद्द</div>
+          <div class="invoice-header-row">
+            <div class="invoice-logo-circle">सु</div>
+            <div style="flex: 1;">
+              <div class="invoice-brand">सुनील ट्रेडिंग कंपनी</div>
+              <div class="invoice-addr">Harringtonganj Furniture Market, Ayodhya</div>
+              <div class="invoice-meta-line">GST: 09AAACRXXXXX • since 2003</div>
+              <div class="invoice-vpa-line">VPA: sunil@oksbi</div>
+            </div>
+          </div>
+          <div class="invoice-divider"></div>
+          <div class="invoice-meta-row">
+            <div>
+              <div class="id">रसीद # U7F9K2</div>
+              <!-- state #38: no customer display name → "ग्राहक" fallback -->
+              <div style="margin-top: 3px;">ग्राहक: ग्राहक</div>
+            </div>
+            <div>दिनांक: 11 अप्रैल 2026</div>
+          </div>
+          <div class="invoice-lines">
+            <div class="invoice-line header">
+              <div>सामान</div>
+              <div class="num">मात्रा</div>
+              <div class="num">दाम</div>
+              <div class="num">कुल</div>
+            </div>
+            <div class="invoice-divider" style="margin: 4px 0;"></div>
+            <div class="invoice-line">
+              <div>स्टील अल्मीरा 4-दरवाज़ा</div>
+              <div class="num">1</div>
+              <div class="num">₹13,500</div>
+              <div class="num">₹13,500</div>
+            </div>
+          </div>
+          <div class="invoice-divider"></div>
+          <div class="invoice-totals">
+            <div class="invoice-total-amt"><span class="label">कुल:</span> ₹13,500</div>
+            <div class="invoice-payment">भुगतान: आंशिक UPI</div>
+            <!-- state #37: udhaar-open variant — ONE line below totals -->
+            <div class="invoice-baki">बाकी: <span class="num">₹5,500</span></div>
+          </div>
+          <div class="invoice-footer">
+            <div class="invoice-thankyou">धन्यवाद, आपका विश्वास हमारा भविष्य है</div>
+            <div class="invoice-signature">सुनील भैया</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 19. C3.12 SHOP DEACTIVATION BANNER + FAQ SCREEN -->
+  <div class="screen-wrapper" id="s19">
+    <div class="screen-label"><span>दुकान बंद हो रही है — Deactivation Banner + FAQ</span><span class="screen-label-id">C3.12</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <!-- deactivating banner on top of landing stack -->
+        <div class="lifecycle-banner">
+          <span class="lifecycle-banner-icon">ⓘ</span>
+          <div class="lifecycle-banner-text">सुनील भैया की दुकान बंद हो रही है — आपका पैसा वापस आ जाएगा, आपका डेटा 180 दिन तक सुरक्षित है</div>
+        </div>
+        <!-- purge_scheduled banner with promoted CTA -->
+        <div class="lifecycle-banner warmer">
+          <span class="lifecycle-banner-icon">ⓘ</span>
+          <div class="lifecycle-banner-text">डेटा 15 दिन में हटा दिया जाएगा — export कीजिए</div>
+          <button class="lifecycle-banner-cta">डेटा export कीजिए</button>
+        </div>
+        <div class="scroll-area" style="background: var(--c-bg);">
+          <div style="font-family: var(--font-deva-display); font-size: 20px; color: var(--c-primary); margin-bottom: var(--s-3);">क्या हो रहा है?</div>
+          <div class="faq-section">
+            <div class="faq-title">पैसा</div>
+            <div class="faq-body">जो पैसा आपने दिया है, वो पूरा वापस आ जाएगा। अगर कोई ऑर्डर चल रहा है, वो पहले पूरा होगा।</div>
+          </div>
+          <div class="faq-section">
+            <div class="faq-title">आपके परिवार के सभी ऑर्डर</div>
+            <div class="faq-body">इस फ़ोन से जो ऑर्डर किए हैं, उन सब का हिसाब यहीं है। नए ऑर्डर अब नहीं लिए जाएँगे।</div>
+          </div>
+          <div class="faq-section">
+            <div class="faq-title">खाता</div>
+            <div class="faq-body">जो खाता बाकी है, वो बंद की तारीख पर रुक जाएगा। अब कोई याद दिलाना नहीं होगा।</div>
+          </div>
+          <div class="faq-section">
+            <div class="faq-title">डेटा</div>
+            <div class="faq-body">आपका डेटा 180 दिन तक रखा जाएगा। उसके बाद पूरी तरह हटा दिया जाएगा।</div>
+          </div>
+          <div class="faq-section">
+            <div class="faq-title">रसीदें</div>
+            <div class="faq-body">आपकी पुरानी रसीदें आपके फ़ोन में रहेंगी। एक साथ export भी कर सकते हैं।</div>
+          </div>
+        </div>
+        <div style="padding: var(--s-3) var(--s-4); background: var(--c-surface); border-top: 1px solid var(--c-divider);">
+          <button class="ops-btn-primary" style="width: 100%;">डेटा export कीजिए</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 20. S4.17 NPS CARD (default + elder preview below) -->
+  <div class="screen-wrapper" id="s20">
+    <div class="screen-label"><span>NPS Card — कितना उपयोगी लगा?</span><span class="screen-label-id">S4.17</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="presence-dock">
+          <div class="presence-avatar">सु<div class="presence-status-dot"></div></div>
+          <div class="presence-info">
+            <div class="presence-name">आज की सूची</div>
+            <div class="presence-status">● नए ऑर्डर · बातें · खाते</div>
+          </div>
+        </div>
+        <div class="scroll-area">
+          <div style="font-family: var(--font-deva-display); font-size: 14px; color: var(--c-text-muted); margin-bottom: var(--s-3);">— तीन सेक्शन के नीचे, बंद किया जा सकता है —</div>
+          <div class="nps-card">
+            <div class="nps-headline">कितना उपयोगी लगा?</div>
+            <div class="nps-dots">
+              <div class="nps-dot">1</div>
+              <div class="nps-dot">2</div>
+              <div class="nps-dot">3</div>
+              <div class="nps-dot">4</div>
+              <div class="nps-dot filled">5</div>
+              <div class="nps-dot filled">6</div>
+              <div class="nps-dot filled">7</div>
+              <div class="nps-dot filled">8</div>
+              <div class="nps-dot">9</div>
+              <div class="nps-dot">10</div>
+            </div>
+            <div class="nps-anchors">
+              <div>1 = बिल्कुल नहीं</div>
+              <div>10 = बहुत ज़्यादा</div>
+            </div>
+            <div class="nps-textarea-link">कुछ कहना है?</div>
+            <div class="nps-buttons">
+              <div class="nps-snooze">बाद में</div>
+              <button class="nps-submit">भेज दीजिए</button>
+            </div>
+          </div>
+          <div style="text-align: center; font-family: var(--font-en-display); font-style: italic; font-size: 11px; color: var(--c-text-muted); margin-top: var(--s-4);">
+            Dismissible card, never modal · no gamification · burnout warning is silent
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 21. S4.19 OPS 3-TAP DEACTIVATION + REVERSAL -->
+  <div class="screen-wrapper" id="s21">
+    <div class="screen-label" style="background: var(--c-commit);"><span>दुकान बंद करना — 3-Tap Ops Flow</span><span class="screen-label-id">S4.19 (bhaiya-only)</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content" style="position: relative;">
+        <!-- Tap 1: informational page peeking at top -->
+        <div class="ops-tap-page" style="max-height: 45%; overflow: hidden;">
+          <div class="ops-tap-title">जब आप दुकान बंद करेंगे, तो क्या होगा?</div>
+          <div class="ops-section">
+            <div class="ops-section-h">ग्राहक</div>
+            <div class="ops-section-b">आपके ग्राहक नए ऑर्डर नहीं दे पाएँगे। पुराने ऑर्डर पहले पूरे होंगे।</div>
+          </div>
+          <div class="ops-section">
+            <div class="ops-section-h">खाता</div>
+            <div class="ops-section-b">खुले खाते बंद की तारीख पर रुक जाएँगे।</div>
+          </div>
+        </div>
+        <div style="padding: var(--s-2) var(--s-4); background: var(--c-bg-warmer); font-family: var(--font-en-display); font-size: 10px; font-style: italic; color: var(--c-text-muted); text-align: center;">
+          Tap 1 → Tap 2 (reason picker) → Tap 3 (confirm sheet below)
+        </div>
+        <!-- Tap 2: reason tiles -->
+        <div style="padding: var(--s-3) var(--s-4);">
+          <div class="reason-tile">रिटायर हो रहा हूँ <span class="chev">›</span></div>
+          <div class="reason-tile" style="border-color: var(--c-accent); border-width: 1.5px;">शॉप बंद कर रहा हूँ <span class="chev">›</span></div>
+          <div class="reason-tile">बीमारी / मेडिकल <span class="chev">›</span></div>
+        </div>
+        <!-- Tap 3: confirmation sheet overlay at bottom -->
+        <div class="confirm-sheet">
+          <div class="confirm-title">क्या आप पक्का हैं? यह तुरंत शुरू हो जाएगा।</div>
+          <button class="ops-btn-secondary" style="width: 100%; margin-bottom: var(--s-2);">रुकिए, मुझे सोचना है</button>
+          <button class="ops-btn-primary commit" style="width: 100%;">हाँ, पक्का बंद कीजिए</button>
+          <!-- The single most important copy placement — PRINTED BELOW the button -->
+          <div class="confirm-reversibility">अगर गलती से दबाया, अगले 24 घंटे में उल्टा कर सकते हैं</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 21b. Reversibility card (24h window) — separate sibling mockup -->
+  <div class="screen-wrapper" id="s21b">
+    <div class="screen-label"><span>24-घंटे Reversibility Card</span><span class="screen-label-id">S4.19 state #58</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="presence-dock">
+          <div class="presence-avatar">सु<div class="presence-status-dot" style="background: var(--c-warning);"></div></div>
+          <div class="presence-info">
+            <div class="presence-name">Settings</div>
+            <div class="presence-status">दुकान बंद करना</div>
+          </div>
+        </div>
+        <div class="scroll-area">
+          <div class="reversibility-card">
+            <div class="reversibility-card-head">
+              <div class="reversibility-card-title">↻ दुकान फिर से चालू कीजिए</div>
+              <div class="reversibility-card-count">18 घंटे बाकी</div>
+            </div>
+            <button class="ops-btn-primary" style="width: 100%;">दुकान खोलिए</button>
+          </div>
+          <div style="text-align: center; font-family: var(--font-en-display); font-style: italic; font-size: 11px; color: var(--c-text-muted); margin-top: var(--s-4);">
+            After 24h → disabled row: "Yugma Labs से संपर्क कीजिए"
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 22. S4.16 MEDIA SPEND OPS TILE (4 states + asterisk) -->
+  <div class="screen-wrapper" id="s22">
+    <div class="screen-label"><span>मीडिया खर्च — Ops Dashboard Tile</span><span class="screen-label-id">S4.16</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content">
+        <div class="presence-dock">
+          <div class="presence-avatar">सु<div class="presence-status-dot"></div></div>
+          <div class="presence-info">
+            <div class="presence-name">Analytics</div>
+            <div class="presence-status">● S4.11 dashboard</div>
+          </div>
+        </div>
+        <div class="scroll-area">
+          <!-- Green state (<50%) -->
+          <div class="media-tile">
+            <div class="media-title">मीडिया खर्च</div>
+            <div class="media-primary">
+              <span class="num">10</span><span class="denom">/25</span>
+              <span class="delta">↑ 12%</span>
+            </div>
+            <div class="media-bar"><div class="media-bar-fill green" style="width: 40%;"></div></div>
+            <div class="media-subtitle">अनुमानित महीने का अंत: 22</div>
+          </div>
+          <!-- Amber state (50-80%) -->
+          <div class="media-tile">
+            <div class="media-banner amber">मीडिया खर्च आधा से ज़्यादा — जल्द खत्म हो सकता है</div>
+            <div class="media-title">मीडिया खर्च</div>
+            <div class="media-primary">
+              <span class="num">17</span><span class="denom">/25</span>
+              <span class="delta">↑ 38%</span>
+            </div>
+            <div class="media-bar"><div class="media-bar-fill amber" style="width: 68%;"></div></div>
+            <div class="media-subtitle">अनुमानित महीने का अंत: 24</div>
+          </div>
+          <!-- Red state (>=80%) with count-incomplete asterisk -->
+          <div class="media-tile">
+            <div class="media-banner red">मीडिया खर्च आधा से ज़्यादा — जल्द खत्म हो सकता है</div>
+            <div class="media-title">मीडिया खर्च</div>
+            <div class="media-primary">
+              <span class="num">22</span><span class="denom">/25</span><span class="asterisk">*</span>
+              <span class="delta">↑ 45%</span>
+            </div>
+            <div class="media-bar"><div class="media-bar-fill red" style="width: 88%;"></div></div>
+            <div class="media-subtitle">अनुमानित महीने का अंत: 26</div>
+            <div class="media-footnote">ⓘ गिनती अधूरी — रात में ठीक हो जाएगी</div>
+          </div>
+          <!-- Red-alt: Cloudinary exhausted, R2 active -->
+          <div class="media-tile">
+            <div class="media-banner red">Cloudinary खत्म — R2 चालू</div>
+            <div class="media-title">मीडिया खर्च</div>
+            <div class="media-primary">
+              <span class="num">25</span><span class="denom">/25</span>
+              <span class="delta">↑ 56%</span>
+            </div>
+            <div class="media-bar"><div class="media-bar-fill red" style="width: 100%;"></div></div>
+            <div class="media-subtitle">अनुमानित महीने का अंत: R2 fallback</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 23. S4.10 UDHAAR REMINDER AFFORDANCES -->
+  <div class="screen-wrapper" id="s23">
+    <div class="screen-label"><span>खाता — Reminder Affordances</span><span class="screen-label-id">S4.10 tweak</span></div>
+    <div class="phone-frame">
+      <div class="phone-statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="phone-content" style="position: relative;">
+        <div class="presence-dock">
+          <div class="presence-avatar">सु<div class="presence-status-dot"></div></div>
+          <div class="presence-info">
+            <div class="presence-name">खुले खाते</div>
+            <div class="presence-status">● 3 ग्राहक</div>
+          </div>
+        </div>
+        <div class="scroll-area">
+          <!-- Ledger card 1 — opt-in ON, expanded, with cadence stepper -->
+          <div style="background: var(--c-surface); border-radius: var(--r-lg); border-left: 4px solid var(--c-commit); padding: var(--s-4); margin-bottom: var(--s-4); box-shadow: var(--shadow-card);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-family: var(--font-deva-display); font-size: 15px; color: var(--c-primary);">सुनीता जी</div>
+            </div>
+            <div style="display: flex; gap: var(--s-4); margin-top: var(--s-3);">
+              <div>
+                <div style="font-family: var(--font-deva-body); font-size: 11px; color: var(--c-text-muted);">कुल राशि</div>
+                <div style="font-family: var(--font-mono); font-size: 17px; font-weight: 600; color: var(--c-text-secondary);">₹13,500</div>
+              </div>
+              <div>
+                <div style="font-family: var(--font-deva-body); font-size: 11px; color: var(--c-text-muted);">बाकी</div>
+                <div style="font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: var(--c-commit);">₹5,500</div>
+              </div>
+            </div>
+            <!-- Opt-in toggle row -->
+            <div class="ledger-affordance">
+              <div>
+                <div class="ledger-affordance-q">क्या मैं इस ग्राहक को याद दिलाऊँ?</div>
+                <div class="reminder-badge">
+                  <span class="lbl">याद दिलाया गया:</span><span class="count">1/3</span>
+                </div>
+              </div>
+              <div class="ledger-toggle on"></div>
+              <div style="color: var(--c-text-muted); font-size: 16px;">⌄</div>
+            </div>
+            <!-- Cadence stepper -->
+            <div class="cadence-stepper">
+              <div class="cadence-label">कितने दिन बाद याद दिलाना है?</div>
+              <div class="cadence-controls">
+                <div class="cadence-btn">−</div>
+                <div class="cadence-value">14 दिन</div>
+                <div class="cadence-btn">+</div>
+              </div>
+              <div class="cadence-range">
+                <span>7 दिन</span>
+                <span>30 दिन</span>
+              </div>
+            </div>
+          </div>
+          <!-- Ledger card 2 — opt-in OFF, collapsed, capped reminder badge -->
+          <div style="background: var(--c-surface); border-radius: var(--r-lg); border-left: 4px solid var(--c-commit); padding: var(--s-4); margin-bottom: var(--s-4); box-shadow: var(--shadow-card);">
+            <div style="font-family: var(--font-deva-display); font-size: 15px; color: var(--c-primary);">राजेश जी</div>
+            <div style="display: flex; gap: var(--s-4); margin-top: var(--s-3);">
+              <div>
+                <div style="font-family: var(--font-deva-body); font-size: 11px; color: var(--c-text-muted);">कुल राशि</div>
+                <div style="font-family: var(--font-mono); font-size: 17px; font-weight: 600; color: var(--c-text-secondary);">₹8,000</div>
+              </div>
+              <div>
+                <div style="font-family: var(--font-deva-body); font-size: 11px; color: var(--c-text-muted);">बाकी</div>
+                <div style="font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: var(--c-commit);">₹8,000</div>
+              </div>
+            </div>
+            <div class="ledger-affordance">
+              <div>
+                <div class="ledger-affordance-q">क्या मैं इस ग्राहक को याद दिलाऊँ?</div>
+                <div class="reminder-badge capped">
+                  <span class="lbl">याद दिलाया गया:</span><span class="count">3/3</span>
+                </div>
+              </div>
+              <div class="ledger-toggle"></div>
+              <div style="color: var(--c-text-muted); font-size: 16px;">⌄</div>
+            </div>
+          </div>
+        </div>
+        <!-- 3-second undo micro-toast (AE F8) -->
+        <div class="undo-toast">
+          <span>बदल दिया — उल्टा करना है?</span>
+          <span class="undo-toast-btn">उल्टा कीजिए</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<section class="legend">
+  <h2>"Workshop Almanac" — design rationale</h2>
+  <p>Every shop-in-an-app I have ever seen converges on the same three aesthetic moves: bright accent colors on white backgrounds, Inter or Roboto typography, and bottom-tab navigation. None of these honor what Sunil Trading Company actually is — a multi-generational family business in a hand-painted bazaar. So this design system rejects all three.</p>
+
+  <p><strong>Typography:</strong> <em>Tiro Devanagari Hindi</em> for display (more characterful than Noto Sans), <em>Mukta</em> for body (warmer than the default), <em>Fraunces</em> for English display (variable serif with personality), <em>EB Garamond</em> for English body (classic, warm). Pre-mortem failure mode #9 warned about Devanagari clipping on cheap Android — every type size and line-height in this system is sized 1.6×–1.85× line height, never less, to give Devanagari conjuncts the room they need.</p>
+
+  <p><strong>Color:</strong> deep polished sheesham primary, antique brass accents (not candy gold), aged cream backgrounds (not pure white), oxblood for commitment moments. Every screen sits on a subtle paper-grain noise overlay — the texture of a 1960s shop ledger, not a 2026 SaaS surface.</p>
+
+  <p><strong>Layout reframe — the Shopkeeper Presence Dock:</strong> Material 3 default is bottom-tab navigation. I'm replacing it with a top-anchored "presence dock" that ALWAYS shows Sunil-bhaiya's avatar, name in Devanagari, current status (● दुकान पर हैं / shaadi mein hain / etc.), and a quick voice-note play button. This honors the brief's "the shopkeeper IS the product" claim literally — he is structurally inescapable on every customer-facing screen.</p>
+
+  <p><strong>Chat reframe — the balance scale:</strong> The chat thread renders messages with a thin brass-colored vertical thread down the center — customer messages float left, shopkeeper messages float right, the brass thread is the relationship between them. Visualizes the negotiation as a balance scale rather than a SMS-style monologue.</p>
+
+  <p><strong>Curation reframe — finite, not paginated:</strong> Sally caught this in her UX Spec and I've honored it. The shortlist screen says "6 चुनी हुईं" ("6 chosen"). When you reach the bottom, there is no "load more." The finiteness IS the feature — these are Sunil-bhaiya's six picks for weddings, not the first page of a search result.</p>
+
+  <p><strong>Commit reframe — Sunil-bhaiya needs your number:</strong> Pre-mortem failure mode #6 warned that OTP-at-commit framed as "verify for security" causes 64% drop-off in a relational economy. The commit screen says "सुनील भैया डिलीवरी के लिए संपर्क करेंगे" — Sunil-bhaiya will contact you for delivery. Never "verify for security." Same auth mechanism, completely different cultural framing.</p>
+
+  <h2>Color tokens</h2>
+  <div class="token-grid">
+    <div class="token-swatch"><div class="token-color" style="background: #6B3410;"></div><div class="token-info"><div class="token-name">primary</div><div class="token-hex">#6B3410</div></div></div>
+    <div class="token-swatch"><div class="token-color" style="background: #4A2308;"></div><div class="token-info"><div class="token-name">primary-deep</div><div class="token-hex">#4A2308</div></div></div>
+    <div class="token-swatch"><div class="token-color" style="background: #8B4513;"></div><div class="token-info"><div class="token-name">secondary</div><div class="token-hex">#8B4513</div></div></div>
+    <div class="token-swatch"><div class="token-color" style="background: #B8860B;"></div><div class="token-info"><div class="token-name">accent</div><div class="token-hex">#B8860B</div></div></div>
+    <div class="token-swatch"><div class="token-color" style="background: #D4A547;"></div><div class="token-info"><div class="token-name">accent-glow</div><div class="token-hex">#D4A547</div></div></div>
+    <div class="token-swatch"><div class="token-color" style="background: #7B1F1F;"></div><div class="token-info"><div class="token-name">commit</div><div class="token-hex">#7B1F1F</div></div></div>
+    <div class="token-swatch"><div class="token-color" style="background: #FAF3E7;"></div><div class="token-info"><div class="token-name">background</div><div class="token-hex">#FAF3E7</div></div></div>
+    <div class="token-swatch"><div class="token-color" style="background: #F5EBD7;"></div><div class="token-info"><div class="token-name">bg-warmer</div><div class="token-hex">#F5EBD7</div></div></div>
+    <div class="token-swatch"><div class="token-color" style="background: #FFFAF0;"></div><div class="token-info"><div class="token-name">surface</div><div class="token-hex">#FFFAF0</div></div></div>
+    <div class="token-swatch"><div class="token-color" style="background: #1F1611;"></div><div class="token-info"><div class="token-name">text-primary</div><div class="token-hex">#1F1611</div></div></div>
+  </div>
+
+  <h2>Things this design system explicitly does</h2>
+  <ul>
+    <li>Replaces Material 3 default ColorScheme with a hand-tuned wood-and-brass palette</li>
+    <li>Replaces bottom-tab nav with a top-anchored Shopkeeper Presence Dock that NEVER hides Sunil-bhaiya from view</li>
+    <li>Renders Devanagari with line heights 1.6–1.85× (never the default 1.2×) so conjuncts breathe on cheap Android</li>
+    <li>Subset-ships only the Devanagari glyphs actually used by `strings_hi.dart` plus 200 most common buffer</li>
+    <li>Uses oxblood (#7B1F1F) ONLY for commit and udhaar acceptance moments — visually marks gravity</li>
+    <li>Treats the chat thread as a balance scale, not a monologue</li>
+    <li>Treats curated shortlists as finite, not paginated</li>
+    <li>Treats the OTP commit ceremony as "Sunil-bhaiya needs your number" — never "verify for security"</li>
+    <li>Includes a paper-grain SVG noise overlay on every page background — subtle, but anchors the aesthetic</li>
+    <li>Has zero hairline borders — minimum 1.5px on every divider, per the cheap-Android rendering guide</li>
+    <li>Voice notes use waveform bars, not progress bars — more organic, less SaaS-y</li>
+    <li>Brass-colored "◈" decorative dividers between sections — anchors the ledger/almanac feeling</li>
+  </ul>
+</section>
+
+</body>
+</html>
