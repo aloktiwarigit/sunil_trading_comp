@@ -23,6 +23,10 @@ export 'src/adapters/auth_provider_msg91.dart';
 export 'src/adapters/auth_provider_email_magic_link.dart';
 export 'src/adapters/auth_provider_upi_only.dart';
 export 'src/adapters/auth_provider_factory.dart';
+export 'src/adapters/media_store.dart';
+export 'src/adapters/media_store_cloudinary_firebase.dart';
+export 'src/adapters/media_store_r2.dart';
+export 'src/adapters/media_store_factory.dart';
 
 // ---------- Infrastructure ----------
 export 'src/firebase_client.dart';
