@@ -149,6 +149,16 @@ enum AuthErrorCode {
   /// (per SAD §4 Flow 4 — caller must run the merger logic).
   credentialAlreadyInUse,
 
+  /// Provider is already linked to the current user — e.g., a phone-verified
+  /// user calling `confirmPhoneVerification` again, or any duplicate linking
+  /// attempt. Distinct from [credentialAlreadyInUse] which signals a
+  /// collision with a DIFFERENT user. Distinguishing these two prevents
+  /// the coordinator from incorrectly running merger logic when the
+  /// situation is actually a benign duplicate-link (per Sprint 2.1 code
+  /// review finding C12). UI should surface a "you're already signed in"
+  /// message, not run the collision merger.
+  providerAlreadyLinked,
+
   /// Underlying provider rejected the request for a reason we don't model.
   unknown,
 }

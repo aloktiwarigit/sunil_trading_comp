@@ -184,8 +184,10 @@ service cloud.firestore {
                     && (isShopOperator(shopId)
                         || (resource.data.authorUid == request.auth.uid
                             && resource.data.authorRole == 'customer'));
+        // Uses shopIdMatches() helper for consistency with udhaarLedger
+        // rule. Sprint 2.3 cleanup per code review finding Agent A 🟡 #1.
         allow create: if isSignedIn()
-                      && request.resource.data.shopId == shopId
+                      && shopIdMatches(shopId)
                       && request.resource.data.authorUid == request.auth.uid
                       && shopIsWritable(shopId)
                       && (

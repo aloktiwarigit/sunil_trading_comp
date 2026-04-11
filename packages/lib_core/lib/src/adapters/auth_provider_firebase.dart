@@ -82,6 +82,29 @@ class AuthProviderFirebase implements AuthProvider {
 
     final completer = Completer<PhoneVerificationResult>();
 
+    // Explicit completion flag — the Completer.isCompleted check alone is
+    // insufficient under race conditions where two callbacks fire in the
+    // same microtask (observed on slow tier-3 Android during network flap).
+    // Sprint 2.1 code review finding C7: without this flag,
+    // `verificationFailed` and `codeSent` firing simultaneously could both
+    // pass the `isCompleted` check and throw "Future already completed".
+    // The flag closes the race because Dart is single-threaded within a
+    // single isolate — once any callback sets it, no other callback can
+    // enter the critical section on the same event-loop turn.
+    var completed = false;
+
+    void safeComplete(PhoneVerificationResult result) {
+      if (completed) return;
+      completed = true;
+      completer.complete(result);
+    }
+
+    void safeCompleteError(Object error) {
+      if (completed) return;
+      completed = true;
+      completer.completeError(error);
+    }
+
     try {
       await _auth.verifyPhoneNumber(
         phoneNumber: phoneE164,
@@ -96,21 +119,17 @@ class AuthProviderFirebase implements AuthProvider {
         },
 
         verificationFailed: (fb.FirebaseAuthException e) {
-          if (!completer.isCompleted) {
-            completer.completeError(_normalize(e));
-          }
+          safeCompleteError(_normalize(e));
         },
 
         codeSent: (String verificationId, int? resendToken) {
-          if (!completer.isCompleted) {
-            completer.complete(
-              PhoneVerificationResult(
-                verificationId: verificationId,
-                codeExpiry: const Duration(seconds: 60),
-                resendToken: resendToken,
-              ),
-            );
-          }
+          safeComplete(
+            PhoneVerificationResult(
+              verificationId: verificationId,
+              codeExpiry: const Duration(seconds: 60),
+              resendToken: resendToken,
+            ),
+          );
         },
 
         codeAutoRetrievalTimeout: (String verificationId) {
@@ -118,9 +137,7 @@ class AuthProviderFirebase implements AuthProvider {
         },
       );
     } on fb.FirebaseAuthException catch (e) {
-      if (!completer.isCompleted) {
-        completer.completeError(_normalize(e));
-      }
+      safeCompleteError(_normalize(e));
     }
 
     return completer.future;
@@ -231,22 +248,52 @@ class AuthProviderFirebase implements AuthProvider {
 
   @override
   Future<AppUser> signInWithGoogle() async {
+    // Step 1 — Google picker. Errors from google_sign_in are NOT
+    // FirebaseAuthException; they are platform exceptions that must be
+    // caught separately per Sprint 2.1 code review finding C6.
+    final GoogleSignInAccount? googleUser;
     try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        // User dismissed the picker.
-        throw const AuthException(
-          AuthErrorCode.cancelled,
-          'Google sign-in cancelled by user',
-        );
-      }
-
-      final googleAuth = await googleUser.authentication;
-      final credential = fb.GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+      googleUser = await _googleSignIn.signIn();
+    } on Object catch (e, st) {
+      _log.severe('GoogleSignIn.signIn() failed: $e\n$st');
+      throw AuthException(
+        AuthErrorCode.unknown,
+        'Google sign-in picker failed: $e',
+        e,
       );
+    }
 
+    if (googleUser == null) {
+      // User dismissed the picker.
+      throw const AuthException(
+        AuthErrorCode.cancelled,
+        'Google sign-in cancelled by user',
+      );
+    }
+
+    // Step 2 — Fetch the Google auth tokens. Can also throw
+    // google_sign_in platform errors if the Google account is in a
+    // weird state (revoked refresh token, network flap).
+    final GoogleSignInAuthentication googleAuth;
+    try {
+      googleAuth = await googleUser.authentication;
+    } on Object catch (e, st) {
+      _log.severe('GoogleSignInAccount.authentication failed: $e\n$st');
+      throw AuthException(
+        AuthErrorCode.unknown,
+        'Google auth token fetch failed: $e',
+        e,
+      );
+    }
+
+    // Step 3 — Exchange for Firebase credential + sign in. This is the
+    // only step that legitimately throws FirebaseAuthException.
+    final credential = fb.GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    try {
       final cred = await _auth.signInWithCredential(credential);
       final user = cred.user;
       if (user == null) {
@@ -284,9 +331,30 @@ class AuthProviderFirebase implements AuthProvider {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  static final RegExp _e164Pattern = RegExp(r'^\+[1-9]\d{6,14}$');
+  // India-primary pattern: +91 followed by a 10-digit mobile starting with
+  // 6/7/8/9 (India's mobile number block per TRAI numbering plan). This is
+  // the v1 target market — Sunil Trading Company is in Ayodhya and every
+  // expected customer has an Indian phone number.
+  static final RegExp _indiaMobilePattern = RegExp(r'^\+91[6-9]\d{9}$');
 
-  static bool _isE164(String phone) => _e164Pattern.hasMatch(phone);
+  // Permissive fallback for E.164 globally. Accepts 7-15 total digits after
+  // the + per the E.164 standard. Used only if `_indiaMobilePattern` rejects
+  // the input AND the caller passes an explicit non-IN phone number in a
+  // future multi-country v1.5+ scenario. For Sprint 2 the India pattern
+  // is what matters.
+  static final RegExp _e164FallbackPattern = RegExp(r'^\+[1-9]\d{6,14}$');
+
+  /// Validate an E.164 phone number. Indian numbers (+91) are validated
+  /// strictly against the TRAI mobile block (10 digits starting with
+  /// 6/7/8/9). Other countries fall back to the general E.164 shape.
+  /// Tightened per Sprint 2.1 code review finding C5 (was permissive E.164
+  /// only, which accepted malformed Indian numbers like `+919`).
+  static bool _isE164(String phone) {
+    if (phone.startsWith('+91')) {
+      return _indiaMobilePattern.hasMatch(phone);
+    }
+    return _e164FallbackPattern.hasMatch(phone);
+  }
 
   AppUser? _toAppUser(fb.User? user) {
     if (user == null) return null;
@@ -337,6 +405,12 @@ class AuthProviderFirebase implements AuthProvider {
       case 'account-exists-with-different-credential':
         return AuthException(
             AuthErrorCode.credentialAlreadyInUse, e.message ?? '', e);
+      // Sprint 2.1 code review finding C12: distinguish benign duplicate
+      // linking (same user already has this provider) from the real
+      // collision merger path (different user has this credential).
+      case 'provider-already-linked':
+        return AuthException(
+            AuthErrorCode.providerAlreadyLinked, e.message ?? '', e);
       default:
         _log.warning('Unmapped FirebaseAuthException: ${e.code} — ${e.message}');
         return AuthException(AuthErrorCode.unknown, e.message ?? e.code, e);

@@ -368,6 +368,127 @@ describe('Cross-tenant integrity (rules.test)', () => {
   });
 
   // -------------------------------------------------------------------------
+  // PRD I6.12 AC #5(b) + #5(c) + #6 — partition-discipline rule enforcement
+  // -------------------------------------------------------------------------
+  //
+  // These tests verify that the Firestore security rule layer (not just the
+  // Dart type system) rejects cross-partition writes. This is critical
+  // because a malicious customer_app build could bypass the Dart sealed-union
+  // partition and write raw Maps directly to Firestore — the rule layer is
+  // the last line of defense.
+  //
+  // Added in Sprint 2.3 cleanup per code review finding Agent B 🟡 #4.
+  // Note: the v1 firestore.rules does NOT yet have Project/ChatThread/
+  // UdhaarLedger sub-collection rules because those stories land in Sprint
+  // 4+ (C3.1, P2.4, P2.5). These tests use the existing `udhaarLedger`
+  // sub-collection as the partition test surface because it's the only
+  // rule that ships with Sprint 1 and has forbidden-vocabulary discipline.
+  // Sprint 4+ will add Project + ChatThread partition tests when those
+  // rules exist.
+
+  describe('partition discipline at rule layer (PRD I6.12 AC #5(b)/#6)', () => {
+    test(
+      'udhaar forbidden-field write is rejected at rule layer even from ' +
+        'authenticated operator (PRD I6.12 AC #6 + ADR-010)',
+      async () => {
+        const db = ctxAsShopOperator('shop_1').firestore();
+        // Walk through every forbidden field individually — confirms that
+        // the rule's hasForbiddenUdhaarFields() helper is exhaustive AND
+        // that the rule layer rejects regardless of the operator's tier.
+        // This is the multi-day offline replay invariant: even if a
+        // compromised client construction bypasses the Dart partition
+        // patches and builds a raw Map with forbidden fields, the rule
+        // layer blocks it.
+        for (const field of [
+          'interest',
+          'interestRate',
+          'overdueFee',
+          'dueDate',
+          'lendingTerms',
+          'borrowerObligation',
+          'defaultStatus',
+          'collectionAttempt',
+        ]) {
+          await assertFails(
+            db
+              .collection('shops')
+              .doc('shop_1')
+              .collection('udhaarLedger')
+              .add({
+                shopId: 'shop_1',
+                customerId: 'cust-1',
+                recordedAmount: 1000,
+                runningBalance: 1000,
+                [field]: 'any-value',
+              }),
+          );
+        }
+      },
+    );
+
+    test(
+      'udhaar operator write with only allowed fields succeeds ' +
+        '(no false positives)',
+      async () => {
+        const db = ctxAsShopOperator('shop_1').firestore();
+        await assertSucceeds(
+          db
+            .collection('shops')
+            .doc('shop_1')
+            .collection('udhaarLedger')
+            .add({
+              shopId: 'shop_1',
+              customerId: 'cust-1',
+              recordedAmount: 10000,
+              runningBalance: 7500,
+              acknowledgedAt: new Date(),
+              partialPaymentReferences: ['txn-1', 'txn-2'],
+              // SAD v1.0.4 RBI guardrail fields (not forbidden)
+              reminderOptInByBhaiya: true,
+              reminderCountLifetime: 1,
+              reminderCadenceDays: 14,
+            }),
+        );
+      },
+    );
+
+    test(
+      'customer cannot write to udhaarLedger at all (ADR-010 ' +
+        'shopkeeper-initiated only)',
+      async () => {
+        const db = ctxAsCustomer('shop_1').firestore();
+        await assertFails(
+          db
+            .collection('shops')
+            .doc('shop_1')
+            .collection('udhaarLedger')
+            .add({
+              shopId: 'shop_1',
+              customerId: 'cust-1',
+              recordedAmount: 5000,
+              runningBalance: 5000,
+            }),
+        );
+      },
+    );
+
+    test(
+      'themeTokens writes are operator-only (customer partition rejection)',
+      async () => {
+        const db = ctxAsCustomer('shop_1').firestore();
+        await assertFails(
+          db
+            .collection('shops')
+            .doc('shop_1')
+            .collection('themeTokens')
+            .doc('active')
+            .update({ primaryColor: '#FFFFFF' }),
+        );
+      },
+    );
+  });
+
+  // -------------------------------------------------------------------------
   // SAD v1.0.4 §5 feedback sub-collection (S4.17 NPS + burnout)
   // -------------------------------------------------------------------------
 

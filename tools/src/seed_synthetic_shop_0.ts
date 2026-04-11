@@ -16,6 +16,21 @@
 // PRD I6.4 AC #7 — provides the surface for the udhaar forbidden-field test.
 //
 // Run: FIRESTORE_EMULATOR_HOST=localhost:8080 npm run seed:synthetic
+//
+// **Canonicalization note (Sprint 2.3 cleanup per code review Agent A ❓):**
+// There are currently two seed paths:
+//   1. This script — invoked via `npm run seed:synthetic`, used for local
+//      dev + manual emulator seeding
+//   2. The `beforeEach()` hook in cross_tenant_integrity.test.ts — used
+//      by CI to seed fresh emulator state for each test run
+//
+// The TWO seed paths must stay in sync manually. When you add or modify
+// a field here, check the test's beforeEach and update both. A full
+// refactor to have the test import this script's seed helpers is deferred
+// to Sprint 3+ when it's worth the refactor cost (for Sprint 1+2, both
+// paths are small and stable). The canonical source of truth for the
+// schema is SAD v1.0.4 §5 — if these two paths disagree with the SAD,
+// the SAD wins.
 // =============================================================================
 
 import {

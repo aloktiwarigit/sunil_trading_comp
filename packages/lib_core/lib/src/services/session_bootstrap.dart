@@ -33,6 +33,7 @@ import 'dart:async';
 
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 
@@ -75,12 +76,30 @@ class SessionBootstrap {
   /// storage.
   ///
   /// [analytics] and [crashlytics] are optional for testability — in
-  /// production main() passes Observability.analytics + Observability.crashlytics.
+  /// production main() MUST pass both (enforced by the assert below in
+  /// release builds per Sprint 2.1 code review finding C8: a production
+  /// caller that forgot to pass crashlytics would silently ship without
+  /// user ID on crashes, making crash triage much harder).
   static Future<SessionBootstrapResult> verifyPersistedUser({
     required AuthProvider authProvider,
     FirebaseAnalytics? analytics,
     FirebaseCrashlytics? crashlytics,
   }) async {
+    // Production misconfiguration guard — in release builds, both
+    // analytics and crashlytics must be non-null. Debug and test runs
+    // are exempt so unit tests can exercise the bootstrap logic without
+    // wiring real Firebase SDKs.
+    if (kReleaseMode) {
+      if (analytics == null || crashlytics == null) {
+        throw StateError(
+          'SessionBootstrap.verifyPersistedUser called in release mode '
+          'without analytics and/or crashlytics — this is a production '
+          'misconfiguration. Pass Observability.analytics + '
+          'Observability.crashlytics from main.dart.',
+        );
+      }
+    }
+
     final user = authProvider.currentUser;
 
     if (user == null) {
