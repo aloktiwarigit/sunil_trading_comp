@@ -52,17 +52,20 @@ class _RecordingMigrationCaller implements StateMigrationCaller {
   }
 }
 
-/// A FakeAuthProvider that lets us simulate the collision-path sequence
-/// deterministically without a real Firebase backend. Wraps a
-/// MockFirebaseAuth + overrides confirmPhoneVerification to emit the
-/// credential-already-in-use error on the first call and succeed with a
-/// different UID on the second.
+/// A FakeAuthProvider that simulates the collision path by throwing
+/// [AuthCollisionException] with a pre-resolved destinationUser, which
+/// is what AuthProviderFirebase does internally after catching the
+/// credential-already-in-use error from linkWithCredential and recovering
+/// via signInWithCredential(e.credential).
+///
+/// Updated per Sprint 2.1 code review finding C1 — the original fixture
+/// used a two-call pattern that would not work against real Firebase
+/// because the verification code is consumed on first use.
 class _CollisionSimulatingAuthProvider implements AuthProvider {
   _CollisionSimulatingAuthProvider(this._anonymousMockAuth, this._destUid);
 
   final MockFirebaseAuth _anonymousMockAuth;
   final String _destUid;
-  int _confirmCallCount = 0;
   AppUser? _currentUser;
 
   @override
@@ -106,23 +109,25 @@ class _CollisionSimulatingAuthProvider implements AuthProvider {
   @override
   Future<AppUser> confirmPhoneVerification(
       String verificationId, String code) async {
-    _confirmCallCount++;
-    if (_confirmCallCount == 1) {
-      // First call — simulate the collision failure.
-      throw const AuthException(
-        AuthErrorCode.credentialAlreadyInUse,
-        'credential-already-in-use (synthetic)',
-      );
-    }
-    // Second call (from _signInToExistingUid) — succeed with a different UID.
-    _currentUser = AppUser(
+    // Simulate the collision-recovery path that AuthProviderFirebase
+    // runs internally: the linkWithCredential fails, the provider
+    // catches credential-already-in-use, extracts e.credential, calls
+    // signInWithCredential to sign into the existing dest UID, and
+    // throws AuthCollisionException with the resolved destination user.
+    final sourceUid = _currentUser?.uid ?? 'unknown-source';
+    final destinationUser = AppUser(
       uid: _destUid,
       tier: AuthTier.phoneVerified,
       isAnonymous: false,
       isPhoneVerified: true,
       phoneNumber: '+919876543210',
     );
-    return _currentUser!;
+    // Update our internal state to reflect the successful sign-in to dest.
+    _currentUser = destinationUser;
+    throw AuthCollisionException(
+      destinationUser: destinationUser,
+      sourceAnonymousUid: sourceUid,
+    );
   }
 
   @override
@@ -336,18 +341,67 @@ void main() {
         throwsA(isA<StateError>()),
       );
 
-      // PhoneUpgradeCoordinator.markForCleanup is NOT called if migration
-      // failed — we don't want to orphan data with no migration. The
-      // destination doc also doesn't get the phone stamp.
+      // Ordering invariant (Sprint 2.1 review finding C4): if migration
+      // fails, NEITHER markPhoneVerified on dest NOR markForCleanup on
+      // source should have been called. The source anonymous customer
+      // doc must remain intact for operator-side repair, and the dest
+      // doc must not get a stale phoneVerifiedAt.
       final sourceDoc = await firestore
           .collection('shops')
           .doc(shopId)
           .collection('customers')
           .doc(sourceUid)
           .get();
-      // Either doc is missing the abandonedAt field or the operation was
-      // never attempted. Accept either.
       expect(sourceDoc.data()?['isAbandoned'], anyOf(isNull, isFalse));
+      expect(sourceDoc.data()?['abandonedAt'], isNull);
+    });
+
+    test(
+        'dest customer doc exists before and is not touched on migration '
+        'failure', () async {
+      // Seed the dest doc with a known timestamp so we can detect any write.
+      final originalDestTimestamp = DateTime(2020, 1, 1);
+      await firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('customers')
+          .doc(destUid)
+          .set(<String, Object?>{
+        'customerId': destUid,
+        'shopId': shopId,
+        'isPhoneVerified': true,
+        'phoneNumber': phoneE164,
+        'phoneVerifiedAt': originalDestTimestamp,
+        'previousProjectIds': <String>[],
+      });
+
+      migrationCaller.shouldThrow = true;
+
+      await expectLater(
+        coordinator.upgradeAnonymousToPhone(
+          verificationId: 'test-vid',
+          otpCode: '123456',
+          phoneE164: phoneE164,
+        ),
+        throwsA(isA<StateError>()),
+      );
+
+      // Verify dest doc's phoneVerifiedAt is unchanged — if markPhoneVerified
+      // had been called the timestamp would have been overwritten with a
+      // fresh one from fake_cloud_firestore's server timestamp sentinel.
+      final destDoc = await firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('customers')
+          .doc(destUid)
+          .get();
+      expect(destDoc.exists, isTrue);
+      expect(
+        destDoc.data()!['phoneVerifiedAt'],
+        equals(originalDestTimestamp),
+        reason: 'dest doc must NOT be touched when migration fails '
+            '(PRD I6.2 + Sprint 2.1 review finding C4)',
+      );
     });
   });
 

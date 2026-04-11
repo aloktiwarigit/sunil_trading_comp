@@ -69,18 +69,30 @@ jobs:
         run: |
           firebase emulators:start \
             --only firestore,auth \
-            --project yugma-dukaan-rules-test \
-            --import=./tools/emulator-seed \
-            --export-on-exit=./tools/emulator-seed &
-          # Wait for emulators to come up
-          for i in $(seq 1 30); do
+            --project yugma-dukaan-rules-test &
+          # Wait for Firestore emulator to become ready (up to 60s).
+          # FAIL LOUDLY if it never comes up — a silent timeout would
+          # leave the test to fail with cryptic networking errors.
+          ready=0
+          for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:8080 > /dev/null 2>&1; then
-              echo "Firestore emulator ready"
+              echo "Firestore emulator ready (after ${i}s)"
+              ready=1
               break
             fi
             echo "Waiting for Firestore emulator... ($i)"
             sleep 1
           done
+          if [ "$ready" -ne 1 ]; then
+            echo "::error::Firestore emulator failed to start within 60s"
+            exit 1
+          fi
+          # Also verify Auth emulator is up
+          if ! curl -sf http://127.0.0.1:9099 > /dev/null 2>&1; then
+            echo "::error::Auth emulator failed to start"
+            exit 1
+          fi
+          echo "All emulators ready"
 
       - name: Run TS rules test
         working-directory: tools

@@ -128,14 +128,28 @@ class PhoneUpgradeCoordinator {
   ///      internally so the UID is preserved (SAD §4 Flow 1).
   ///   2. On success (happy path): write `phoneVerifiedAt` + `phoneNumber`
   ///      to the Customer Firestore doc per PRD I6.2 AC #3.
-  ///   3. On [AuthErrorCode.credentialAlreadyInUse]: run the merger logic
-  ///      per SAD §4 Flow 4.
+  ///   3. On [AuthCollisionException]: run the merger logic per SAD §4
+  ///      Flow 4. AuthProviderFirebase has already resolved the collision
+  ///      by signing into the existing phone-verified UID via the
+  ///      Firebase SDK's e.credential pattern — the coordinator just
+  ///      needs to migrate state and mark cleanup.
   ///
   /// Returns a [PhoneUpgradeResult] with the final user and the path taken.
   ///
   /// Throws [AuthException] for unrecoverable errors (invalid code, expired
   /// code, network). The caller (Sprint 5 commit screen) must surface those
   /// to the UI.
+  ///
+  /// **Consistency caveat (Sprint 2.1 code review finding C3):** if
+  /// `markPhoneVerified` fails after `confirmPhoneVerification` succeeds,
+  /// the user is phone-verified in Firebase Auth but the Customer Firestore
+  /// doc is stale. Sprint 2 accepts this gap — Firebase Auth IS the source
+  /// of truth for the auth tier, and the Customer doc is a denormalized
+  /// mirror. Ops-side repair logic in v1.5 (S4.x) can detect drift and
+  /// backfill. For now the Sprint 5 commit screen will see the AuthException
+  /// and surface "phone verified but profile not saved — please retry" to
+  /// the user.
+  /// TODO(v1.5): add compensating retry via Riverpod persistence queue.
   Future<PhoneUpgradeResult> upgradeAnonymousToPhone({
     required String verificationId,
     required String otpCode,
@@ -155,10 +169,8 @@ class PhoneUpgradeCoordinator {
       );
     }
 
-    final sourceUid = sourceUser.uid;
-
     try {
-      // Happy path: linkWithCredential preserves the UID.
+      // Happy path: linkWithCredential preserves the UID (SAD §4 Flow 1).
       final linkedUser = await _authProvider.confirmPhoneVerification(
         verificationId,
         otpCode,
@@ -174,57 +186,43 @@ class PhoneUpgradeCoordinator {
         user: linkedUser,
         path: PhoneUpgradePath.happyPath,
       );
-    } on AuthException catch (e) {
-      // Only one error code triggers the merger path.
-      if (e.code != AuthErrorCode.credentialAlreadyInUse) {
-        rethrow;
-      }
-
+    } on AuthCollisionException catch (collision) {
+      // SAD §4 Flow 4 — collision merger. AuthProviderFirebase has
+      // already recovered by signing into the destination UID via
+      // e.credential + signInWithCredential. The exception carries the
+      // resolved destination user + the original anonymous source UID.
       _log.info(
-        'credential-already-in-use collision detected for uid=$sourceUid '
-        '— running merger logic per SAD §4 Flow 4',
+        'collision detected: source=${collision.sourceAnonymousUid} '
+        'dest=${collision.destinationUser.uid} — running merger',
       );
 
-      // SAD §4 Flow 4 Step 1: sign in to the existing phone-verified UID
-      // via the same credential. The current anonymous session becomes the
-      // "source" that needs migration; the newly-signed-in session is the
-      // "destination" that will survive.
-      //
-      // NOTE: AuthProvider doesn't currently expose a "sign in with phone
-      // credential without linking" method because Firebase's
-      // signInWithCredential works identically regardless of whether an
-      // anonymous user is currently signed in — it signs out the anonymous
-      // user and signs in with the credential. So a second call to
-      // confirmPhoneVerification with the same verificationId + code
-      // achieves the sign-in, provided we first sign out of the anonymous
-      // session. We DON'T sign out the anonymous session first because
-      // that destroys the session we need to read sourceUid from.
-      //
-      // Instead, the AuthProviderFirebase implementation inspects
-      // `_auth.currentUser` before calling signInWithCredential. When
-      // called after a credential-already-in-use failure, the anonymous
-      // user has already been detached from the credential by Firebase,
-      // and signInWithCredential returns the existing phone-verified user.
-      //
-      // For Sprint 2, we reconfirm with the same verificationId+otp:
-      final destUser = await _signInToExistingUid(verificationId, otpCode);
+      final sourceUid = collision.sourceAnonymousUid;
+      final destUser = collision.destinationUser;
 
-      // SAD §4 Flow 4 Step 2: migrate Decision Circle membership + Project
-      // drafts + chat thread participation via the joinDecisionCircle
-      // Cloud Function. For Sprint 2 this is a NoopStateMigrationCaller
-      // that logs intent only; real migration lands in Sprint 5–6.
+      // Step 1: migrate Decision Circle membership + Project drafts +
+      // chat thread participation via the joinDecisionCircle Cloud
+      // Function. For Sprint 2 this is a NoopStateMigrationCaller that
+      // logs intent only; real migration lands in Sprint 5–6.
+      //
+      // If migration fails, we do NOT mark the source for cleanup —
+      // leaving the source doc intact means a human operator can
+      // inspect and repair. We also do NOT mark the dest phone-verified
+      // because the migration is the precondition for the dest being
+      // a valid target.
       await _migrationCaller.migrateState(
         sourceUid: sourceUid,
         destUid: destUser.uid,
       );
 
-      // SAD §4 Flow 4 Step 3: write phone stamp to the destination
-      // customer doc (may or may not already be set; merge is safe).
+      // Step 2: write phone stamp to the destination customer doc. Per
+      // review finding C4, this MUST succeed before we mark the source
+      // for cleanup — otherwise a failed dest-write would orphan the
+      // source with no cleanup recovery path.
       await _customerRepo.markPhoneVerified(destUser.uid, phoneE164);
 
-      // SAD §4 Flow 4 Step 4: mark the orphaned anonymous customer doc
-      // for cleanup. A periodic Cloud Function sweep will hard-delete it
-      // after the safe retention window.
+      // Step 3: mark the orphaned anonymous customer doc for cleanup.
+      // Only reached if BOTH steps 1 and 2 succeeded — any earlier
+      // failure surfaces to the caller before we touch the source doc.
       await _customerRepo.markForCleanup(sourceUid);
 
       _log.info(
@@ -238,20 +236,6 @@ class PhoneUpgradeCoordinator {
         orphanedAnonymousUid: sourceUid,
       );
     }
-  }
-
-  /// Sprint 2 simplification: after a collision, re-confirm with the same
-  /// credential. In Sprint 5 when the real commit screen exists, this path
-  /// may be extended to regenerate a fresh OTP request if the original
-  /// credential was consumed.
-  Future<AppUser> _signInToExistingUid(
-    String verificationId,
-    String otpCode,
-  ) async {
-    // A second call to confirmPhoneVerification — the anonymous session
-    // should already have been detached from the credential by Firebase's
-    // initial failure, so this call does a plain signInWithCredential.
-    return _authProvider.confirmPhoneVerification(verificationId, otpCode);
   }
 }
 

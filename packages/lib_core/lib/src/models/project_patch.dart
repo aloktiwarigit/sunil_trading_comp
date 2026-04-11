@@ -146,6 +146,14 @@ class ProjectOperatorPatch with _$ProjectOperatorPatch {
 /// Operator cross-partition mutation: reverting a committed Project back to
 /// `draft` (PRD I6.12 edge case #2). Writes an audit log entry to
 /// `shops/{shopId}/audit/{eventId}` as part of the same transaction.
+///
+/// **Revert discipline (fixed Sprint 2.1 code review finding B1):** ALL
+/// downstream state timestamps AND the Triple Zero invariant field must
+/// be nulled when reverting, otherwise a Project that was paid/delivered/
+/// closed and then reverted to draft would carry stale timestamps from
+/// its prior state machine path. The security rule at §6 enforces
+/// `state == 'draft'` → `paidAt == null AND deliveredAt == null AND
+/// closedAt == null AND amountReceivedByShop == 0`.
 @freezed
 class ProjectOperatorRevertPatch with _$ProjectOperatorRevertPatch {
   const factory ProjectOperatorRevertPatch({
@@ -157,7 +165,20 @@ class ProjectOperatorRevertPatch with _$ProjectOperatorRevertPatch {
 
   Map<String, Object?> toFirestoreMap() => <String, Object?>{
         'state': 'draft',
+        // Null every downstream timestamp — the revert returns the Project
+        // to the draft state machine root, so any paidAt/deliveredAt/
+        // closedAt recorded under the committed subtree is now invalid.
         'committedAt': null,
+        'paidAt': null,
+        'deliveredAt': null,
+        'closedAt': null,
+        // Reset the Triple Zero invariant field. A paid Project reverted
+        // to draft must not carry a non-zero amountReceivedByShop because
+        // the `paid` state is no longer reachable from `draft` without
+        // going through C3.5 UPI payment flow again.
+        'amountReceivedByShop': 0,
+        // Audit trail — who reverted and why (written alongside the
+        // transaction that modifies the Project doc).
         'revertedByUid': revertedByUid,
         'revertReason': reason,
       };

@@ -71,21 +71,32 @@ class CustomerRepo {
 
   /// Create a minimal customer document on first anonymous sign-in.
   ///
-  /// Idempotent — if the document already exists, it is not overwritten.
-  /// Uses `set(..., merge: true)` with a `createdAt` guard so repeat calls
-  /// are safe.
+  /// Truly idempotent — wraps the write in a Firestore transaction that
+  /// first checks if the document exists. If it exists, no write happens
+  /// at all. If it doesn't exist, the fields below are written with
+  /// server timestamp `createdAt`.
+  ///
+  /// **Why a transaction:** a naive `set(..., merge: true)` with
+  /// `FieldValue.serverTimestamp()` would overwrite `createdAt` on every
+  /// retry because Firestore regenerates the timestamp on every merge
+  /// regardless of field existence. This was flagged as finding B3 in
+  /// the Sprint 2.1 code review.
   Future<void> createAnonymous(String uid) async {
     final ref = _collection().doc(uid);
-    await ref.set(
-      <String, Object?>{
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (snap.exists) {
+        // Already created — do nothing. createdAt is preserved verbatim.
+        return;
+      }
+      txn.set(ref, <String, Object?>{
         'customerId': uid,
         'shopId': _shopIdProvider.shopId,
         'isPhoneVerified': false,
         'previousProjectIds': <String>[],
         'createdAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+      });
+    });
     _log.info('createAnonymous uid=$uid');
   }
 

@@ -136,13 +136,15 @@ class AuthProviderFirebase implements AuthProvider {
       smsCode: code,
     );
 
-    try {
-      final existing = _auth.currentUser;
+    final existing = _auth.currentUser;
+    final sourceAnonymousUid =
+        (existing != null && existing.isAnonymous) ? existing.uid : null;
 
-      // Anonymous → Phone upgrade — preserves UID per SAD §4 Flow 1.
-      if (existing != null && existing.isAnonymous) {
-        final cred = await existing.linkWithCredential(credential);
-        final user = cred.user;
+    // ---- Anonymous → Phone upgrade (SAD §4 Flow 1) ----
+    if (sourceAnonymousUid != null) {
+      try {
+        final linkResult = await existing!.linkWithCredential(credential);
+        final user = linkResult.user;
         if (user == null) {
           throw const AuthException(
             AuthErrorCode.unknown,
@@ -151,9 +153,63 @@ class AuthProviderFirebase implements AuthProvider {
         }
         _log.info('Anonymous → Phone upgrade successful: ${user.uid}');
         return _toAppUser(user)!;
+      } on fb.FirebaseAuthException catch (e) {
+        // ---- Collision recovery (SAD §4 Flow 4) ----
+        //
+        // Fixed in response to Sprint 2.1 code review findings C1 + C2.
+        // Original implementation threw and let the coordinator re-call
+        // confirmPhoneVerification, but Firebase consumes the verification
+        // code on first use — a second call would fail with
+        // invalid-verification-code. The correct pattern is to extract
+        // e.credential (the already-validated PhoneAuthCredential) and
+        // call signInWithCredential with it, which signs into the
+        // existing phone-verified UID without consuming a new OTP.
+        if (e.code == 'credential-already-in-use' ||
+            e.code == 'account-exists-with-different-credential') {
+          final recovered = e.credential;
+          if (recovered == null) {
+            // Firebase didn't give us a recoverable credential — this
+            // shouldn't happen for phone auth but we handle it defensively.
+            _log.severe(
+              'credential-already-in-use with null e.credential — '
+              'cannot recover. UID=${sourceAnonymousUid}',
+            );
+            throw _normalize(e);
+          }
+          try {
+            final signInResult = await _auth.signInWithCredential(recovered);
+            final destUser = signInResult.user;
+            if (destUser == null) {
+              throw const AuthException(
+                AuthErrorCode.unknown,
+                'collision recovery signInWithCredential returned null user',
+              );
+            }
+            _log.info(
+              'collision recovery: source=$sourceAnonymousUid '
+              'dest=${destUser.uid}',
+            );
+            // Throw the specialized collision exception so the coordinator
+            // can detect this path and run migration + cleanup.
+            throw AuthCollisionException(
+              destinationUser: _toAppUser(destUser)!,
+              sourceAnonymousUid: sourceAnonymousUid,
+            );
+          } on fb.FirebaseAuthException catch (recoveryError) {
+            _log.severe(
+              'collision recovery signInWithCredential failed: '
+              '${recoveryError.code} — ${recoveryError.message}',
+            );
+            throw _normalize(recoveryError);
+          }
+        }
+        // Other errors — normalize and rethrow.
+        throw _normalize(e);
       }
+    }
 
-      // No existing session, or already phone-verified — plain sign-in.
+    // ---- Plain phone sign-in (no anonymous session) ----
+    try {
       final cred = await _auth.signInWithCredential(credential);
       final user = cred.user;
       if (user == null) {

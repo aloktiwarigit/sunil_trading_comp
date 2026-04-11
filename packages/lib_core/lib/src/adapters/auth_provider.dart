@@ -165,6 +165,62 @@ class AuthException implements Exception {
   String toString() => 'AuthException($code): $message';
 }
 
+/// Specialization of [AuthException] thrown by
+/// [AuthProvider.confirmPhoneVerification] when the underlying Firebase
+/// call fails with `credential-already-in-use` AND the provider has
+/// successfully recovered the collision by signing into the existing
+/// phone-verified UID using the same already-validated credential.
+///
+/// The [destinationUser] is the AppUser corresponding to the EXISTING
+/// phone-verified account. Callers (PhoneUpgradeCoordinator) should:
+///   1. Catch this exception specifically (before catching generic
+///      AuthException)
+///   2. Use [destinationUser] as the post-upgrade user
+///   3. Run any state migration (Decision Circle / Project draft / chat
+///      history) from the original anonymous UID to the destinationUser.uid
+///   4. Mark the orphaned anonymous Customer document for cleanup
+///
+/// **Why an exception instead of a return value:** the collision path is
+/// a real error condition at the Firebase SDK level — the original
+/// `linkWithCredential` call DID fail. The coordinator needs to know both
+/// that a collision happened AND what the resolved destination user is.
+/// Returning a non-null result from `confirmPhoneVerification` would hide
+/// the collision signal from the happy-path callers. Throwing with the
+/// destination user attached preserves the "success" semantic for the
+/// coordinator while surfacing the collision signal in the type system.
+///
+/// **Fixes Sprint 2.1 code review finding C1 + C2:** the original
+/// implementation re-called `confirmPhoneVerification` on collision,
+/// which broke because Firebase consumes the verification code on first
+/// use. The correct Firebase pattern is to extract `e.credential` from
+/// the failed-link exception and call `signInWithCredential` with it —
+/// which is exactly what [AuthProviderFirebase] now does internally.
+class AuthCollisionException extends AuthException {
+  AuthCollisionException({
+    required this.destinationUser,
+    required this.sourceAnonymousUid,
+    String? message,
+  }) : super(
+          AuthErrorCode.credentialAlreadyInUse,
+          message ?? 'credential-already-in-use: collision recovered',
+        );
+
+  /// The existing phone-verified AppUser the provider signed into as
+  /// recovery. This is the user the upgrade flow should treat as the
+  /// surviving identity.
+  final AppUser destinationUser;
+
+  /// The UID of the anonymous session that was active BEFORE the
+  /// collision. The coordinator must migrate any state attached to this
+  /// UID to [destinationUser].uid and then mark the source Customer doc
+  /// for cleanup.
+  final String sourceAnonymousUid;
+
+  @override
+  String toString() =>
+      'AuthCollisionException(source=$sourceAnonymousUid, dest=${destinationUser.uid})';
+}
+
 /// The adapter interface itself.
 ///
 /// Every implementation MUST honor these contracts:
