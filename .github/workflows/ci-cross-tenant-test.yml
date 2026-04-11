@@ -1,0 +1,138 @@
+# =============================================================================
+# ci-cross-tenant-test.yml — THE non-negotiable CI gate per ADR-012 + R9.
+#
+# Runs on every PR to main, regardless of path filter. Runs three gates:
+#
+#   1. TS rules test (`tools/src/cross_tenant_integrity.test.ts`)
+#      against the Firebase emulator with the real firestore.rules loaded.
+#      This is the actual security rule enforcement test.
+#
+#   2. Dart shape test (`packages/lib_core/test/cross_tenant_integrity_test.dart`)
+#      using fake_cloud_firestore. Verifies model + repository shape
+#      invariants that can't be expressed in rules (every model has shopId,
+#      partition patches emit only owned fields, etc.).
+#
+#   3. project_patch import audit (`tools/audit_project_patch_imports.sh`).
+#      Verifies customer_app and shopkeeper_app respect the partition
+#      discipline per PRD I6.12 AC #3 + Standing Rule 11.
+#
+# If ANY of the three fails, the PR is blocked.
+# =============================================================================
+
+name: Cross-tenant integrity
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1 — TS rules test against Firebase emulator
+  # ---------------------------------------------------------------------------
+
+  ts-rules-test:
+    name: TS rules test (emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: tools/package-lock.json
+
+      - name: Setup Java (required for Firebase emulator)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools@latest
+
+      - name: Install tools dependencies
+        working-directory: tools
+        run: npm ci
+
+      - name: Build TS
+        working-directory: tools
+        run: npm run build
+
+      - name: Start Firestore + Auth emulators
+        run: |
+          firebase emulators:start \
+            --only firestore,auth \
+            --project yugma-dukaan-rules-test \
+            --import=./tools/emulator-seed \
+            --export-on-exit=./tools/emulator-seed &
+          # Wait for emulators to come up
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8080 > /dev/null 2>&1; then
+              echo "Firestore emulator ready"
+              break
+            fi
+            echo "Waiting for Firestore emulator... ($i)"
+            sleep 1
+          done
+
+      - name: Run TS rules test
+        working-directory: tools
+        env:
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
+          FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
+          GCLOUD_PROJECT: yugma-dukaan-rules-test
+        run: npm run test:rules
+
+  # ---------------------------------------------------------------------------
+  # Job 2 — Dart shape test
+  # ---------------------------------------------------------------------------
+
+  dart-shape-test:
+    name: Dart shape test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Run build_runner (Freezed + json_serializable codegen)
+        run: melos run build_runner
+
+      - name: Run Dart cross-tenant shape test
+        run: melos run test:cross-tenant
+
+  # ---------------------------------------------------------------------------
+  # Job 3 — project_patch import audit
+  # ---------------------------------------------------------------------------
+
+  import-audit:
+    name: project_patch import audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run import audit
+        run: bash tools/audit_project_patch_imports.sh

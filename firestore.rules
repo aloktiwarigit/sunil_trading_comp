@@ -1,0 +1,213 @@
+rules_version = '2';
+
+// =============================================================================
+// Yugma Dukaan — Firestore Security Rules
+// Per-shop scoping enforced on every read and write.
+// Cross-tenant integrity test (cross_tenant_integrity_test.dart) MUST pass
+// against this file on every PR — see ADR-012, R9.
+//
+// Sprint 1 scope: shopId scoping foundation + udhaar forbidden-field guard.
+// Per-collection rules expand as Sprints 2–6 ship the corresponding stories.
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // Helper functions
+    // -------------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAnonymous() {
+      return isSignedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    function isPhoneVerified() {
+      return isSignedIn() && request.auth.token.firebase.sign_in_provider == 'phone';
+    }
+
+    function isGoogleSignedIn() {
+      return isSignedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    function callerShopId() {
+      return request.auth.token.shopId;
+    }
+
+    function callerRole() {
+      return request.auth.token.role;
+    }
+
+    function isShopMember(shopId) {
+      return isSignedIn() && callerShopId() == shopId;
+    }
+
+    function isShopOperator(shopId) {
+      return isShopMember(shopId) && isGoogleSignedIn() &&
+        (callerRole() == 'shopkeeper'
+         || callerRole() == 'son'
+         || callerRole() == 'munshi');
+    }
+
+    function hasShopId(data) {
+      return 'shopId' in data && data.shopId is string && data.shopId.size() > 0;
+    }
+
+    function shopIdMatches(shopId) {
+      return hasShopId(request.resource.data)
+          && request.resource.data.shopId == shopId;
+    }
+
+    // App Check is enforced at the Firebase product level (firebase.json), not
+    // in rules — but we double-gate via the shopId token claim which is only
+    // issued through our auth flows.
+
+    // -------------------------------------------------------------------------
+    // Shop lifecycle write-freeze helper (SAD §6 v1.0.4 + ADR-013 + R16/DPDP)
+    // -------------------------------------------------------------------------
+    // Freezes ALL client writes as soon as shopLifecycle leaves "active".
+    // Reads continue so customers/operators can access their data during the
+    // DPDP retention window. Cloud Function 8 (shopDeactivationSweep) owns all
+    // mutations while the shop is not active, including scoped deletion at
+    // retention expiry. Every allow create/update/delete below AND-gates on
+    // this helper per the non-optional I6.4 acceptance criterion.
+
+    function shopIsWritable(shopId) {
+      return exists(/databases/$(database)/documents/shops/$(shopId))
+          && get(/databases/$(database)/documents/shops/$(shopId)).data.shopLifecycle == 'active';
+    }
+
+    // -------------------------------------------------------------------------
+    // Role helpers (Phase 6 addition — aligned with SAD §6 naming)
+    // -------------------------------------------------------------------------
+
+    function isOperatorOf(shopId) {
+      return isShopOperator(shopId);
+    }
+
+    function isCustomerOf(shopId) {
+      return isShopMember(shopId)
+          && (isAnonymous() || isPhoneVerified());
+    }
+
+    function isBhaiyaOf(shopId) {
+      return isShopMember(shopId)
+          && isGoogleSignedIn()
+          && callerRole() == 'shopkeeper';
+    }
+
+    // -------------------------------------------------------------------------
+    // Forbidden vocabulary on Udhaar Ledger (ADR-010, RBI-defensive)
+    // -------------------------------------------------------------------------
+
+    function hasForbiddenUdhaarFields(data) {
+      return data.keys().hasAny([
+        'interest',
+        'interestRate',
+        'overdueFee',
+        'dueDate',
+        'lendingTerms',
+        'borrowerObligation',
+        'defaultStatus',
+        'collectionAttempt'
+      ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Catch-all default deny (REQUIRED — every collection must be explicit)
+    // -------------------------------------------------------------------------
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // /shops/{shopId} — Shop document
+    // Sprint 1 scope: read for any signed-in user whose shopId matches
+    // -------------------------------------------------------------------------
+
+    match /shops/{shopId} {
+      allow read: if isShopMember(shopId);
+      allow create: if false; // shops are created server-side via admin SDK
+      allow update: if isShopOperator(shopId) && shopIsWritable(shopId);
+      allow delete: if false;
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/themeTokens/{docId} — multi-tenant theming (SAD §8)
+      // ---------------------------------------------------------------------
+
+      match /themeTokens/{tokenDocId} {
+        allow read: if isShopMember(shopId);
+        allow write: if isShopOperator(shopId) && shopIsWritable(shopId);
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/featureFlags/{flagId} — Remote Config mirror
+      // ---------------------------------------------------------------------
+
+      match /featureFlags/{flagId} {
+        allow read: if isShopMember(shopId);
+        allow write: if false; // managed via Remote Config console only
+      }
+
+      // ---------------------------------------------------------------------
+      // Sub-collections expand in Sprints 2–6 as stories ship:
+      //   inventory/, projects/, customers/, chatThreads/, voiceNotes/,
+      //   udhaarLedger/, customerMemory/, curatedShortlists/, decisionCircles/
+      // ---------------------------------------------------------------------
+
+      // Sprint 1 stub for udhaarLedger — present so the cross-tenant test
+      // can assert the forbidden-field guard works from day one. Writes
+      // freeze automatically when shopLifecycle != 'active' per ADR-013.
+      match /udhaarLedger/{ledgerId} {
+        allow read: if isShopOperator(shopId);
+        allow create, update: if isShopOperator(shopId)
+                              && shopIdMatches(shopId)
+                              && !hasForbiddenUdhaarFields(request.resource.data)
+                              && shopIsWritable(shopId);
+        allow delete: if false;
+      }
+
+      // ---------------------------------------------------------------------
+      // v1.0.4 patch — feedback sub-collection (SAD §6 + S4.17 NPS + burnout)
+      // ---------------------------------------------------------------------
+      // Customers create their own customer_nps / customer_csat documents.
+      // Operators create their own shopkeeper_burnout_self_report /
+      // shopkeeper_usage_sample documents. All feedback is immutable after
+      // create — no update, no delete. Reads: operators see everything in
+      // their shop; customers see only their own submissions.
+
+      match /feedback/{feedbackId} {
+        allow read: if isSignedIn()
+                    && (isShopOperator(shopId)
+                        || (resource.data.authorUid == request.auth.uid
+                            && resource.data.authorRole == 'customer'));
+        allow create: if isSignedIn()
+                      && request.resource.data.shopId == shopId
+                      && request.resource.data.authorUid == request.auth.uid
+                      && shopIsWritable(shopId)
+                      && (
+                           (request.resource.data.type in ['customer_nps', 'customer_csat']
+                            && isCustomerOf(shopId))
+                           ||
+                           (request.resource.data.type in ['shopkeeper_burnout_self_report', 'shopkeeper_usage_sample']
+                            && isOperatorOf(shopId))
+                         );
+        allow update, delete: if false;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // /operators/{uid} — Shopkeeper / son / munshi mapping
+    // Created by signupNewOperator Cloud Function only.
+    // -------------------------------------------------------------------------
+
+    match /operators/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+  }
+}
