@@ -40,6 +40,12 @@ export 'src/feature_flags/feature_flags.dart';
 export 'src/feature_flags/runtime_feature_flags.dart';
 export 'src/feature_flags/kill_switch_listener.dart';
 
+// ---------- Locale ----------
+export 'src/locale/strings_base.dart';
+export 'src/locale/strings_hi.dart';
+export 'src/locale/strings_en.dart';
+export 'src/locale/locale_resolver.dart';
+
 // ---------- Observability ----------
 export 'src/observability/analytics_events.dart';
 export 'src/observability/observability.dart';
