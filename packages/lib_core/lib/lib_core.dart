@@ -51,3 +51,8 @@ export 'src/models/udhaar_ledger_patch.dart';
 export 'src/repositories/project_repo.dart';
 export 'src/repositories/chat_thread_repo.dart';
 export 'src/repositories/udhaar_ledger_repo.dart';
+export 'src/repositories/customer_repo.dart';
+
+// ---------- Services (orchestration over adapters + repositories) ----------
+export 'src/services/phone_upgrade_coordinator.dart';
+export 'src/services/session_bootstrap.dart';
