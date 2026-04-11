@@ -27,6 +27,10 @@ export 'src/adapters/media_store.dart';
 export 'src/adapters/media_store_cloudinary_firebase.dart';
 export 'src/adapters/media_store_r2.dart';
 export 'src/adapters/media_store_factory.dart';
+export 'src/adapters/comms_channel.dart';
+export 'src/adapters/comms_channel_firestore.dart';
+export 'src/adapters/comms_channel_whatsapp.dart';
+export 'src/adapters/comms_channel_factory.dart';
 
 // ---------- Infrastructure ----------
 export 'src/firebase_client.dart';
@@ -44,6 +48,7 @@ export 'src/models/customer.dart';
 export 'src/models/line_item.dart';
 export 'src/models/project.dart';
 export 'src/models/chat_thread.dart';
+export 'src/models/message.dart';
 export 'src/models/udhaar_ledger.dart';
 
 // ---------- Partition patches (see library-level doc comment above) ----------
