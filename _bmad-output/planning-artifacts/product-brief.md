@@ -419,7 +419,7 @@ A detailed architecture document is Winston's deliverable. This is the brief's e
 - **Navigation:** GoRouter (official, stable)
 - **Data classes:** Freezed 3 + build_runner
 - **UI / theming:** Material 3 + custom `ThemeExtension` token architecture for multi-tenant support. Avoid forui/shadcn_flutter until they hit 1.0.
-- **Typography:** Noto Sans Devanagari / Mukta as primary; Inter or Roboto as English secondary.
+- **Typography:** Tiro Devanagari Hindi (display) + Mukta (body) + Fraunces (English display) + EB Garamond (English body) + DM Mono (numeric). No other fonts permitted. *(v1.4 revision — see §8 Constraint 4 normative source. Replaces the original Noto Sans Devanagari / Inter / Roboto stack.)*
 - **Backend:** Firebase Blaze with hard $1/month budget cap + kill-switch Cloud Function (safety rail against abuse, not an expected spend). Firestore, Cloud Storage, Cloud Functions (gen 2), Auth, FCM, Analytics, Crashlytics, Performance, Hosting.
 - **Image hosting:** Cloudinary Free tier (25 credits/mo) for catalog image transformations; Firebase Hosting for hero and branding assets.
 - **Auth — customer app (layered, pre-commit vs commit):**
