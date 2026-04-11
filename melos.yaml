@@ -1,0 +1,68 @@
+# =============================================================================
+# Yugma Dukaan — Melos workspace config
+# Per SAD §3 — recommended over native pubspec workspaces (more mature 2026)
+# =============================================================================
+
+name: yugma_dukaan
+
+repository: https://github.com/yugmalabs/yugma-dukaan
+
+packages:
+  - apps/customer_app
+  - apps/shopkeeper_app
+  - packages/lib_core
+
+command:
+  bootstrap:
+    runPubGetInParallel: true
+    usePubspecOverrides: true
+
+scripts:
+  # ---------- Codegen ----------
+  build_runner:
+    description: Run build_runner across all packages (Freezed, Riverpod, json_serializable)
+    run: melos exec --depends-on="build_runner" -- "dart run build_runner build --delete-conflicting-outputs"
+
+  build_runner_watch:
+    description: Watch mode for build_runner
+    run: melos exec --depends-on="build_runner" -- "dart run build_runner watch --delete-conflicting-outputs"
+
+  # ---------- Quality ----------
+  analyze:
+    description: Static analysis across all packages
+    run: melos exec -- "dart analyze --fatal-infos --fatal-warnings"
+
+  format:
+    description: Format all Dart files
+    run: melos exec -- "dart format --set-exit-if-changed ."
+
+  # ---------- Tests ----------
+  test:
+    description: Run unit tests across all packages
+    run: melos exec --dir-exists="test" -- "flutter test"
+
+  test:cross-tenant:
+    description: Run the cross-tenant integrity test (THE one that blocks every PR — see ADR-012)
+    run: melos exec --scope="lib_core" -- "flutter test test/cross_tenant_integrity_test.dart"
+
+  # ---------- Dev ----------
+  dev:customer:
+    description: Run customer app in debug mode
+    exec:
+      concurrency: 1
+    run: flutter run
+    packageFilters:
+      scope: customer_app
+
+  dev:shopkeeper:
+    description: Run shopkeeper app in debug mode
+    exec:
+      concurrency: 1
+    run: flutter run
+    packageFilters:
+      scope: shopkeeper_app
+
+  # ---------- Clean ----------
+  clean:
+    description: Clean all Flutter build artifacts
+    run: melos exec -- "flutter clean"

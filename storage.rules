@@ -1,0 +1,69 @@
+rules_version = '2';
+
+// =============================================================================
+// Yugma Dukaan — Cloud Storage Rules
+// Per-shop scoping — every path must start with /shops/{shopId}/
+// =============================================================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ---------- Helper functions ----------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isShopMember(shopId) {
+      return isSignedIn()
+        && request.auth.token.shopId == shopId;
+    }
+
+    function isShopOperator(shopId) {
+      return isShopMember(shopId)
+        && (request.auth.token.role == 'shopkeeper'
+            || request.auth.token.role == 'son'
+            || request.auth.token.role == 'munshi');
+    }
+
+    function isReasonableSize() {
+      return request.resource.size < 10 * 1024 * 1024; // 10 MB
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isAudio() {
+      return request.resource.contentType.matches('audio/.*');
+    }
+
+    // ---------- Catch-all default deny ----------
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // ---------- Voice notes (per SAD §11 ADR-006) ----------
+    // Path: /shops/{shopId}/voice_notes/{noteId}.aac
+
+    match /shops/{shopId}/voice_notes/{noteId} {
+      allow read: if isShopMember(shopId);
+      allow write: if isShopOperator(shopId)
+                   && isReasonableSize()
+                   && isAudio();
+    }
+
+    // ---------- Shop branding (logo, shopkeeper face, hero image) ----------
+    // Path: /shops/{shopId}/branding/{filename}
+
+    match /shops/{shopId}/branding/{filename} {
+      allow read: if true; // public — used by marketing site at build time
+      allow write: if isShopOperator(shopId)
+                   && isReasonableSize()
+                   && isImage();
+    }
+
+    // Catalog images go to Cloudinary, NOT Firebase Storage — see ADR-006
+  }
+}

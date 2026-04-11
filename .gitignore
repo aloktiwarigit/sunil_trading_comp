@@ -1,0 +1,82 @@
+# =============================================================================
+# Yugma Dukaan — root .gitignore
+# =============================================================================
+
+# -------- Dart / Flutter --------
+.dart_tool/
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+.fvm/flutter_sdk
+**/generated_plugin_registrant.*
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+
+# Freezed / Riverpod / json_serializable codegen
+**/*.g.dart
+**/*.freezed.dart
+**/*.gr.dart
+
+# -------- Android --------
+**/android/.gradle/
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/key.properties
+**/android/app/release/
+*.jks
+*.keystore
+**/android/app/google-services.json
+
+# -------- iOS --------
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/App.framework
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Runner/GoogleService-Info.plist
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# -------- Node / Astro / Cloud Functions --------
+node_modules/
+dist/
+.astro/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+**/functions/lib/
+
+# -------- Editors --------
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# -------- Claude Code harness (user-specific) --------
+.claude/
+
+# -------- Secrets --------
+.env
+.env.*
+!.env.example
+*.pem
+serviceAccountKey*.json
+
+# -------- Coverage --------
+coverage/
+*.lcov
+
+# -------- Melos --------
+.melos_tool/

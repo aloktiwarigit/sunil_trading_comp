@@ -1,0 +1,16 @@
+# =============================================================================
+# Yugma Dukaan — workspace root pubspec
+# Holds dev_dependencies shared across all member packages
+# =============================================================================
+
+name: yugma_dukaan_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+# Melos workspace member discovery is via melos.yaml (not native workspace).
+# This file exists primarily to host the workspace-level dev tools.
+
+dev_dependencies:
+  melos: ^6.3.0

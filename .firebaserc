@@ -1,0 +1,10 @@
+{
+  "projects": {
+    "default": "yugma-dukaan-dev",
+    "dev": "yugma-dukaan-dev",
+    "staging": "yugma-dukaan-staging",
+    "prod": "yugma-dukaan-prod"
+  },
+  "targets": {},
+  "etags": {}
+}
