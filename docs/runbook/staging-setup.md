@@ -148,14 +148,56 @@ For automated circuit-breaker behavior (not just email), wire a Pub/Sub topic:
 5. Create a topic named exactly **`budget-alerts`** in the same GCP project (e.g., `yugma-dukaan-dev`)
 6. Save the budget. Cloud Billing will start publishing threshold crossings to the topic.
 
-### Step 6.4 — Deploy the kill-switch Cloud Function
+### Step 6.4 — Pre-deploy IAM fix (required first time per GCP project)
 
-Phase 2.x scaffolded the `killSwitchOnBudgetAlert` function (PRD I6.8 + SAD §7 Function 1). Deploy it once Blaze + budget + Pub/Sub are wired:
+**Lesson learned from the 2026-04-11 first-deploy attempt:** Google Cloud tightened default IAM policies in 2024. The first-time `firebase deploy --only functions` on a fresh Blaze project returns:
+
+```
+Build failed with status: FAILURE. Could not build the function due
+to a missing permission on the build service account.
+```
+
+**Fix (via Cloud Console IAM UI):**
+
+1. Open https://console.cloud.google.com/iam-admin/iam?project=yugma-dukaan-dev
+2. Find the **compute default service account** — ends in `{project-number}-compute@developer.gserviceaccount.com` (e.g., `934939527575-compute@developer.gserviceaccount.com` for dev)
+3. Click the pencil icon to edit → **Add another role** → add all of:
+   - `Cloud Build Service Account`
+   - `Artifact Registry Writer`
+   - `Storage Object Viewer`
+   - `Logs Writer`
+4. Save
+5. Also verify the **Cloud Build service account** (`{project-number}@cloudbuild.gserviceaccount.com`) has the `Cloud Build Service Account` role — usually does by default but tightened orgs may not
+
+**Fix (via gcloud CLI alternative):**
+```bash
+PROJECT=yugma-dukaan-dev
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT --format='value(projectNumber)')
+COMPUTE_SA="$PROJECT_NUMBER-compute@developer.gserviceaccount.com"
+
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member="serviceAccount:$COMPUTE_SA" \
+  --role="roles/cloudbuild.builds.builder"
+
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member="serviceAccount:$COMPUTE_SA" \
+  --role="roles/artifactregistry.writer"
+
+gcloud projects add-iam-policy-binding $PROJECT \
+  --member="serviceAccount:$COMPUTE_SA" \
+  --role="roles/storage.objectViewer"
+```
+
+### Step 6.5 — Deploy the kill-switch Cloud Function
+
+Phase 2.x scaffolded the `killSwitchOnBudgetAlert` function (PRD I6.8 + SAD §7 Function 1). Deploy it once Blaze + budget + Pub/Sub + IAM are wired:
 
 ```bash
 cd "C:/Alok/Business Projects/Almira-Project"
-firebase deploy --only functions --project yugma-dukaan-dev
+firebase deploy --only functions --project yugma-dukaan-dev --force
 ```
+
+**Always include `--force`** on first deploy so Firebase auto-sets the Artifact Registry cleanup policy (keeps only recent container images, stays inside the 500 MB free-tier ceiling).
 
 Expected output:
 ```
