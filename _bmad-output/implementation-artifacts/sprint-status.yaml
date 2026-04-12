@@ -38,22 +38,22 @@
 # Walking Skeleton: 13/19 done. 6 remaining: C3.1, C3.4, C3.5, P2.4, P2.5, S4.3.
 # All pushed to origin/main. Zero test failures. Triple Zero intact.
 #
-# ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 4) =====
+# ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 5) =====
 #
 # Epics: 6 total. 1 done (E6). 3 in-progress (E1, E3, E4). 2 backlog (E2/E5).
-# Stories: 67 total. 24 done. 0 ready-for-dev. 0 in-progress. 43 backlog.
+# Stories: 67 total. 29 done. 0 ready-for-dev. 0 in-progress. 38 backlog.
 # Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 # Phase 1.10 test debt: CLEARED (0 test failures remaining).
 #
-# Session 4 shipped: Sprint 5 (C3.4+C3.5) — WS 19/19 COMPLETE.
-# + Sprint 6 (C3.6+C3.7+S4.6) — payment alternatives + shopkeeper orders.
-# 24 stories done total. Committed at 314f7a9 on main.
+# Session 5 shipped: Sprint 7 (C3.2+C3.3) — draft editing + negotiation.
+# + Sprint 8 (S4.7+S4.8+S4.4) — shopkeeper order management.
+# 29 stories done total. Committed at 716221c on main.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-12  # Session 4 — Sprint 5 shipped, WS 19/19 CLOSED
+last_updated: 2026-04-12  # Session 5 — Sprint 7+8 shipped, 29/67 done
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -183,8 +183,8 @@ development_status:
 
   # C3.1 Create project draft — shipped Phase 2.1 Sprint 4 (c9d6aea)
   c3-1-create-project-draft: done
-  c3-2-edit-line-items: backlog
-  c3-3-negotiate-discount-in-chat: backlog
+  c3-2-edit-line-items: done  # Sprint 7, Session 5
+  c3-3-negotiate-discount-in-chat: done  # Sprint 7, Session 5
   # C3.4 Commit project with phone OTP — shipped Phase 2.1 Sprint 5 (32c0e5b)
   # ProjectCustomerCommitPatch + commit transaction + CommitController/Screen
   # + 7 tests. Code review: 7 patches applied.
@@ -223,11 +223,11 @@ development_status:
   # S4.6 Active projects list — shipped Sprint 6 (314f7a9)
   # ActiveProjectsScreen + filter chips + project cards + /orders route
   s4-6-active-projects-list: done
-  s4-4-inventory-edit-price-stock: backlog
+  s4-4-inventory-edit-price-stock: done  # Sprint 8, Session 5
   s4-5-golden-hour-photo-capture: backlog
   # (moved up — see above)
-  s4-7-project-detail-with-memory: backlog
-  s4-8-chat-reply-text-or-voice: backlog
+  s4-7-project-detail-with-memory: done  # Sprint 8, Session 5
+  s4-8-chat-reply-text-or-voice: done  # Sprint 8, Session 5
   s4-9-customer-memory-inline-edit: backlog
   s4-10-udhaar-ledger-with-rbi-guardrails: backlog
   s4-11-analytics-dashboard: backlog
