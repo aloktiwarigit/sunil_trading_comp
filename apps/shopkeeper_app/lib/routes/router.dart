@@ -29,6 +29,7 @@ import '../features/inventory/inventory_list_screen.dart';
 import '../features/chat/shopkeeper_chat_screen.dart';
 import '../features/curation/curation_screen.dart';
 import '../features/inventory/golden_hour_capture_screen.dart';
+import '../features/presence/presence_toggle_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/settings/shop_deactivation_screen.dart';
 import '../features/orders/active_projects_screen.dart';
@@ -72,7 +73,8 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
               state.matchedLocation.startsWith('/curation') ||
               state.matchedLocation.startsWith('/golden-hour') ||
               state.matchedLocation.startsWith('/settings') ||
-              state.matchedLocation.startsWith('/deactivate')) {
+              state.matchedLocation.startsWith('/deactivate') ||
+              state.matchedLocation.startsWith('/presence')) {
             return null;
           }
           return '/home';
@@ -123,6 +125,11 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      // B1.9 — Presence status toggle
+      GoRoute(
+        path: '/presence',
+        builder: (context, state) => const PresenceToggleScreen(),
       ),
       // S4.19 — Shop deactivation flow
       GoRoute(
