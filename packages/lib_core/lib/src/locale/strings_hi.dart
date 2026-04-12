@@ -829,6 +829,9 @@ class AppStringsHi extends AppStrings {
   String get homeSectionMyPicks => 'मेरी पसंद';
 
   @override
+  String get homeSectionDashboard => 'दुकान का हिसाब';
+
+  @override
   String get homeSectionSettings => 'सेटिंग्स';
 
   @override

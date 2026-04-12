@@ -102,7 +102,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.all(YugmaSpacing.s8),
                 child: Text(
-                  strings.emptyOrdersList,
+                  strings.analyticsNoOrdersYet,
                   textAlign: TextAlign.center,
                   style: theme.bodyDeva.copyWith(
                     color: theme.shopTextMuted,

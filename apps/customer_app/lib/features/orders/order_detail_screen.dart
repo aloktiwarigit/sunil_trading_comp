@@ -461,11 +461,9 @@ class OrderDetailScreen extends ConsumerWidget {
       await file.writeAsBytes(pdfBytes);
 
       // Share via platform sheet.
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
-          subject: strings.receiptShareSubject(project.projectId),
-        ),
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: strings.receiptShareSubject(project.projectId),
       );
     } catch (e) {
       if (context.mounted) {

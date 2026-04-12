@@ -195,7 +195,7 @@ class GreetingManagementScreen extends ConsumerWidget {
           'पुराना संदेश वापस लाएँ?',
           style: TextStyle(
             fontFamily: YugmaFonts.devaDisplay,
-            fontSize: YugmaTypeScale.h4,
+            fontSize: YugmaTypeScale.bodyLarge,
           ),
         ),
         content: Text(

@@ -342,6 +342,7 @@ class _DashboardSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = const AppStringsHi();
     final theme = context.yugmaTheme;
     return GestureDetector(
       onTap: () => context.push('/dashboard'),
@@ -368,9 +369,9 @@ class _DashboardSection extends StatelessWidget {
             ),
             const SizedBox(width: YugmaSpacing.s3),
             Text(
-              'Dashboard',
+              strings.homeSectionDashboard,
               style: TextStyle(
-                fontFamily: theme.fontFamilyEnglishBody,
+                fontFamily: theme.fontFamilyDevanagariBody,
                 fontSize: YugmaTypeScale.body,
                 color: theme.shopTextPrimary,
                 fontWeight: FontWeight.w600,

@@ -897,6 +897,9 @@ abstract class AppStrings {
   /// "My picks" section label on home dashboard.
   String get homeSectionMyPicks;
 
+  /// "Dashboard" section label on home.
+  String get homeSectionDashboard;
+
   /// "Settings" section label.
   String get homeSectionSettings;
 

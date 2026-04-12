@@ -821,6 +821,9 @@ class AppStringsEn extends AppStrings {
   String get homeSectionMyPicks => 'My picks';
 
   @override
+  String get homeSectionDashboard => 'Dashboard';
+
+  @override
   String get homeSectionSettings => 'Settings';
 
   @override
