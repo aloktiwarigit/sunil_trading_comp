@@ -70,6 +70,9 @@ class AppStringsEn extends AppStrings {
   @override
   String get presenceStatusAvailable => '● At the shop';
 
+  @override
+  String get metaBarMapLabel => 'Map';
+
   // ---- §2 Curated shortlists ----
 
   @override

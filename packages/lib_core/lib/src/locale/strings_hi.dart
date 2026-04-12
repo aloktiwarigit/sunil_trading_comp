@@ -76,6 +76,9 @@ class AppStringsHi extends AppStrings {
   @override
   String get presenceStatusAvailable => '● दुकान पर हैं';
 
+  @override
+  String get metaBarMapLabel => 'नक्शा';
+
   // ---- §2 Curated shortlists ----
 
   @override

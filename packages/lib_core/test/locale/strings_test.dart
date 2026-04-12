@@ -43,6 +43,7 @@ Map<String, String> _renderAllStrings(AppStrings s) {
     'shortlistPreviewHeadline': s.shortlistPreviewHeadline('Test'),
     'shortlistBadgeCurated': s.shortlistBadgeCurated,
     'presenceStatusAvailable': s.presenceStatusAvailable,
+    'metaBarMapLabel': s.metaBarMapLabel,
 
     // ---- §2 Curated shortlists ----
     'shortlistTitleShaadi': s.shortlistTitleShaadi,

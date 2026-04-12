@@ -96,6 +96,9 @@ abstract class AppStrings {
   /// Presence dock status — at the shop.
   String get presenceStatusAvailable;
 
+  /// Meta bar map link label.
+  String get metaBarMapLabel;
+
   // =========================================================================
   // §2 — Curated shortlists (UX Spec §5.5 #3–5)
   // =========================================================================

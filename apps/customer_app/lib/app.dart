@@ -55,12 +55,19 @@ class CustomerApp extends ConsumerWidget {
   }
 
   /// Compile-time default theme used during splash before Firestore loads.
+  /// Registers a YugmaThemeExtension from compile-time defaults so any
+  /// widget that calls context.yugmaTheme during the splash window does
+  /// not crash (code review blocker #1).
   ThemeData _buildDefaultTheme() {
+    final defaultExt = YugmaThemeExtension.fromTokens(
+      ShopThemeTokens.sunilTradingCompanyDefault(),
+    );
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: YugmaColors.primary,
       ),
+      extensions: [defaultExt],
     );
   }
 }

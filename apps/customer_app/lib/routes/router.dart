@@ -28,16 +28,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isLoading = onboarding.isLoading;
       final hasError = onboarding.hasError;
+      final isReady = !isLoading && !hasError && onboarding.hasValue;
       final isOnSplash = state.matchedLocation == '/';
+      final isOnLanding = state.matchedLocation == '/landing';
 
-      // While loading, stay on splash
-      if (isLoading && isOnSplash) return null;
+      // Guard: block navigation to /landing before data is ready
+      // (code review blocker #2 — prevents deeplink bypass)
+      if (!isReady && isOnLanding) return '/';
 
-      // If error during onboarding, stay on splash (shows error state)
-      if (hasError && isOnSplash) return null;
+      // While loading or error, stay on splash
+      if (!isReady && isOnSplash) return null;
 
       // Once loaded, redirect splash → landing
-      if (!isLoading && !hasError && isOnSplash) return '/landing';
+      if (isReady && isOnSplash) return '/landing';
 
       return null;
     },

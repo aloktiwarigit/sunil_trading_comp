@@ -396,7 +396,7 @@ class _MetaBar extends StatelessWidget {
           _MetaItem(
             theme: theme,
             icon: Icons.place_outlined,
-            label: 'Map',
+            label: strings.metaBarMapLabel,
           ),
         ],
       ),
