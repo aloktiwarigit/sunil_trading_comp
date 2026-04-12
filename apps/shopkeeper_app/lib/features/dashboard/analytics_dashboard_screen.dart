@@ -75,25 +75,25 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = context.yugmaTheme;
     final strings = const AppStringsHi();
     final projectsAsync = ref.watch(allShopProjectsProvider);
 
     return Scaffold(
-      backgroundColor: YugmaColors.background,
+      backgroundColor: theme.shopBackground,
       appBar: AppBar(
-        backgroundColor: YugmaColors.primary,
-        foregroundColor: YugmaColors.textOnPrimary,
+        backgroundColor: theme.shopPrimary,
+        foregroundColor: theme.shopTextOnPrimary,
         title: Text(
           strings.opsDashboardTitle,
-          style: TextStyle(
-            fontFamily: YugmaFonts.devaDisplay,
+          style: theme.h2Deva.copyWith(
             fontSize: YugmaTypeScale.h3,
           ),
         ),
       ),
       body: projectsAsync.when(
         loading: () => Center(
-          child: CircularProgressIndicator(color: YugmaColors.primary),
+          child: CircularProgressIndicator(color: theme.shopPrimary),
         ),
         error: (err, _) => YugmaErrorBanner(error: err),
         data: (projects) {
@@ -104,10 +104,8 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                 child: Text(
                   strings.emptyOrdersList,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.devaBody,
-                    fontSize: YugmaTypeScale.body,
-                    color: YugmaColors.textMuted,
+                  style: theme.bodyDeva.copyWith(
+                    color: theme.shopTextMuted,
                   ),
                 ),
               ),
@@ -120,6 +118,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildDashboard(BuildContext context, List<Project> projects) {
+    final theme = context.yugmaTheme;
     final now = DateTime.now();
     final thisMonth = DateTime(now.year, now.month);
     final lastMonth = DateTime(now.year, now.month - 1);
@@ -193,11 +192,10 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
           // AC #3: Bar chart — last 7 days
           Text(
             'पिछले 7 दिन',
-            style: TextStyle(
-              fontFamily: YugmaFonts.devaBody,
+            style: theme.bodyDeva.copyWith(
               fontSize: YugmaTypeScale.bodyLarge,
               fontWeight: FontWeight.w700,
-              color: YugmaColors.textPrimary,
+              color: theme.shopTextPrimary,
             ),
           ),
           const SizedBox(height: YugmaSpacing.s2),
@@ -286,12 +284,13 @@ class _MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.yugmaTheme;
     final displayValue = isRupee ? '₹${_formatInr(value)}' : '$value';
     final deltaColor = delta > 0
-        ? YugmaColors.primary
+        ? theme.shopPrimary
         : delta < 0
-            ? YugmaColors.commit
-            : YugmaColors.textMuted;
+            ? theme.shopCommit
+            : theme.shopTextMuted;
     final deltaIcon = delta > 0
         ? Icons.arrow_upward
         : delta < 0
@@ -304,7 +303,7 @@ class _MetricTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(YugmaSpacing.s4),
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
           boxShadow: YugmaShadows.card,
         ),
@@ -313,20 +312,17 @@ class _MetricTile extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(
-                fontFamily: YugmaFonts.devaBody,
-                fontSize: YugmaTypeScale.caption,
-                color: YugmaColors.textSecondary,
+              style: theme.captionDeva.copyWith(
+                color: theme.shopTextSecondary,
               ),
             ),
             const SizedBox(height: YugmaSpacing.s1),
             Text(
               displayValue,
-              style: TextStyle(
-                fontFamily: YugmaFonts.mono,
+              style: theme.monoNumeral.copyWith(
                 fontSize: YugmaTypeScale.h3,
                 fontWeight: FontWeight.w700,
-                color: YugmaColors.textPrimary,
+                color: theme.shopTextPrimary,
               ),
             ),
             if (delta != 0) ...[
@@ -337,8 +333,7 @@ class _MetricTile extends StatelessWidget {
                     Icon(deltaIcon, size: 14, color: deltaColor),
                   Text(
                     '${delta.abs()}',
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.mono,
+                    style: theme.monoNumeral.copyWith(
                       fontSize: YugmaTypeScale.caption,
                       color: deltaColor,
                     ),
@@ -378,21 +373,20 @@ class _SimpleBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.yugmaTheme;
     final maxVal = data.fold<int>(0, (m, v) => v > m ? v : m);
     if (maxVal == 0) {
       return Container(
         height: 120,
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
         ),
         child: Center(
           child: Text(
             'अभी तक कोई ऑर्डर नहीं',
-            style: TextStyle(
-              fontFamily: YugmaFonts.devaBody,
-              fontSize: YugmaTypeScale.caption,
-              color: YugmaColors.textMuted,
+            style: theme.captionDeva.copyWith(
+              color: theme.shopTextMuted,
             ),
           ),
         ),
@@ -405,7 +399,7 @@ class _SimpleBarChart extends StatelessWidget {
       height: 160,
       padding: const EdgeInsets.all(YugmaSpacing.s3),
       decoration: BoxDecoration(
-        color: YugmaColors.surface,
+        color: theme.shopSurface,
         borderRadius: BorderRadius.circular(YugmaRadius.lg),
         boxShadow: YugmaShadows.card,
       ),
@@ -421,17 +415,16 @@ class _SimpleBarChart extends StatelessWidget {
                   if (data[i] > 0)
                     Text(
                       '${data[i]}',
-                      style: TextStyle(
-                        fontFamily: YugmaFonts.mono,
+                      style: theme.monoNumeral.copyWith(
                         fontSize: 10,
-                        color: YugmaColors.textSecondary,
+                        color: theme.shopTextSecondary,
                       ),
                     ),
                   const SizedBox(height: 2),
                   Container(
                     height: (data[i] / maxVal) * 100,
                     decoration: BoxDecoration(
-                      color: YugmaColors.primary.withValues(
+                      color: theme.shopPrimary.withValues(
                         alpha: i == data.length - 1 ? 1.0 : 0.5,
                       ),
                       borderRadius: const BorderRadius.vertical(
@@ -442,10 +435,9 @@ class _SimpleBarChart extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '${now.subtract(Duration(days: 6 - i)).day}',
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.mono,
+                    style: theme.monoNumeral.copyWith(
                       fontSize: 10,
-                      color: YugmaColors.textMuted,
+                      color: theme.shopTextMuted,
                     ),
                   ),
                 ],

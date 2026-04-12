@@ -392,6 +392,7 @@ class _UdhaarSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.yugmaTheme;
     return GestureDetector(
       onTap: () => context.push('/udhaar'),
       child: Container(
@@ -401,10 +402,10 @@ class _UdhaarSection extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(YugmaSpacing.s5),
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
           border: Border.all(
-            color: YugmaColors.primary.withValues(alpha: 0.2),
+            color: theme.shopPrimary.withValues(alpha: 0.2),
           ),
           boxShadow: YugmaShadows.card,
         ),
@@ -412,23 +413,21 @@ class _UdhaarSection extends StatelessWidget {
           children: [
             Icon(
               Icons.account_balance_wallet_outlined,
-              color: YugmaColors.primary,
+              color: theme.shopPrimary,
               size: 24,
             ),
             const SizedBox(width: YugmaSpacing.s3),
             Text(
               'उधार खाता',
-              style: TextStyle(
-                fontFamily: YugmaFonts.devaBody,
-                fontSize: YugmaTypeScale.body,
-                color: YugmaColors.textPrimary,
+              style: theme.bodyDeva.copyWith(
+                color: theme.shopTextPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const Spacer(),
             Icon(
               Icons.chevron_right,
-              color: YugmaColors.textMuted,
+              color: theme.shopTextMuted,
             ),
           ],
         ),
