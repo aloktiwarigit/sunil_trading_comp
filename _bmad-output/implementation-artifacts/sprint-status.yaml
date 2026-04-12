@@ -27,32 +27,33 @@
 #   - optional: Can be completed but not required
 #   - done: Retrospective has been completed
 #
-# ===== SPECIAL BMAD NOTES (Yugma Dukaan / Sprint 0 gate) =====
+# ===== SPECIAL BMAD NOTES (Yugma Dukaan / Session 3 update) =====
 #
-# E6 shipped 10 of 12 stories (I6.1-I6.7 + I6.9 + I6.10 + I6.12) via Sprint 1
-# through Phase 1.9. I6.8 (kill-switch Cloud Function) is backlog — gated on
-# Blaze upgrade. I6.11 (Hindi-capacity verification) is IN-PROGRESS — Alok
-# executing Sprint 0 outreach per sprint-0-execution-kit.md.
+# E6 DONE (all 12 stories). Sprint 0 CLOSED (END STATE A, 2026-04-12).
+# I6.8 kill-switch deployed + live in asia-south1. I6.11 closed — Alok is
+# the Hindi reviewer. D4 face photo consent secured.
 #
-# ALL user-visible stories (E1/E2/E3/E4/E5) are BACKLOG because I6.11 must
-# close before any Devanagari UX ships. End state A (Hindi reviewer hired +
-# vetted) or end state B (defaultLocale=en fallback) unblocks Phase 2.
+# Phase 2.1 (Session 3, 2026-04-12): shipped Sprint 2 (B1.1+B1.2) +
+# Sprint 3 (B1.3+B1.4+B1.5+S4.1+S4.13) + Phase 1.10 test debt fix.
+# Walking Skeleton: 13/19 done. 6 remaining: C3.1, C3.4, C3.5, P2.4, P2.5, S4.3.
+# All pushed to origin/main. Zero test failures. Triple Zero intact.
 #
-# Phase 1 prep work (MediaStore + CommsChannel + Sprint 3 models/repos +
-# locale scaffold + font pipeline + docs) is all committed locally but NOT
-# pushed to origin/main. 8 commits pending push authorization.
+# ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 3) =====
 #
-# ===== CURRENT STATE SUMMARY =====
-#
-# Epics: 6 total. 1 done (E6). 0 in-progress. 5 backlog (E1/E2/E3/E4/E5).
-# Stories: 67 total. 12 done. 0 ready-for-dev. 0 in-progress. 55 backlog.
-# Walking Skeleton (19 stories): 6 done. 13 backlog.
+# Epics: 6 total. 1 done (E6). 2 in-progress (E1, E4). 3 backlog (E2/E3/E5).
+# Stories: 67 total. 19 done. 0 ready-for-dev. 0 in-progress. 48 backlog.
+# Walking Skeleton (19 stories): 13 done. 6 backlog.
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
+# Phase 1.10 test debt: CLEARED (0 test failures remaining).
+#
+# Session 3 shipped: Sprint 2 (B1.1+B1.2) + Sprint 3 (B1.3+B1.4+B1.5+S4.1+S4.13)
+# + Phase 1.10 test debt fix + 2 code reviews (Sprint 2: 2🔴 fixed, Sprint 3: clean)
+# All pushed to origin/main at 23a10b0.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-11
+last_updated: 2026-04-12
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -118,18 +119,30 @@ development_status:
 
   # =========================================================================
   # Epic E1 — Bharosa Foundation (13 stories)
-  # Status: backlog. UNBLOCKED — Sprint 0 closed 2026-04-12.
+  # Status: in-progress. 5 of 13 done (B1.1-B1.5). Sprint 2+3 shipped.
   # =========================================================================
-  epic-1: backlog
+  epic-1: in-progress
 
-  # Sprint 2 completion (B1.1 + B1.2 share the BharosaLanding widget)
-  b1-1-first-time-customer-onboarding: backlog
-  b1-2-anonymous-landing-with-shopkeeper-face: backlog
+  # B1.1 First-time customer onboarding — shipped Phase 2.1 Sprint 2 (bfeb4d3)
+  # SplashScreen + OnboardingController + GoRouter auth-gated routing.
+  b1-1-first-time-customer-onboarding: done
 
-  # Sprint 3 Walking Skeleton leaf work
-  b1-3-greeting-voice-note-auto-play: backlog
-  b1-4-curated-occasion-shortlists: backlog
-  b1-5-sku-detail-with-golden-hour-photo: backlog
+  # B1.2 Anonymous landing with shopkeeper face — shipped Phase 2.1 Sprint 2 (34e8cce)
+  # BharosaLanding + ShopkeeperFaceFrame (D4 fallback) + ShopkeeperPresenceDock
+  # + 9 AppStrings keys + locale toggle + pull-to-refresh. 56 tests.
+  b1-2-anonymous-landing-with-shopkeeper-face: done
+
+  # B1.3 Greeting voice note auto-play — shipped Phase 2.1 Sprint 3 (6619851)
+  # VoiceNotePlayerWidget (waveform inline player). Greeting card already in B1.2.
+  b1-3-greeting-voice-note-auto-play: done
+
+  # B1.4 Curated occasion shortlists — shipped Phase 2.1 Sprint 3 (6619851)
+  # CuratedShortlistCard + ShortlistScreen (finite scroll, not paginated).
+  b1-4-curated-occasion-shortlists: done
+
+  # B1.5 SKU detail with Golden Hour photo — shipped Phase 2.1 Sprint 3 (6619851)
+  # SkuDetailCard + GoldenHourPhotoView (asli roop toggle). negotiableDownTo hidden.
+  b1-5-sku-detail-with-golden-hour-photo: done
 
   # E1 depth stories (Sprint 3-5)
   b1-6-voice-note-recording-shopkeeper: backlog
@@ -183,13 +196,16 @@ development_status:
 
   # =========================================================================
   # Epic E4 — Shopkeeper Operations (17 stories, S4.14 deferred v1.5)
-  # Status: backlog. All blocked on I6.11 + S4.1 auth foundation.
+  # Status: in-progress. 2 of 17 done (S4.1, S4.13). Sprint 3 shipped.
   # Note: S4.14 Bulk CSV import is v1.5 deferred — NOT counted in v1 status.
   # Note: S4.15 reserved — NOT present in v1.
   # =========================================================================
-  epic-4: backlog
+  epic-4: in-progress
 
-  s4-1-shopkeeper-google-sign-in: backlog
+  # S4.1 Shopkeeper Google sign-in — shipped Phase 2.1 Sprint 3 (6619851)
+  # AuthController + SignInScreen + auth-gated router. 30 tests.
+  s4-1-shopkeeper-google-sign-in: done
+
   s4-2-multi-operator-role-based-access: backlog
   s4-3-inventory-create-new-sku: backlog
   s4-4-inventory-edit-price-stock: backlog
@@ -201,7 +217,9 @@ development_status:
   s4-10-udhaar-ledger-with-rbi-guardrails: backlog
   s4-11-analytics-dashboard: backlog
   s4-12-shop-settings-theme-operators-flags: backlog
-  s4-13-todays-task-daily-prompt-card: backlog
+  # S4.13 Today's task daily prompt — shipped Phase 2.1 Sprint 3 (6619851)
+  # TodaysTaskCard + 30-day seed + HomeDashboard. 9 AppStrings keys.
+  s4-13-todays-task-daily-prompt-card: done
   s4-16-media-store-cost-monitor-tile: backlog
   s4-17-shopkeeper-nps-burnout-warning: backlog
   s4-18-repeat-customer-event-tracking: backlog
