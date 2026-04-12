@@ -120,6 +120,15 @@ class HomeDashboard extends ConsumerWidget {
             const _OrdersSection(),
             // ── S4.11: Dashboard section — all roles ──
             const _DashboardSection(),
+            // ── B1.12: Curation section — bhaiya + beta ──
+            RoleSetGate(
+              allowedRoles: const {OperatorRole.bhaiya, OperatorRole.beta},
+              child: const _CurationSection(),
+            ),
+            // ── S4.12: Settings — bhaiya only ──
+            BhaiyaOnlyGate(
+              child: const _SettingsSection(),
+            ),
             // ── S4.10: Udhaar section — bhaiya + munshi only ──
             // S4.2 AC #2: beta cannot access udhaar
             RoleSetGate(
@@ -233,6 +242,94 @@ class _OrdersSection extends StatelessWidget {
               Icons.chevron_right,
               color: YugmaColors.textMuted,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// B1.12 — Curation section.
+class _CurationSection extends StatelessWidget {
+  const _CurationSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/curation'),
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: YugmaSpacing.s4,
+          vertical: YugmaSpacing.s2,
+        ),
+        padding: const EdgeInsets.all(YugmaSpacing.s5),
+        decoration: BoxDecoration(
+          color: YugmaColors.surface,
+          borderRadius: BorderRadius.circular(YugmaRadius.lg),
+          border: Border.all(
+            color: YugmaColors.primary.withValues(alpha: 0.2),
+          ),
+          boxShadow: YugmaShadows.card,
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.star_outline, color: YugmaColors.primary, size: 24),
+            const SizedBox(width: YugmaSpacing.s3),
+            Text(
+              'मेरी पसंद',
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaBody,
+                fontSize: YugmaTypeScale.body,
+                color: YugmaColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right, color: YugmaColors.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// S4.12 — Settings section (bhaiya only).
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/settings'),
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: YugmaSpacing.s4,
+          vertical: YugmaSpacing.s2,
+        ),
+        padding: const EdgeInsets.all(YugmaSpacing.s5),
+        decoration: BoxDecoration(
+          color: YugmaColors.surface,
+          borderRadius: BorderRadius.circular(YugmaRadius.lg),
+          border: Border.all(
+            color: YugmaColors.primary.withValues(alpha: 0.2),
+          ),
+          boxShadow: YugmaShadows.card,
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.settings_outlined, color: YugmaColors.primary, size: 24),
+            const SizedBox(width: YugmaSpacing.s3),
+            Text(
+              'सेटिंग्स',
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaBody,
+                fontSize: YugmaTypeScale.body,
+                color: YugmaColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right, color: YugmaColors.textMuted),
           ],
         ),
       ),

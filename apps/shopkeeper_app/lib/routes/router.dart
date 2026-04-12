@@ -29,6 +29,7 @@ import '../features/inventory/inventory_list_screen.dart';
 import '../features/chat/shopkeeper_chat_screen.dart';
 import '../features/curation/curation_screen.dart';
 import '../features/inventory/golden_hour_capture_screen.dart';
+import '../features/settings/settings_screen.dart';
 import '../features/orders/active_projects_screen.dart';
 import '../features/orders/project_detail_screen.dart';
 import '../features/udhaar/udhaar_detail_screen.dart';
@@ -68,7 +69,8 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
               state.matchedLocation.startsWith('/dashboard') ||
               state.matchedLocation.startsWith('/greeting') ||
               state.matchedLocation.startsWith('/curation') ||
-              state.matchedLocation.startsWith('/golden-hour')) {
+              state.matchedLocation.startsWith('/golden-hour') ||
+              state.matchedLocation.startsWith('/settings')) {
             return null;
           }
           return '/home';
@@ -114,6 +116,11 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/dashboard',
         builder: (context, state) => const AnalyticsDashboardScreen(),
+      ),
+      // S4.12 — Settings (bhaiya only)
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
       // S4.5 — Golden Hour photo capture
       GoRoute(
