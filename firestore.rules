@@ -223,7 +223,7 @@ service cloud.firestore {
       //       customer_app layer filters at render time.
 
       match /inventory/{skuId} {
-        allow read: if isShopMember(shopId);
+        allow read: if isSignedIn();
         allow create, update: if isShopOperator(shopId)
                               && shopIdMatches(shopId)
                               && shopIsWritable(shopId);
@@ -244,7 +244,7 @@ service cloud.firestore {
       //       VoiceNoteAuthorRole enum. Munshi cannot.
 
       match /voiceNotes/{voiceNoteId} {
-        allow read: if isShopMember(shopId);
+        allow read: if isSignedIn();
         allow create, update: if isShopOperator(shopId)
                               && callerRole() != 'munshi'
                               && shopIdMatches(shopId)
@@ -269,7 +269,7 @@ service cloud.firestore {
       //       helper; queued as Phase 2+ refinement.
 
       match /curatedShortlists/{shortlistId} {
-        allow read: if isShopMember(shopId);
+        allow read: if isSignedIn();
         allow create, update: if isShopOperator(shopId)
                               && callerRole() != 'munshi'
                               && shopIdMatches(shopId)

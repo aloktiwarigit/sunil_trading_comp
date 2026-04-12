@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc",
     "seed:synthetic": "tsc && node dist/seed_synthetic_shop_0.js",
+    "seed:flagship": "tsc && node dist/seed_flagship.js",
     "test:rules": "tsc && jest --config jest.config.js",
     "lint": "eslint src --ext .ts"
   },

@@ -124,6 +124,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                         .read(onboardingControllerProvider.notifier)
                         .refreshTheme();
                   },
+                  // B-2: wire dock navigation
+                  onMyListTap: () => context.go('/draft'),
+                  onOrdersTap: () => context.go('/orders'),
                 );
               },
             ),

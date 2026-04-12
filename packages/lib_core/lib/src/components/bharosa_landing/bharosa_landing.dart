@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import '../../locale/strings_base.dart';
 import '../../theme/tokens.dart';
 import '../../theme/yugma_theme_extension.dart';
+import '../yugma_connectivity_banner.dart';
 import 'shopkeeper_face_frame.dart';
 import 'shopkeeper_presence_dock.dart';
 
@@ -86,6 +87,12 @@ class BharosaLanding extends StatefulWidget {
   /// Called on pull-to-refresh. B1.2 AC #6.
   final Future<void> Function()? onRefresh;
 
+  /// B-2: Called when dock "My List" icon is tapped.
+  final VoidCallback? onMyListTap;
+
+  /// B-2: Called when dock "My Orders" icon is tapped.
+  final VoidCallback? onOrdersTap;
+
   const BharosaLanding({
     super.key,
     required this.onShortlistTap,
@@ -99,6 +106,8 @@ class BharosaLanding extends StatefulWidget {
     this.onLocaleToggle,
     this.currentLocaleCode = 'hi',
     this.onRefresh,
+    this.onMyListTap,
+    this.onOrdersTap,
   });
 
   @override
@@ -143,6 +152,9 @@ class _BharosaLandingState extends State<BharosaLanding>
 
     Widget body = Column(
       children: [
+        // D-8: Connectivity banner — slides down when offline
+        YugmaConnectivityBanner(strings: widget.strings),
+
         // Hero: face + name + tagline
         _BharosaHero(
           theme: theme,
@@ -177,10 +189,12 @@ class _BharosaLandingState extends State<BharosaLanding>
           ),
         ),
 
-        // Presence Dock
+        // Presence Dock — B-2: nav buttons wired when callbacks provided
         ShopkeeperPresenceDock(
           onVoiceNote: widget.onPresenceVoiceNote,
           strings: widget.strings,
+          onMyListTap: widget.onMyListTap,
+          onOrdersTap: widget.onOrdersTap,
         ),
       ],
     );
