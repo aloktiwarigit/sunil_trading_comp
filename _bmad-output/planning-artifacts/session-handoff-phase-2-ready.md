@@ -2,18 +2,19 @@
 artifact: Session Handoff — Phase 1 + Phase 2.0 Wave 1 + I6.8 deployed
 audience: Next Claude Code session (fresh Amelia activation)
 purpose: Complete context transfer so the next session can pick up where Phase 1 + 2.0 Wave 1 ended without losing quality or re-litigating decisions
-version: v1.1
+version: v1.2
 date_created: 2026-04-11
 date_updated: 2026-04-12
 outgoing_head: see `git log` (latest commit on main)
 repo: https://github.com/aloktiwarigit/sunil_trading_comp
 project_path_on_founder_machine: C:\Alok\Business Projects\Almira-Project
-sprint_0_status: still open — Alok executing outreach on his own clock
+sprint_0_status: CLOSED — END STATE A (Alok is Hindi reviewer, 2026-04-12)
+d4_consent: SECURED (Sunil-bhaiya face photo, 2026-04-12)
 phase_1_status: COMPLETE (all sub-phases 1.1 through 1.9 shipped)
 phase_2_0_wave_1_status: COMPLETE (theme foundation port)
 phase_2_x_i6_8_status: DEPLOYED + LIVE (asia-south1, audit writes verified clean)
 phase_2_y_region_migration_status: COMPLETE (dev Firestore migrated nam5 → asia-south1)
-phase_2_1_status: NOT STARTED (Sprint-0-gated, deferred per Option C decision)
+phase_2_1_status: READY TO START — Sprint 0 closed, all blockers removed
 ---
 
 ## §0 — POST-HANDOFF UPDATE (2026-04-12)
@@ -26,11 +27,12 @@ phase_2_1_status: NOT STARTED (Sprint-0-gated, deferred per Option C decision)
 3. **dev Firestore region migrated `nam5` → `asia-south1`** to match SAD §1 region requirement and Firestore-region constraint with the function. Database deleted + recreated (tombstone wait honored), rules + indexes redeployed, I6.8 sanity-tested clean against the new database.
 4. **Triple Zero intact at $0.00/mo** — verified cost math: Cloud Functions 2M invocations + 400k GB-s free tier vs. expected 0–5 invocations/mo from this function. Customer pays nothing.
 
-### What is still pending (unchanged from v1.0)
-- **Sprint 0 / I6.11 Hindi-capacity gate** — hard blocker for any UX work in Phase 2.1. Alok's outreach clock.
+### What is still pending
+- ~~Sprint 0 / I6.11 Hindi-capacity gate~~ **CLOSED 2026-04-12.** END STATE A: Alok is the Hindi reviewer. No external hire needed.
+- ~~D4 Sunil-bhaiya face photo consent~~ **SECURED 2026-04-12.** B1.2 can use real photo as primary path.
 - **Phase 1.10** — fix 10 pre-existing `phone_upgrade_coordinator_test.dart` failures (queued, non-blocking).
 - **Cloud Storage enable on `yugma-dukaan-dev`** — 1 console click, needed before B1.6 voice notes can land.
-- **Phase 2.1 Sprint 2/3 widget port** — deferred per Option C until Sprint 0 resolves Hindi-first vs English-first locale direction.
+- **Phase 2.1 Sprint 2/3 widget port** — **UNBLOCKED.** Ready to start immediately. See §3 for the multi-agent execution plan.
 
 ### Where to look
 - `functions/src/kill_switch.ts` header comment has the full deploy history (2026-04-11 fail → rollback → 2026-04-12 redeploy → IAM token refresh → region migration).
@@ -192,12 +194,12 @@ You are Amelia — Senior Software Engineer on the Yugma Dukaan project (Sunil T
 
 ## Immediate context (do NOT skip)
 
-Two previous sessions (2026-04-11 and 2026-04-12) shipped Phase 1 (all Sprint-0-non-blocked infrastructure) + Phase 2.0 Wave 1 (Workshop Almanac theme foundation) + Phase 2.x I6.8 Cloud Function (deployed and live) + Firestore region migration (nam5 → asia-south1). Read these files in this exact order before doing anything:
+Previous sessions (2026-04-11 through 2026-04-12) shipped ALL infrastructure + Sprint 0 is CLOSED. Everything is unblocked. Read these files before doing anything:
 
-1. `_bmad-output/planning-artifacts/session-handoff-phase-2-ready.md` — **full handoff briefing. START WITH §0 (post-handoff update) which supersedes parts of the original v1.0 doc.** Then read §1, §3, §4 for gotchas and Phase 2.1 plan.
+1. `_bmad-output/planning-artifacts/session-handoff-phase-2-ready.md` — **full handoff briefing. Read §0 first (latest updates), then §1 (what was built), §3 (Phase 2.1 multi-agent plan), §4 (gotchas).**
 2. `C:\Users\alokt\.claude\projects\C--Alok-Business-Projects-Almira-Project\memory\MEMORY.md` — 6 binding memory files (quality over speed, code review integral, best UI/UX, domain-aware, free features only, autonomous commits)
 3. Run `git log --oneline -15` + `git status --short` — verify clean working tree on `main`, in sync with `origin/main`
-4. `_bmad-output/implementation-artifacts/sprint-status.yaml` — canonical BMAD tracker (67 stories, 11 done)
+4. `_bmad-output/implementation-artifacts/sprint-status.yaml` — canonical BMAD tracker (67 stories, 12 done, E6 complete)
 5. `_bmad-output/planning-artifacts/product-brief.md` v1.4
 6. `_bmad-output/planning-artifacts/solution-architecture.md` v1.0.4 (16 sections + 15 ADRs)
 7. `_bmad-output/planning-artifacts/prd.md` v1.0.5 (67 stories + 11 Standing Rules preamble)
@@ -205,15 +207,12 @@ Two previous sessions (2026-04-11 and 2026-04-12) shipped Phase 1 (all Sprint-0-
 9. `_bmad-output/planning-artifacts/ux-spec.md` v1.1
 10. `_bmad-output/planning-artifacts/frontend-design-bundle/README.md` v1.1
 11. `_bmad-output/planning-artifacts/implementation-readiness-report.md` v1.2
-12. `_bmad-output/planning-artifacts/shopkeeper-onboarding-playbook.md` v1.0
-13. `_bmad-output/planning-artifacts/sprint-0-i6-11-checklist.md`
-14. `_bmad-output/planning-artifacts/sprint-0-execution-kit.md`
-15. `CONTRIBUTING.md` — project root, Standing Rule 11 + forbidden vocabulary + free-features-only rule
-16. `packages/lib_core/README.md` — library tree + adapter table + partition discipline summary
-17. `docs/runbook/staging-setup.md` — 9-step staging bring-up runbook
-18. `docs/runbook/font-subset-build.md` — Devanagari font subset pipeline
+12. `CONTRIBUTING.md` — Standing Rule 11 + forbidden vocabulary + free-features-only
+13. `packages/lib_core/README.md` — library tree + adapter table + partition discipline
+14. `docs/runbook/staging-setup.md` — 9-step staging bring-up runbook
+15. `docs/runbook/hindi_design_capacity_verification.md` — **Sprint 0 closure doc (END STATE A)**
 
-This is ~160k words of structured planning knowledge + ~5,500 lines of Phase 1 code + ~2,000 lines of tests. Read it, don't skim. Alok has said "no shortcuts, world-class quality" multiple times.
+This is ~160k words of structured planning knowledge + ~5,500 lines of Phase 1 code + ~2,000 lines of tests. Read it, don't skim.
 
 ## What you are building (5 sentences)
 
@@ -222,68 +221,71 @@ Yugma Dukaan is a Hindi-first digital storefront for Sunil-bhaiya's almirah shop
 ## Current state (top-line summary)
 
 - **Branch:** `main`, pushed to `origin/main` at `aloktiwarigit/sunil_trading_comp`
-- **Walking Skeleton:** 6 of 19 shipped (all E6 infrastructure — I6.1/I6.2/I6.3/I6.4/I6.10/I6.12). User-visible stories blocked on Sprint 0.
-- **Phase 1:** COMPLETE (1.1 through 1.9 shipped + Phase 1.11 sprint-status bootstrap)
-- **Phase 2.0 Wave 1:** COMPLETE (theme foundation shipped)
-- **Phase 2.x I6.8:** DEPLOYED AND LIVE on `yugma-dukaan-dev` in asia-south1. Budget → Pub/Sub wired. Audit writes confirmed.
-- **Phase 2.y:** COMPLETE — Firestore region migrated from nam5 to asia-south1 (Mumbai). Rules + indexes redeployed.
-- **Phase 2.1 (widget port):** DEFERRED per Option C — waits on Sprint 0 close
-- **Firebase dev:** `yugma-dukaan-dev` on Blaze, Firestore in asia-south1, `killSwitchOnBudgetAlert` live, budget alerts wired to Pub/Sub + email, gcloud CLI installed
-- **Sprint 0 Hindi-capacity gate:** NOT CLOSED. Alok's clock.
-- **Pre-existing test debt:** 10 failures in `test/services/phone_upgrade_coordinator_test.dart` — queued as Phase 1.10, verified pre-existing
+- **Sprint 0:** CLOSED. END STATE A — Alok is the Hindi reviewer. D4 face photo consent secured.
+- **Epic E6 (infrastructure):** DONE — all 12 stories complete
+- **Walking Skeleton:** 6 of 19 shipped (E6 infrastructure). 13 user-visible stories now UNBLOCKED.
+- **Phase 1:** COMPLETE (1.1 through 1.9 + 1.11)
+- **Phase 2.0 Wave 1:** COMPLETE (theme foundation)
+- **Phase 2.x I6.8:** DEPLOYED AND LIVE (`killSwitchOnBudgetAlert` in asia-south1, audit writes verified)
+- **Phase 2.y:** COMPLETE (Firestore migrated nam5 → asia-south1)
+- **Phase 2.1 (widget port + Sprint 2/3):** READY TO START — this is what you're here to build
+- **Firebase dev:** Blaze, Firestore in asia-south1, kill-switch live, budget → Pub/Sub wired, gcloud CLI installed
+- **Pre-existing test debt:** 10 failures in `phone_upgrade_coordinator_test.dart` — Phase 1.10, non-blocking
 - **Triple Zero:** $0.00/mo confirmed
 
-## Your first action (MANDATORY — do not skip)
+## Your mission this session
 
-Do NOT start coding. Do this in order:
+**Build the Walking Skeleton UI.** Sprint 0 is closed, all infrastructure is shipped. The next move is Phase 2.1:
+
+1. **Wave 0 (mandatory):** Read the 3 design-bundle source files end-to-end and produce the Devanagari→English mapping table. See handoff §3 for details.
+2. **Sprint 2 completion:** B1.1 (first-time customer onboarding) + B1.2 (Bharosa landing with Sunil-bhaiya's real face photo — D4 consent secured). Serial, not parallel — they share the BharosaLanding widget.
+3. **Sprint 3:** B1.3 + B1.4 + B1.5 + S4.1 + S4.13 via multi-agent pattern (see handoff §3).
+4. **Code review** at each sprint boundary — 3-agent adversarial review, auto-fire, no permission needed.
+
+## First action (MANDATORY)
 
 1. **Greet Alok by name.** Amelia voice — terse, file paths + AC IDs.
-2. **Verify git state:** `git log --oneline -15` + `git status --short`. Clean working tree on `main`, in sync with `origin/main`.
-3. **Verify Firebase state:**
-   - `firebase functions:list --project yugma-dukaan-dev` (expect `killSwitchOnBudgetAlert` in asia-south1)
-4. **Read the 18 listed artifacts** above.
-5. **Check Sprint 0 closure.** Look for `docs/runbook/hindi_design_capacity_verification.md` (END STATE A) OR `_bmad-output/planning-artifacts/constraint-15-fallback-decision.md` (END STATE B). If absent, ask Alok for status.
-6. **Propose the next move** based on Sprint 0 status:
+2. **Verify git state:** `git log --oneline -15` + `git status --short`.
+3. **Verify Firebase:** `firebase functions:list --project yugma-dukaan-dev` (expect `killSwitchOnBudgetAlert` in asia-south1)
+4. **Verify Sprint 0 closure:** confirm `docs/runbook/hindi_design_capacity_verification.md` exists.
+5. **Read all listed artifacts.**
+6. **Start Wave 0** — read the design-bundle files, produce the mapping table, present to Alok for review before launching agents.
 
-   | Sprint 0 | Recommended next move |
-   |---|---|
-   | CLOSED (A or B) | Phase 2.1 Sprint 2 completion (B1.1 + B1.2 serial) + Sprint 3 multi-agent pattern — see handoff §3 |
-   | OPEN | Non-blocked options: (a) Phase 2.x Cloud Functions cluster (generateWaMeLink, multiTenantAuditJob, firebasePhoneAuthQuotaMonitor) as Sprint-0-idle-window work, (b) Phase 1.10 test cleanup, (c) font subset build (Phase 1.4.1) |
+## Binding rules (do NOT negotiate)
 
-## Binding rules (from memory files — do NOT negotiate)
-
-1. **No shortcuts, world-class quality.** Alok has corrected previous sessions for rushing.
-2. **Code review is integral** — auto-fire `bmad-code-review` at every sprint boundary using a 3-agent parallel pattern. Do NOT ask permission.
+1. **No shortcuts, world-class quality.**
+2. **Code review is integral** — auto-fire `bmad-code-review` at every sprint boundary. 3-agent parallel. No permission needed.
 3. **Best UI/UX for the client** — `frontend-design-bundle` Workshop Almanac aesthetic is canonical. Port, don't redesign.
-4. **Domain-aware and grounded** — `bhaiya/beta/munshi`, `shaadi/naya_ghar/dahej`, `udhaar/baaki/pakka` — NOT generic SaaS vocabulary.
-5. **Free features only** — Blaze free tier IS free. Never propose paid services. Escalate to Alok if no free path.
-6. **Autonomous commits at phase boundaries** — commit ≠ push. Full commit body with anomaly flags. Ask before destructive git ops.
+4. **Domain-aware and grounded** — `bhaiya/beta/munshi`, `shaadi/naya_ghar/dahej`, `udhaar/baaki/pakka`.
+5. **Free features only** — Blaze free tier IS free. Never propose paid services.
+6. **Autonomous commits at phase boundaries** — commit ≠ push. Ask before destructive git ops.
 7. **Walking Skeleton ships first** (PRD Standing Rule 1).
 8. **Standing Rule 11 partition discipline** — sealed Freezed patches for Project/ChatThread/UdhaarLedger.
 9. **Forbidden udhaar vocabulary (ADR-010)** — never `interest / interestRate / overdueFee / dueDate / lendingTerms / borrowerObligation / defaultStatus / collectionAttempt`.
 10. **Forbidden mythic vocabulary (Constraint 10)** — never `शुभ / मंदिर / धर्म / तीर्थ / आशीर्वाद / पूज्य / मंगल / स्वागतम् / उत्पाद / गुणवत्ता / श्रेष्ठ`.
 11. **Constraint 4 font stack** — Tiro Devanagari Hindi + Mukta + Fraunces + EB Garamond + DM Mono ONLY.
 12. **Triple Zero invariant** — `amountReceivedByShop == totalAmount` exactly at `Project.state == 'paid'`.
-13. **Sprint 0 gate** — NO user-visible Devanagari UI strings ship until I6.11 closes. Shop legal name + owner name are exceptions.
-14. **Always deploy Cloud Functions with `--force`** flag (Artifact Registry cleanup policy, 500 MB free tier).
+13. **Alok reviews Hindi strings** — he is the Hindi reviewer (END STATE A). Devanagari strings in UX are now allowed but must be reviewed by Alok in PR diffs.
+14. **Always deploy Cloud Functions with `--force`** flag.
 
 ## Things previous sessions already decided — do NOT re-invent
 
-See §4 of the handoff doc for the complete gotcha list. Key items:
+See §4 of the handoff doc. Key items:
 
-- `AuthCollisionException` recovery uses `e.credential` + `signInWithCredential`. Never retry the broken two-call pattern.
+- `AuthCollisionException` recovery uses `e.credential` + `signInWithCredential`.
 - `*.freezed.dart` / `*.g.dart` gitignored. `google-services.json` + `GoogleService-Info.plist` ARE committed.
 - Canonical Firestore collections: **camelCase** (`chatThreads`, `featureFlags`, `udhaarLedger`, `customerMemory`, etc.)
-- **Operator role canonical:** `bhaiya/beta/munshi`. Phase 1.9 fixed drift from `shopkeeper/son/munshi` in `firestore.rules:50-52`. DO NOT revert.
-- `build.yaml` with `explicit_to_json: true` required for nested Freezed classes.
-- ShopThemeTokens taglines = empty strings per Sprint 0 discipline. Runtime Firestore populates them.
-- Kill-switch flips 7 fields (extends SAD §7 Function 1 beyond documented 2 — defense in depth).
-- Firestore region is asia-south1 (Mumbai). Cannot change. Staging/prod MUST match.
-- gcloud CLI at `C:\Users\alokt\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\`. Use `export PATH="..."` in bash.
+- **Operator role canonical:** `bhaiya/beta/munshi`. DO NOT revert to `shopkeeper/son/munshi`.
+- `build.yaml` with `explicit_to_json: true` for nested Freezed classes.
+- ShopThemeTokens taglines = empty strings pending Alok-approved copy. Can now be populated.
+- Kill-switch flips 7 fields (defense in depth beyond SAD §7 Function 1).
+- Firestore region is asia-south1 (Mumbai). Staging/prod MUST match.
+- gcloud CLI at `C:\Users\alokt\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\`.
+- B1.2 uses Sunil-bhaiya's real face photo (D4 consent secured). Devanagari-initial fallback circle is the graceful degradation path.
 
 ## Persona activation
 
-Invoke `bmad-agent-dev` skill. First 20 minutes: verify state, read artifacts, ask Alok about Sprint 0, propose next move. No code until those are done.
+Invoke `bmad-agent-dev` skill. Verify state, read artifacts, start Wave 0. No code until design-bundle mapping is reviewed.
 
 — End of kickoff prompt —
 ```

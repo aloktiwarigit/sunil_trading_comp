@@ -44,9 +44,10 @@
 #
 # ===== CURRENT STATE SUMMARY =====
 #
-# Epics: 6 total. 0 done. 1 in-progress (E6). 5 backlog (E1/E2/E3/E4/E5).
-# Stories: 67 total. 11 done. 0 ready-for-dev. 1 in-progress (I6.11). 55 backlog.
+# Epics: 6 total. 1 done (E6). 0 in-progress. 5 backlog (E1/E2/E3/E4/E5).
+# Stories: 67 total. 12 done. 0 ready-for-dev. 0 in-progress. 55 backlog.
 # Walking Skeleton (19 stories): 6 done. 13 backlog.
+# Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 #
 # =================================
 
@@ -60,9 +61,9 @@ story_location: _bmad-output/implementation-artifacts
 development_status:
   # =========================================================================
   # Epic E6 — Cross-Cutting Infrastructure (12 stories)
-  # Status: in-progress. 10 done, 1 in-progress (I6.11), 1 backlog (I6.8).
+  # Status: DONE. All 12 stories complete. Sprint 0 closed 2026-04-12.
   # =========================================================================
-  epic-6: in-progress
+  epic-6: done
 
   # I6.1 AuthProvider adapter scaffolding — shipped Sprint 1.2-1.3 (8d34a91)
   i6-1-auth-provider-adapter-scaffolding: done
@@ -102,11 +103,11 @@ development_status:
   # I6.10 Crashlytics + Analytics + App Check — shipped Sprint 1.5 (efdd0b6)
   i6-10-crashlytics-analytics-app-check: done
 
-  # I6.11 Hindi-native design capacity verification gate
-  # — IN-PROGRESS. Alok executing Sprint 0 outreach per sprint-0-execution-kit.md.
-  # — Blocks Sprint 1-6 UX for E1/E2/E3/E4/E5. End state A (reviewer hired)
-  #   or B (defaultLocale=en) required before Phase 2 starts.
-  i6-11-hindi-native-design-capacity-verification: in-progress
+  # I6.11 Hindi-native design capacity verification gate — CLOSED 2026-04-12
+  # END STATE A: Alok (founder) is the Hindi reviewer. Native Hindi speaker
+  # from Ayodhya, has shipped Devanagari apps before. No external hire needed.
+  # D4 Sunil-bhaiya face photo consent also secured same day.
+  i6-11-hindi-native-design-capacity-verification: done
 
   # I6.12 Offline-first field-partition discipline — shipped Sprint 1.4 +
   # Sprint 2.1 + Sprint 2.3 + Phase 1.9 (ChatThread+UdhaarLedger negative-
@@ -117,7 +118,7 @@ development_status:
 
   # =========================================================================
   # Epic E1 — Bharosa Foundation (13 stories)
-  # Status: backlog. All blocked on I6.11 close.
+  # Status: backlog. UNBLOCKED — Sprint 0 closed 2026-04-12.
   # =========================================================================
   epic-1: backlog
 
