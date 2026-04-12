@@ -14,10 +14,11 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
+
+import '../../main.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../auth/auth_controller.dart';
@@ -281,11 +282,8 @@ class _GoldenHourCaptureScreenState
     final photoId = 'gh_${DateTime.now().millisecondsSinceEpoch}';
 
     try {
-      // AC #4: upload to Cloudinary via MediaStore
-      final mediaStore = MediaStoreCloudinaryFirebase(
-        firebaseStorage: FirebaseStorage.instance,
-        cloudinaryCloudName: '',
-      );
+      // AC #4: upload to Cloudinary via shared MediaStore provider
+      final mediaStore = ref.read(mediaStoreProvider);
       await mediaStore.uploadCatalogImage(
         bytes: _capturedBytes!,
         shopId: shopId,

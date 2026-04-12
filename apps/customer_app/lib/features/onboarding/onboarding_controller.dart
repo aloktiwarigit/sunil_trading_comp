@@ -27,6 +27,7 @@ class OnboardingState {
     required this.strings,
     required this.localeCode,
     required this.user,
+    required this.shop,
   });
 
   /// Loaded ShopThemeTokens for the flagship shop.
@@ -40,6 +41,10 @@ class OnboardingState {
 
   /// The authenticated user (anonymous or phone-verified).
   final AppUser user;
+
+  /// Shop document — needed for lifecycle state (ADR-013) and
+  /// dpdpRetentionUntil (C3.12 FAQ screen).
+  final Shop shop;
 }
 
 /// Riverpod provider for the onboarding controller.
@@ -66,8 +71,25 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
       user = await authProvider.signInAnonymous();
     }
 
-    // Step 2: Fetch ShopThemeTokens from Firestore
+    // Step 2: Fetch Shop document + ShopThemeTokens from Firestore
     final firestore = FirebaseFirestore.instance;
+    final shopDoc = await firestore
+        .collection('shops')
+        .doc(shopId)
+        .get();
+
+    final shop = shopDoc.exists && shopDoc.data() != null
+        ? Shop.fromJson(shopDoc.data()!)
+        : Shop(
+            shopId: shopId,
+            brandName: 'Sunil Trading Company',
+            brandNameDevanagari: 'सुनील ट्रेडिंग कंपनी',
+            ownerUid: '',
+            market: 'Harringtonganj',
+            createdAt: DateTime.now(),
+            activeFromDay: DateTime.now(),
+          );
+
     final themeDoc = await firestore
         .collection('shops')
         .doc(shopId)
@@ -99,6 +121,7 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
       strings: strings,
       localeCode: localeCode,
       user: user,
+      shop: shop,
     );
   }
 
@@ -119,6 +142,7 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
       strings: newStrings,
       localeCode: newCode,
       user: current.user,
+      shop: current.shop,
     ));
   }
 
@@ -148,6 +172,7 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
       strings: current.strings,
       localeCode: current.localeCode,
       user: current.user,
+      shop: current.shop,
     ));
   }
 }

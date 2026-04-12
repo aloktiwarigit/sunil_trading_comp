@@ -11,6 +11,7 @@
 //   - killSwitchOnBudgetAlert (PRD I6.8 + SAD §7 Function 1)
 //
 // Future exports (SAD §7 inventory — implemented as stories land):
+//   - triggerMarketingRebuild (M5.5, marketing site rebuild on theme update)
 //   - generateWaMeLink (I6.5 companion)
 //   - sendUdhaarReminder (Sprint 5, RBI guardrails)
 //   - multiTenantAuditJob (Sprint 5, R9 sentinel)
@@ -31,3 +32,4 @@ if (!admin.apps.length) {
 }
 
 export { killSwitchOnBudgetAlert } from './kill_switch';
+export { triggerMarketingRebuild } from './trigger_marketing_rebuild';

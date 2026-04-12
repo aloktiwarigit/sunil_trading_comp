@@ -829,9 +829,9 @@ class ProjectDetailScreen extends ConsumerWidget {
                   labelStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                  DropdownMenuItem(value: 'cash', child: Text('नकद')),
                   DropdownMenuItem(value: 'upi', child: Text('UPI')),
-                  DropdownMenuItem(value: 'bank', child: Text('Bank')),
+                  DropdownMenuItem(value: 'bank', child: Text('बैंक ट्रांसफ़र')),
                 ],
                 onChanged: (v) {
                   if (v != null) {

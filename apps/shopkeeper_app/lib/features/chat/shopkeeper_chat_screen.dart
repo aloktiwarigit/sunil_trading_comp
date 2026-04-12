@@ -12,7 +12,6 @@
 // =============================================================================
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -212,11 +211,8 @@ class _ProposePriceBar extends ConsumerWidget {
           final voiceNoteId = 'vn_${DateTime.now().millisecondsSinceEpoch}';
 
           try {
-            // Step 1: Upload audio via MediaStore.
-            final mediaStore = MediaStoreCloudinaryFirebase(
-              firebaseStorage: FirebaseStorage.instance,
-              cloudinaryCloudName: '',
-            );
+            // Step 1: Upload audio via shared MediaStore provider.
+            final mediaStore = ref.read(mediaStoreProvider);
             await mediaStore.uploadVoiceNote(
               bytes: result.bytes,
               shopId: shopId,

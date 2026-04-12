@@ -27,7 +27,7 @@
   "hosting": [
     {
       "target": "marketing",
-      "public": "sites/marketing/dist",
+      "public": "apps/marketing_site/dist",
       "ignore": [
         "firebase.json",
         "**/.*",

@@ -11,11 +11,11 @@
 // =============================================================================
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
 
+import '../../main.dart';
 import '../auth/auth_controller.dart';
 import 'voice_recorder_widget.dart';
 
@@ -169,11 +169,8 @@ class GreetingManagementScreen extends ConsumerWidget {
           final voiceNoteId = 'vn_greeting_${DateTime.now().millisecondsSinceEpoch}';
 
           try {
-            // Upload audio
-            final mediaStore = MediaStoreCloudinaryFirebase(
-              firebaseStorage: FirebaseStorage.instance,
-              cloudinaryCloudName: '',
-            );
+            // Upload audio via shared MediaStore provider
+            final mediaStore = ref.read(mediaStoreProvider);
             await mediaStore.uploadVoiceNote(
               bytes: result.bytes,
               shopId: shopId,

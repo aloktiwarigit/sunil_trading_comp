@@ -1,84 +1,100 @@
 ---
-// M5.1 — Marketing site landing page.
+// M5.1 + M5.3 — Marketing site landing page with build-time Firestore fetch.
 //
-// Per M5.1 ACs:
+// M5.1 ACs (unchanged):
 //   AC #1: Astro + pure static HTML+CSS from Firebase Hosting
 //   AC #2: <100KB bundle including subset Devanagari font
 //   AC #3: <1s first paint on 3G (Lighthouse verified post-deploy)
 //   AC #4: Hero: bhaiya face + shop name + tagline + GST + established year
 //   AC #5: Primary CTA → wa.me with prefilled greeting
 //   AC #6: Secondary CTA → deep link to customer app (Play Store fallback)
-//   AC #7: 2 curated SKU previews (placeholder until M5.3 build-time fetch)
 //   AC #8: Footer: address, hours, map link
 //
+// M5.3 ACs:
+//   AC #1: Top 6 SKUs from most recent curated shortlist baked at build time
+//   AC #2: Each preview: Golden Hour photo, Devanagari name, price
+//   AC #3: Tapping preview opens modal with full details (read-only)
+//   AC #4: "पूरा कैटलॉग देखिए" CTA links into customer app
+//
 // Edge cases:
-//   #1: Desktop — responsive layout
-//   #2: JS disabled — pure static renders fully
-//   #3: Font fail — system Devanagari fallback
+//   M5.1 #1: Desktop — responsive layout
+//   M5.1 #2: JS disabled — pure static renders fully
+//   M5.1 #3: Font fail — system Devanagari fallback
+//   M5.3 #1: No curated shortlist → "जल्द ही" placeholder
+//   M5.3 #2: SKUs change between builds → rebuilt on theme update (M5.5)
+//   M5.3 #3: Photo CDN slow → skeleton placeholders
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { fetchShopContent } from '../lib/fetch_shop_content';
+import type { SkuPreview } from '../lib/fetch_shop_content';
 
-// Build-time shop data — hardcoded for v1 flagship shop.
-// M5.5 will replace this with Firestore build-time fetch.
-const shop = {
-  name: 'सुनील ट्रेडिंग कंपनी',
-  nameEn: 'Sunil Trading Company',
-  tagline: 'हैरिंगटनगंज, अयोध्या की भरोसेमंद अलमारी दुकान',
-  gst: 'GST: 09AXXXX1234X1ZX',
-  established: 2003,
-  yearsInBusiness: new Date().getFullYear() - 2003,
-  phone: '+919876543210',
-  whatsappGreeting: 'नमस्ते सुनील भैया, मुझे अलमारी देखनी है',
-  address: 'हैरिंगटनगंज बाज़ार, अयोध्या, उत्तर प्रदेश 224001',
-  addressEn: 'Harringtonganj Market, Ayodhya, Uttar Pradesh 224001',
-  hours: 'सोमवार–शनिवार: सुबह 10 बजे – शाम 8 बजे',
-  mapUrl: 'https://maps.google.com/?q=Harringtonganj+Ayodhya',
-};
+// Build-time fetch — runs during `astro build`, NOT in browser.
+const shopId = import.meta.env.SHOP_ID ?? process.env.SHOP_ID ?? 'sunil-trading-company';
+const shop = await fetchShopContent(shopId);
 
-const whatsappUrl = `https://wa.me/${shop.phone.replace('+', '')}?text=${encodeURIComponent(shop.whatsappGreeting)}`;
+const yearsInBusiness = new Date().getFullYear() - shop.establishedYear;
+const whatsappUrl = `https://wa.me/${shop.whatsappNumberE164.replace('+', '')}?text=${encodeURIComponent(`नमस्ते ${shop.ownerName}, मुझे अलमारी देखनी है`)}`;
 const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.suniltrading';
+const hasVoiceNote = shop.greetingVoiceNoteUrl.length > 0;
+const hasCatalog = shop.curatedPreview.length > 0;
+const hasFacePhoto = shop.shopkeeperFaceUrl.length > 0;
 ---
 
-<BaseLayout title={`${shop.name} — ${shop.nameEn}`}>
+<BaseLayout title={`${shop.brandName} — ${shop.brandNameEnglish}`}>
   <!-- Hero Section -->
   <header class="hero">
     <div class="hero-content">
-      <!-- Bhaiya face photo placeholder (AC #4) -->
+      <!-- Bhaiya face photo (AC #4) -->
       <div class="hero-photo">
-        <div class="photo-placeholder">
-          <span class="photo-initials">स</span>
-        </div>
+        {hasFacePhoto ? (
+          <img
+            src={shop.shopkeeperFaceUrl}
+            alt={shop.ownerName}
+            class="photo-face"
+            width="120"
+            height="120"
+            loading="eager"
+          />
+        ) : (
+          <div class="photo-placeholder">
+            <span class="photo-initials">{shop.brandName.charAt(0)}</span>
+          </div>
+        )}
       </div>
 
-      <h1 class="shop-name">{shop.name}</h1>
-      <p class="shop-name-en">{shop.nameEn}</p>
+      <h1 class="shop-name">{shop.brandName}</h1>
+      <p class="shop-name-en">{shop.brandNameEnglish}</p>
 
-      <p class="tagline">{shop.tagline}</p>
+      <p class="tagline">{shop.taglineDevanagari}</p>
 
       <div class="meta-bar">
         <span class="meta-years">
-          {shop.yearsInBusiness} साल · {shop.established} से
+          {yearsInBusiness} साल · {shop.establishedYear} से
         </span>
-        <span class="meta-divider">·</span>
-        <span class="meta-gst">{shop.gst}</span>
+        {shop.gstNumber && (
+          <>
+            <span class="meta-divider">·</span>
+            <span class="meta-gst">{shop.gstNumber}</span>
+          </>
+        )}
       </div>
 
-      <!-- M5.2: Auto-play greeting voice note -->
-      <div class="greeting-audio">
-        <audio id="greetingAudio" preload="auto">
-          <!-- Voice note URL injected at build time by M5.5 -->
-          <!-- Placeholder: will be replaced with real Firebase Storage URL -->
-          <source src="" type="audio/mp4" />
-        </audio>
-        <button class="btn-voice" id="voiceBtn" onclick="toggleVoice()">
-          🎤 सुनील भैया की आवाज़ सुनिए
-        </button>
-      </div>
+      <!-- M5.2: Greeting voice note -->
+      {hasVoiceNote && (
+        <div class="greeting-audio">
+          <audio id="greetingAudio" preload="auto">
+            <source src={shop.greetingVoiceNoteUrl} type="audio/mp4" />
+          </audio>
+          <button class="btn-voice" id="voiceBtn" onclick="toggleVoice()">
+            🎤 {shop.ownerName} की आवाज़ सुनिए
+          </button>
+        </div>
+      )}
 
       <!-- CTAs -->
       <div class="cta-group">
         <a href={whatsappUrl} class="btn btn-primary cta-whatsapp" target="_blank" rel="noopener">
-          सुनील भैया से अभी बात कीजिए
+          {shop.ownerName} से अभी बात कीजिए
         </a>
         <a href={appUrl} class="btn btn-outline cta-app" target="_blank" rel="noopener">
           दुकान खोलिए
@@ -87,35 +103,65 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
     </div>
   </header>
 
-  <!-- SKU Preview Section (AC #7 — placeholder until M5.3) -->
+  <!-- SKU Preview Section (M5.3) -->
   <section class="sku-preview">
     <h2 class="section-title">भैया की पसंद</h2>
-    <div class="sku-grid">
-      <div class="sku-card">
-        <div class="sku-photo-placeholder"></div>
-        <p class="sku-name">गोदरेज स्टील अलमारी</p>
-        <p class="sku-price">₹17,500</p>
+
+    {hasCatalog ? (
+      <div class="sku-grid">
+        {shop.curatedPreview.map((sku: SkuPreview) => (
+          <button class="sku-card" data-sku-id={sku.skuId} onclick={`openSkuModal('${sku.skuId}')`}>
+            {sku.thumbnailUrl ? (
+              <img
+                src={sku.thumbnailUrl}
+                alt={sku.nameDevanagari}
+                class="sku-photo"
+                width="300"
+                height="225"
+                loading="lazy"
+              />
+            ) : (
+              <div class="sku-photo-placeholder"></div>
+            )}
+            <p class="sku-name">{sku.nameDevanagari}</p>
+            <p class="sku-price">₹{sku.priceInr.toLocaleString('en-IN')}</p>
+          </button>
+        ))}
       </div>
-      <div class="sku-card">
-        <div class="sku-photo-placeholder"></div>
-        <p class="sku-name">शीशम लकड़ी वार्डरोब</p>
-        <p class="sku-price">₹35,000</p>
+    ) : (
+      /* M5.3 Edge #1: No curated shortlist */
+      <div class="sku-coming-soon">
+        <p class="coming-soon-text">जल्द ही</p>
       </div>
+    )}
+
+    <!-- M5.3 AC #4: Full catalog CTA -->
+    <div class="catalog-cta">
+      <a href={appUrl} class="btn btn-accent" target="_blank" rel="noopener">
+        पूरा कैटलॉग देखिए
+      </a>
     </div>
   </section>
 
-  <!-- Footer (AC #8) -->
+  <!-- M5.3 AC #3: SKU detail modal (read-only) -->
+  <div id="skuModal" class="modal" onclick="closeSkuModal(event)">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeSkuModal()">&times;</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Footer (M5.1 AC #8) -->
   <footer class="site-footer">
     <div class="footer-content">
-      <p class="footer-address">{shop.address}</p>
-      <p class="footer-address-en">{shop.addressEn}</p>
-      <p class="footer-hours">{shop.hours}</p>
+      <p class="footer-address">{shop.marketArea}, {shop.city}</p>
+      <p class="footer-address-en">{shop.taglineEnglish}</p>
       <div class="footer-links">
-        <a href={shop.mapUrl} target="_blank" rel="noopener" class="footer-link">
+        <a href="https://maps.google.com/?q=Harringtonganj+Ayodhya" target="_blank" rel="noopener" class="footer-link">
           नक्शा देखिए
         </a>
         <span class="footer-divider">·</span>
-        <a href={`tel:${shop.phone}`} class="footer-link">
+        <a href={`tel:${shop.whatsappNumberE164}`} class="footer-link">
           फ़ोन कीजिए
         </a>
         <span class="footer-divider">·</span>
@@ -151,6 +197,14 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
 
   .hero-photo {
     margin-bottom: var(--s6);
+  }
+
+  .photo-face {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid rgba(255, 255, 255, 0.3);
   }
 
   .photo-placeholder {
@@ -230,7 +284,7 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
     border-color: var(--color-text-on-primary);
   }
 
-  /* SKU Preview */
+  /* SKU Preview (M5.3) */
   .sku-preview {
     padding: var(--s8) var(--s4);
     max-width: 600px;
@@ -249,6 +303,7 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--s4);
+    margin-bottom: var(--s6);
   }
 
   .sku-card {
@@ -256,6 +311,23 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--color-divider);
+    cursor: pointer;
+    text-align: left;
+    padding: 0;
+    transition: box-shadow 0.2s;
+    font: inherit;
+    color: inherit;
+  }
+
+  .sku-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .sku-photo {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    display: block;
   }
 
   .sku-photo-placeholder {
@@ -284,6 +356,107 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
     color: var(--color-accent);
   }
 
+  /* M5.3 Edge #1: Coming soon placeholder */
+  .sku-coming-soon {
+    padding: var(--s8) var(--s4);
+    text-align: center;
+    border: 2px dashed var(--color-divider);
+    border-radius: 12px;
+    margin-bottom: var(--s6);
+  }
+
+  .coming-soon-text {
+    font-family: var(--font-deva-body);
+    font-size: 1.1rem;
+    color: var(--color-text-muted);
+  }
+
+  /* M5.3 AC #4: Full catalog CTA */
+  .catalog-cta {
+    text-align: center;
+    margin-top: var(--s4);
+  }
+
+  /* M5.3 AC #3: SKU detail modal */
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: var(--s4);
+  }
+
+  .modal.open {
+    display: flex;
+  }
+
+  .modal-content {
+    background: var(--color-surface);
+    border-radius: 16px;
+    max-width: 400px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: var(--s2);
+    right: var(--s3);
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    min-height: 48px;
+    min-width: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-photo {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .modal-photo-placeholder {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, var(--color-divider) 0%, #f0ede8 100%);
+    border-radius: 16px 16px 0 0;
+  }
+
+  .modal-body-inner {
+    padding: var(--s4);
+  }
+
+  .modal-sku-name {
+    font-family: var(--font-deva-display);
+    font-size: 1.5rem;
+    margin-bottom: var(--s1);
+  }
+
+  .modal-sku-name-en {
+    font-family: var(--font-en-body);
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--s3);
+  }
+
+  .modal-sku-price {
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-accent);
+  }
+
   /* Footer */
   .site-footer {
     background: var(--color-primary-deep);
@@ -307,13 +480,6 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
     font-family: var(--font-en-body);
     font-size: 0.85rem;
     opacity: 0.7;
-    margin-bottom: var(--s3);
-  }
-
-  .footer-hours {
-    font-family: var(--font-deva-body);
-    font-size: 0.85rem;
-    opacity: 0.8;
     margin-bottom: var(--s4);
   }
 
@@ -365,7 +531,7 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
     border-color: var(--color-accent);
   }
 
-  /* Desktop responsive (Edge #1) */
+  /* Desktop responsive (M5.1 Edge #1) */
   @media (min-width: 768px) {
     .hero {
       padding: var(--s16) var(--s8);
@@ -379,12 +545,18 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
       flex-direction: row;
       justify-content: center;
     }
+
+    .sku-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 </style>
 
-<script>
+<script define:vars={{ skuData: JSON.stringify(shop.curatedPreview) }}>
+  // Parse SKU data baked at build time for modal rendering.
+  const skus = JSON.parse(skuData);
+
   // M5.2: voice note playback toggle.
-  // AC #3: browser-blocked autoplay shows "tap to hear" CTA.
   function toggleVoice() {
     const audio = document.getElementById('greetingAudio');
     const btn = document.getElementById('voiceBtn');
@@ -409,6 +581,43 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
       btn.textContent = '🎤 सुनील भैया की आवाज़ सुनिए';
     }, { once: true });
   }
-  // Expose to onclick
+
+  // M5.3 AC #3: SKU detail modal.
+  function openSkuModal(skuId) {
+    const sku = skus.find(s => s.skuId === skuId);
+    if (!sku) return;
+
+    const modal = document.getElementById('skuModal');
+    const body = document.getElementById('modalBody');
+    if (!modal || !body) return;
+
+    const photoHtml = sku.thumbnailUrl
+      ? `<img src="${sku.thumbnailUrl}" alt="${sku.nameDevanagari}" class="modal-photo" />`
+      : '<div class="modal-photo-placeholder"></div>';
+
+    body.innerHTML = `
+      ${photoHtml}
+      <div class="modal-body-inner">
+        <h3 class="modal-sku-name">${sku.nameDevanagari}</h3>
+        <p class="modal-sku-name-en">${sku.nameEnglish}</p>
+        <p class="modal-sku-price">₹${Number(sku.priceInr).toLocaleString('en-IN')}</p>
+      </div>
+    `;
+
+    modal.classList.add('open');
+  }
+
+  function closeSkuModal(event) {
+    const modal = document.getElementById('skuModal');
+    if (!modal) return;
+    // Close on backdrop click or explicit close
+    if (!event || event.target === modal || event.target.closest('.modal-close')) {
+      modal.classList.remove('open');
+    }
+  }
+
+  // Expose to onclick handlers
   window.toggleVoice = toggleVoice;
+  window.openSkuModal = openSkuModal;
+  window.closeSkuModal = closeSkuModal;
 </script>

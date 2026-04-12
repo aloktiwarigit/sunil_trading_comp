@@ -237,10 +237,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (data == null) return const SplashScreen();
 
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
-          // CR F6: compute retention days from Shop state, not hardcoded.
-          // The actual dpdpRetentionUntil is on the Shop doc (loaded via
-          // onboarding or a dedicated provider). Default to 180 if unavailable.
-          final retentionDays = 180; // TODO(C3.12): wire from Shop.dpdpRetentionUntil
+          // CR F6: compute retention days from Shop.dpdpRetentionUntil.
+          // Default to 180 if the field is null (shop is active, not deactivating).
+          final retentionUntil = data.shop.dpdpRetentionUntil;
+          final retentionDays = retentionUntil != null
+              ? retentionUntil.difference(DateTime.now()).inDays.clamp(0, 999)
+              : 180;
 
           return Theme(
             data: ThemeData(

@@ -11,6 +11,7 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -86,5 +87,15 @@ void _configureLogging() {
 final shopkeeperAuthProviderInstance = Provider<AuthProvider>((ref) {
   throw UnimplementedError(
     'shopkeeperAuthProviderInstance must be overridden in main.dart',
+  );
+});
+
+/// Singleton MediaStore for the shopkeeper app. Used by voice note recording,
+/// golden hour photo capture, and greeting management screens. Avoids ad-hoc
+/// MediaStoreCloudinaryFirebase construction per handoff §4 gotcha.
+final mediaStoreProvider = Provider<MediaStore>((ref) {
+  return MediaStoreCloudinaryFirebase(
+    firebaseStorage: FirebaseStorage.instance,
+    cloudinaryCloudName: '',
   );
 });

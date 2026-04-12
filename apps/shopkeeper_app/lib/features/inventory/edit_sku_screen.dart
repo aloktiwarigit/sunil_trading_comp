@@ -12,12 +12,12 @@
 // =============================================================================
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
+import '../../main.dart';
 import '../auth/auth_controller.dart';
 import '../voice/voice_recorder_widget.dart';
 
@@ -370,13 +370,8 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
 
           // Step 1: Upload audio via MediaStore adapter.
           try {
-            // Upload via Firebase Storage directly (MediaStore adapter).
-            // In production this resolves via MediaStoreFactory; for now
-            // we use the Firebase Storage implementation directly.
-            final mediaStore = MediaStoreCloudinaryFirebase(
-              firebaseStorage: FirebaseStorage.instance,
-              cloudinaryCloudName: '', // Voice notes use Firebase Storage, not Cloudinary
-            );
+            // Upload via shared MediaStore provider.
+            final mediaStore = ref.read(mediaStoreProvider);
             await mediaStore.uploadVoiceNote(
               bytes: result.bytes,
               shopId: shopId,
