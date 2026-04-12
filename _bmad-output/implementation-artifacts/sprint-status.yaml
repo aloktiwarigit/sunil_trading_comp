@@ -41,20 +41,22 @@
 # ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 6) =====
 #
 # Epics: 6 total. 1 done (E6). 4 in-progress (E1, E3, E4, E5). 1 backlog (E2).
-# Stories: 67 total. 39 done. 0 ready-for-dev. 0 in-progress. 28 backlog.
+# Stories: 67 total. 45 done. 0 ready-for-dev. 0 in-progress. 22 backlog.
 # Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 #
-# Session 6 shipped 2 sprints:
+# Session 6 shipped 4 sprints:
 #   Sprint 11 (S4.9+B1.13) — customer memory editing + Devanagari receipt
 #   Sprint 12 (C3.10+C3.11+C3.12) — order tracking + delivery + deactivation
+#   Sprint 13 (S4.10+S4.11) — udhaar ledger management + analytics dashboard
+#   Sprint 14 (S4.2+S4.17) — multi-operator role gating + NPS survey
 # Also completed B1.11 (foundation for S4.9).
-# 39 stories done total (33→39). Committed at 708152a on main.
+# 45 stories done total (33→45). Committed at bccd70c on main.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-12  # Session 6 — Sprint 11-12 shipped, 39/67 done
+last_updated: 2026-04-12  # Session 6 — Sprint 11-14 shipped, 45/67 done
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -223,7 +225,8 @@ development_status:
   # AuthController + SignInScreen + auth-gated router. 30 tests.
   s4-1-shopkeeper-google-sign-in: done
 
-  s4-2-multi-operator-role-based-access: backlog
+  # S4.2 Multi-operator role-based access — shipped Sprint 14 (bccd70c)
+  s4-2-multi-operator-role-based-access: done
   # S4.3 Inventory create new SKU — shipped Phase 2.1 Sprint 4 (c9d6aea)
   s4-3-inventory-create-new-sku: done
   # S4.6 Active projects list — shipped Sprint 6 (314f7a9)
@@ -236,14 +239,17 @@ development_status:
   s4-8-chat-reply-text-or-voice: done  # Sprint 8, Session 5
   # S4.9 Customer memory editing — shipped Sprint 11 (2c45049)
   s4-9-customer-memory-inline-edit: done
-  s4-10-udhaar-ledger-with-rbi-guardrails: backlog
-  s4-11-analytics-dashboard: backlog
+  # S4.10 Udhaar ledger view + RBI guardrails — shipped Sprint 13 (0940909)
+  s4-10-udhaar-ledger-with-rbi-guardrails: done
+  # S4.11 Analytics dashboard — shipped Sprint 13 (0940909)
+  s4-11-analytics-dashboard: done
   s4-12-shop-settings-theme-operators-flags: backlog
   # S4.13 Today's task daily prompt — shipped Phase 2.1 Sprint 3 (6619851)
   # TodaysTaskCard + 30-day seed + HomeDashboard. 9 AppStrings keys.
   s4-13-todays-task-daily-prompt-card: done
   s4-16-media-store-cost-monitor-tile: backlog
-  s4-17-shopkeeper-nps-burnout-warning: backlog
+  # S4.17 NPS + burnout warning — shipped Sprint 14 (bccd70c)
+  s4-17-shopkeeper-nps-burnout-warning: done
   s4-18-repeat-customer-event-tracking: backlog
   s4-19-shopkeeper-triggered-shop-deactivation: backlog
 
