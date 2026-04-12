@@ -21,6 +21,7 @@ import 'package:lib_core/lib_core.dart';
 
 import '../features/auth/auth_controller.dart';
 import '../features/auth/sign_in_screen.dart';
+import '../features/dashboard/analytics_dashboard_screen.dart';
 import '../features/dashboard/home_dashboard.dart';
 import '../features/inventory/create_sku_screen.dart';
 import '../features/inventory/edit_sku_screen.dart';
@@ -28,6 +29,8 @@ import '../features/inventory/inventory_list_screen.dart';
 import '../features/chat/shopkeeper_chat_screen.dart';
 import '../features/orders/active_projects_screen.dart';
 import '../features/orders/project_detail_screen.dart';
+import '../features/udhaar/udhaar_detail_screen.dart';
+import '../features/udhaar/udhaar_list_screen.dart';
 
 final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -57,7 +60,9 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
           // Allow navigation to sub-routes when authorized.
           if (isOnHome ||
               state.matchedLocation.startsWith('/inventory') ||
-              state.matchedLocation.startsWith('/orders')) {
+              state.matchedLocation.startsWith('/orders') ||
+              state.matchedLocation.startsWith('/udhaar') ||
+              state.matchedLocation.startsWith('/dashboard')) {
             return null;
           }
           return '/home';
@@ -96,6 +101,24 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+      // S4.11 — Analytics dashboard
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const AnalyticsDashboardScreen(),
+      ),
+      // S4.10 — Udhaar ledger management
+      GoRoute(
+        path: '/udhaar',
+        builder: (context, state) => const UdhaarListScreen(),
+        routes: <RouteBase>[
+          GoRoute(
+            path: ':ledgerId',
+            builder: (context, state) => UdhaarDetailScreen(
+              ledgerId: state.pathParameters['ledgerId']!,
+            ),
           ),
         ],
       ),
