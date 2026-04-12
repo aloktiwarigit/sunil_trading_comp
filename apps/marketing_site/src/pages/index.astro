@@ -63,6 +63,18 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
         <span class="meta-gst">{shop.gst}</span>
       </div>
 
+      <!-- M5.2: Auto-play greeting voice note -->
+      <div class="greeting-audio">
+        <audio id="greetingAudio" preload="auto">
+          <!-- Voice note URL injected at build time by M5.5 -->
+          <!-- Placeholder: will be replaced with real Firebase Storage URL -->
+          <source src="" type="audio/mp4" />
+        </audio>
+        <button class="btn-voice" id="voiceBtn" onclick="toggleVoice()">
+          🎤 सुनील भैया की आवाज़ सुनिए
+        </button>
+      </div>
+
       <!-- CTAs -->
       <div class="cta-group">
         <a href={whatsappUrl} class="btn btn-primary cta-whatsapp" target="_blank" rel="noopener">
@@ -327,6 +339,32 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
     font-style: italic;
   }
 
+  /* M5.2 — Voice greeting */
+  .greeting-audio {
+    margin-bottom: var(--s4);
+  }
+
+  .btn-voice {
+    font-family: var(--font-deva-body);
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--color-text-on-primary);
+    padding: var(--s2) var(--s4);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-voice:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .btn-voice.playing {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
   /* Desktop responsive (Edge #1) */
   @media (min-width: 768px) {
     .hero {
@@ -343,3 +381,34 @@ const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.sunil
     }
   }
 </style>
+
+<script>
+  // M5.2: voice note playback toggle.
+  // AC #3: browser-blocked autoplay shows "tap to hear" CTA.
+  function toggleVoice() {
+    const audio = document.getElementById('greetingAudio');
+    const btn = document.getElementById('voiceBtn');
+    if (!audio || !btn) return;
+
+    if (audio.paused) {
+      audio.play().then(() => {
+        btn.classList.add('playing');
+        btn.textContent = '🔊 बंद कीजिए';
+      }).catch(() => {
+        // Autoplay blocked — button already shows CTA
+      });
+    } else {
+      audio.pause();
+      audio.currentTime = 0;
+      btn.classList.remove('playing');
+      btn.textContent = '🎤 सुनील भैया की आवाज़ सुनिए';
+    }
+
+    audio.addEventListener('ended', () => {
+      btn.classList.remove('playing');
+      btn.textContent = '🎤 सुनील भैया की आवाज़ सुनिए';
+    }, { once: true });
+  }
+  // Expose to onclick
+  window.toggleVoice = toggleVoice;
+</script>
