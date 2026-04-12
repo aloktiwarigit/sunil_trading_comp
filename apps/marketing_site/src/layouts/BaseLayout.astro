@@ -1,0 +1,125 @@
+---
+// Base layout for all marketing pages.
+// Per M5.1 AC #2: <100KB initial bundle including subset Devanagari font.
+// Per Constraint 4: 5 fonts only — Tiro Devanagari Hindi, Mukta, Fraunces,
+// EB Garamond, DM Mono.
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'सुनील ट्रेडिंग कंपनी — अयोध्या की भरोसेमंद अलमारी दुकान' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="hi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+
+    <!-- Subset fonts via Google Fonts — Devanagari display + body -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&family=Mukta:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,700&family=EB+Garamond:wght@400;600&family=DM+Mono&display=swap"
+      rel="stylesheet"
+    />
+
+    <style is:global>
+      /* ================================================================
+       * Yugma Dukaan Marketing — Global Styles
+       * Constraint 4 font stack. ADR-003 color tokens.
+       * ================================================================ */
+
+      :root {
+        /* Colors — from ShopThemeTokens for Sunil Trading Company */
+        --color-primary: #1B3A4B;
+        --color-primary-deep: #0F2330;
+        --color-accent: #B8860B;
+        --color-background: #FAF8F5;
+        --color-surface: #FFFFFF;
+        --color-text-primary: #1A1A1A;
+        --color-text-secondary: #666666;
+        --color-text-muted: #999999;
+        --color-text-on-primary: #FFFFFF;
+        --color-divider: #E8E5E0;
+        --color-commit: #8B0000;
+
+        /* Font families */
+        --font-deva-display: 'Tiro Devanagari Hindi', serif;
+        --font-deva-body: 'Mukta', sans-serif;
+        --font-en-display: 'Fraunces', serif;
+        --font-en-body: 'EB Garamond', serif;
+        --font-mono: 'DM Mono', monospace;
+
+        /* Spacing */
+        --s1: 4px;
+        --s2: 8px;
+        --s3: 12px;
+        --s4: 16px;
+        --s6: 24px;
+        --s8: 32px;
+        --s12: 48px;
+        --s16: 64px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-deva-body);
+        background-color: var(--color-background);
+        color: var(--color-text-primary);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: var(--color-primary);
+        text-decoration: none;
+      }
+
+      /* Tap targets ≥ 48px per accessibility */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: var(--s3) var(--s6);
+        border-radius: 8px;
+        font-family: var(--font-deva-body);
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: opacity 0.2s;
+      }
+
+      .btn:hover { opacity: 0.9; }
+
+      .btn-primary {
+        background-color: var(--color-primary);
+        color: var(--color-text-on-primary);
+      }
+
+      .btn-accent {
+        background-color: var(--color-accent);
+        color: var(--color-text-on-primary);
+      }
+
+      .btn-outline {
+        background-color: transparent;
+        border: 2px solid var(--color-primary);
+        color: var(--color-primary);
+      }
+    </style>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

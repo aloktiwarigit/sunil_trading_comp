@@ -1,0 +1,345 @@
+---
+// M5.1 — Marketing site landing page.
+//
+// Per M5.1 ACs:
+//   AC #1: Astro + pure static HTML+CSS from Firebase Hosting
+//   AC #2: <100KB bundle including subset Devanagari font
+//   AC #3: <1s first paint on 3G (Lighthouse verified post-deploy)
+//   AC #4: Hero: bhaiya face + shop name + tagline + GST + established year
+//   AC #5: Primary CTA → wa.me with prefilled greeting
+//   AC #6: Secondary CTA → deep link to customer app (Play Store fallback)
+//   AC #7: 2 curated SKU previews (placeholder until M5.3 build-time fetch)
+//   AC #8: Footer: address, hours, map link
+//
+// Edge cases:
+//   #1: Desktop — responsive layout
+//   #2: JS disabled — pure static renders fully
+//   #3: Font fail — system Devanagari fallback
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Build-time shop data — hardcoded for v1 flagship shop.
+// M5.5 will replace this with Firestore build-time fetch.
+const shop = {
+  name: 'सुनील ट्रेडिंग कंपनी',
+  nameEn: 'Sunil Trading Company',
+  tagline: 'हैरिंगटनगंज, अयोध्या की भरोसेमंद अलमारी दुकान',
+  gst: 'GST: 09AXXXX1234X1ZX',
+  established: 2003,
+  yearsInBusiness: new Date().getFullYear() - 2003,
+  phone: '+919876543210',
+  whatsappGreeting: 'नमस्ते सुनील भैया, मुझे अलमारी देखनी है',
+  address: 'हैरिंगटनगंज बाज़ार, अयोध्या, उत्तर प्रदेश 224001',
+  addressEn: 'Harringtonganj Market, Ayodhya, Uttar Pradesh 224001',
+  hours: 'सोमवार–शनिवार: सुबह 10 बजे – शाम 8 बजे',
+  mapUrl: 'https://maps.google.com/?q=Harringtonganj+Ayodhya',
+};
+
+const whatsappUrl = `https://wa.me/${shop.phone.replace('+', '')}?text=${encodeURIComponent(shop.whatsappGreeting)}`;
+const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.suniltrading';
+---
+
+<BaseLayout title={`${shop.name} — ${shop.nameEn}`}>
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-content">
+      <!-- Bhaiya face photo placeholder (AC #4) -->
+      <div class="hero-photo">
+        <div class="photo-placeholder">
+          <span class="photo-initials">स</span>
+        </div>
+      </div>
+
+      <h1 class="shop-name">{shop.name}</h1>
+      <p class="shop-name-en">{shop.nameEn}</p>
+
+      <p class="tagline">{shop.tagline}</p>
+
+      <div class="meta-bar">
+        <span class="meta-years">
+          {shop.yearsInBusiness} साल · {shop.established} से
+        </span>
+        <span class="meta-divider">·</span>
+        <span class="meta-gst">{shop.gst}</span>
+      </div>
+
+      <!-- CTAs -->
+      <div class="cta-group">
+        <a href={whatsappUrl} class="btn btn-primary cta-whatsapp" target="_blank" rel="noopener">
+          सुनील भैया से अभी बात कीजिए
+        </a>
+        <a href={appUrl} class="btn btn-outline cta-app" target="_blank" rel="noopener">
+          दुकान खोलिए
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- SKU Preview Section (AC #7 — placeholder until M5.3) -->
+  <section class="sku-preview">
+    <h2 class="section-title">भैया की पसंद</h2>
+    <div class="sku-grid">
+      <div class="sku-card">
+        <div class="sku-photo-placeholder"></div>
+        <p class="sku-name">गोदरेज स्टील अलमारी</p>
+        <p class="sku-price">₹17,500</p>
+      </div>
+      <div class="sku-card">
+        <div class="sku-photo-placeholder"></div>
+        <p class="sku-name">शीशम लकड़ी वार्डरोब</p>
+        <p class="sku-price">₹35,000</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer (AC #8) -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <p class="footer-address">{shop.address}</p>
+      <p class="footer-address-en">{shop.addressEn}</p>
+      <p class="footer-hours">{shop.hours}</p>
+      <div class="footer-links">
+        <a href={shop.mapUrl} target="_blank" rel="noopener" class="footer-link">
+          नक्शा देखिए
+        </a>
+        <span class="footer-divider">·</span>
+        <a href={`tel:${shop.phone}`} class="footer-link">
+          फ़ोन कीजिए
+        </a>
+        <span class="footer-divider">·</span>
+        <a href="/visit" class="footer-link">
+          दुकान आइए
+        </a>
+      </div>
+      <p class="footer-brand">Yugma Labs</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<style>
+  /* ================================================================
+   * Landing Page Styles
+   * ================================================================ */
+
+  .hero {
+    background: linear-gradient(
+      135deg,
+      var(--color-primary) 0%,
+      var(--color-primary-deep) 100%
+    );
+    color: var(--color-text-on-primary);
+    padding: var(--s16) var(--s4) var(--s12);
+    text-align: center;
+  }
+
+  .hero-content {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .hero-photo {
+    margin-bottom: var(--s6);
+  }
+
+  .photo-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .photo-initials {
+    font-family: var(--font-deva-display);
+    font-size: 3rem;
+    color: var(--color-text-on-primary);
+  }
+
+  .shop-name {
+    font-family: var(--font-deva-display);
+    font-size: 2.25rem;
+    font-weight: 400;
+    line-height: 1.2;
+    margin-bottom: var(--s1);
+  }
+
+  .shop-name-en {
+    font-family: var(--font-en-display);
+    font-size: 1rem;
+    font-weight: 400;
+    font-style: italic;
+    opacity: 0.8;
+    margin-bottom: var(--s4);
+  }
+
+  .tagline {
+    font-family: var(--font-deva-body);
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: var(--s4);
+  }
+
+  .meta-bar {
+    font-family: var(--font-en-body);
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-bottom: var(--s8);
+  }
+
+  .meta-divider {
+    margin: 0 var(--s2);
+  }
+
+  .cta-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+    align-items: center;
+  }
+
+  .cta-whatsapp {
+    width: 100%;
+    max-width: 320px;
+    font-size: 1rem;
+  }
+
+  .cta-app {
+    width: 100%;
+    max-width: 320px;
+    border-color: rgba(255, 255, 255, 0.5);
+    color: var(--color-text-on-primary);
+    font-size: 0.95rem;
+  }
+
+  .cta-app:hover {
+    border-color: var(--color-text-on-primary);
+  }
+
+  /* SKU Preview */
+  .sku-preview {
+    padding: var(--s8) var(--s4);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .section-title {
+    font-family: var(--font-deva-body);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: var(--s4);
+  }
+
+  .sku-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s4);
+  }
+
+  .sku-card {
+    background: var(--color-surface);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--color-divider);
+  }
+
+  .sku-photo-placeholder {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: linear-gradient(
+      135deg,
+      var(--color-divider) 0%,
+      #f0ede8 100%
+    );
+  }
+
+  .sku-name {
+    font-family: var(--font-deva-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: var(--s3) var(--s3) var(--s1);
+    color: var(--color-text-primary);
+  }
+
+  .sku-price {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0 var(--s3) var(--s3);
+    color: var(--color-accent);
+  }
+
+  /* Footer */
+  .site-footer {
+    background: var(--color-primary-deep);
+    color: var(--color-text-on-primary);
+    padding: var(--s8) var(--s4);
+    text-align: center;
+  }
+
+  .footer-content {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .footer-address {
+    font-family: var(--font-deva-body);
+    font-size: 0.95rem;
+    margin-bottom: var(--s1);
+  }
+
+  .footer-address-en {
+    font-family: var(--font-en-body);
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-bottom: var(--s3);
+  }
+
+  .footer-hours {
+    font-family: var(--font-deva-body);
+    font-size: 0.85rem;
+    opacity: 0.8;
+    margin-bottom: var(--s4);
+  }
+
+  .footer-links {
+    margin-bottom: var(--s6);
+  }
+
+  .footer-link {
+    font-family: var(--font-deva-body);
+    font-size: 0.9rem;
+    color: var(--color-accent);
+  }
+
+  .footer-divider {
+    margin: 0 var(--s2);
+    opacity: 0.5;
+  }
+
+  .footer-brand {
+    font-family: var(--font-en-body);
+    font-size: 0.8rem;
+    opacity: 0.5;
+    font-style: italic;
+  }
+
+  /* Desktop responsive (Edge #1) */
+  @media (min-width: 768px) {
+    .hero {
+      padding: var(--s16) var(--s8);
+    }
+
+    .shop-name {
+      font-size: 3rem;
+    }
+
+    .cta-group {
+      flex-direction: row;
+      justify-content: center;
+    }
+  }
+</style>

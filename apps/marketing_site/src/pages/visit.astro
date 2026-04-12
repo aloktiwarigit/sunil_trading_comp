@@ -1,0 +1,213 @@
+---
+// M5.4 — Visit / contact page (map, hours, WhatsApp CTA).
+//
+// Per M5.4 ACs:
+//   AC #1: Static map image + address + hours + phone + WhatsApp
+//   AC #2: Map image fetched at build time (placeholder for v1)
+//
+// Edge cases:
+//   #1: Map unavailable → placeholder with text directions
+//   #2: Address update → rebuild triggered by M5.5 (deferred)
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const shop = {
+  name: 'सुनील ट्रेडिंग कंपनी',
+  address: 'हैरिंगटनगंज बाज़ार, अयोध्या, उत्तर प्रदेश 224001',
+  addressEn: 'Harringtonganj Market, Ayodhya, Uttar Pradesh 224001',
+  hours: 'सोमवार–शनिवार: सुबह 10 बजे – शाम 8 बजे',
+  hoursEn: 'Mon–Sat: 10 AM – 8 PM',
+  phone: '+919876543210',
+  phoneDisplay: '+91 98765 43210',
+  whatsappGreeting: 'नमस्ते सुनील भैया, मुझे अलमारी देखनी है',
+  mapUrl: 'https://maps.google.com/?q=Harringtonganj+Ayodhya',
+  // Static map — placeholder until Google Static Maps API key is configured.
+  // M5.5 build pipeline will fetch this at build time.
+  staticMapUrl: '',
+  directions: 'अयोध्या रेलवे स्टेशन से 2 किमी — ऑटो से 10 मिनट',
+};
+
+const whatsappUrl = `https://wa.me/${shop.phone.replace('+', '')}?text=${encodeURIComponent(shop.whatsappGreeting)}`;
+---
+
+<BaseLayout title={`दुकान आइए — ${shop.name}`} description="सुनील ट्रेडिंग कंपनी का पता, समय, और संपर्क">
+  <main class="visit-page">
+    <header class="visit-header">
+      <a href="/" class="back-link">&larr; वापस</a>
+      <h1 class="page-title">दुकान आइए</h1>
+    </header>
+
+    <!-- Map Section -->
+    <section class="map-section">
+      {shop.staticMapUrl ? (
+        <a href={shop.mapUrl} target="_blank" rel="noopener">
+          <img
+            src={shop.staticMapUrl}
+            alt="सुनील ट्रेडिंग कंपनी का नक्शा"
+            class="map-image"
+            loading="lazy"
+          />
+        </a>
+      ) : (
+        <a href={shop.mapUrl} target="_blank" rel="noopener" class="map-placeholder">
+          <div class="map-placeholder-content">
+            <span class="map-icon">📍</span>
+            <p class="map-text">Google Maps पर देखिए</p>
+          </div>
+        </a>
+      )}
+    </section>
+
+    <!-- Address Card -->
+    <section class="info-card">
+      <h2 class="info-label">पता</h2>
+      <p class="info-value-deva">{shop.address}</p>
+      <p class="info-value-en">{shop.addressEn}</p>
+      <p class="info-directions">{shop.directions}</p>
+    </section>
+
+    <!-- Hours Card -->
+    <section class="info-card">
+      <h2 class="info-label">समय</h2>
+      <p class="info-value-deva">{shop.hours}</p>
+      <p class="info-value-en">{shop.hoursEn}</p>
+    </section>
+
+    <!-- Contact Actions -->
+    <section class="contact-actions">
+      <a href={`tel:${shop.phone}`} class="btn btn-primary contact-btn">
+        फ़ोन कीजिए — {shop.phoneDisplay}
+      </a>
+      <a href={whatsappUrl} class="btn btn-accent contact-btn" target="_blank" rel="noopener">
+        WhatsApp पर बात कीजिए
+      </a>
+      <a href={shop.mapUrl} class="btn btn-outline contact-btn" target="_blank" rel="noopener">
+        रास्ता दिखाइए
+      </a>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .visit-page {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--s4);
+  }
+
+  .visit-header {
+    padding: var(--s4) 0;
+  }
+
+  .back-link {
+    font-family: var(--font-deva-body);
+    font-size: 0.9rem;
+    color: var(--color-primary);
+    display: inline-block;
+    margin-bottom: var(--s2);
+  }
+
+  .page-title {
+    font-family: var(--font-deva-display);
+    font-size: 1.75rem;
+    color: var(--color-text-primary);
+  }
+
+  /* Map */
+  .map-section {
+    margin-bottom: var(--s6);
+  }
+
+  .map-image {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--color-divider);
+  }
+
+  .map-placeholder {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: linear-gradient(
+      135deg,
+      var(--color-primary) 0%,
+      var(--color-primary-deep) 100%
+    );
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-on-primary);
+  }
+
+  .map-placeholder-content {
+    text-align: center;
+  }
+
+  .map-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: var(--s2);
+  }
+
+  .map-text {
+    font-family: var(--font-deva-body);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  /* Info Cards */
+  .info-card {
+    background: var(--color-surface);
+    border-radius: 12px;
+    border: 1px solid var(--color-divider);
+    padding: var(--s4);
+    margin-bottom: var(--s4);
+  }
+
+  .info-label {
+    font-family: var(--font-deva-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--s2);
+  }
+
+  .info-value-deva {
+    font-family: var(--font-deva-body);
+    font-size: 1.05rem;
+    color: var(--color-text-primary);
+    margin-bottom: var(--s1);
+  }
+
+  .info-value-en {
+    font-family: var(--font-en-body);
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+  }
+
+  .info-directions {
+    font-family: var(--font-deva-body);
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin-top: var(--s2);
+    font-style: italic;
+  }
+
+  /* Contact Actions */
+  .contact-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+    margin-top: var(--s6);
+    margin-bottom: var(--s12);
+  }
+
+  .contact-btn {
+    width: 100%;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+</style>
