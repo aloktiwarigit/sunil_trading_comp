@@ -151,7 +151,7 @@ class OrderDetailScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '₹${_formatInr(project.totalAmount)}',
+                        '₹${formatInr(project.totalAmount)}',
                         style: theme.monoNumeral.copyWith(
                           fontSize: YugmaTypeScale.display,
                           fontWeight: FontWeight.w700,
@@ -384,7 +384,7 @@ class OrderDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: YugmaSpacing.s2),
                   Text(
-                    '₹${_formatInr(project.lineItems[i].effectivePrice)}',
+                    '₹${formatInr(project.lineItems[i].effectivePrice)}',
                     style: theme.monoNumeral.copyWith(
                       fontSize: YugmaTypeScale.body,
                       fontWeight: FontWeight.w600,
@@ -480,21 +480,6 @@ class OrderDetailScreen extends ConsumerWidget {
     }
   }
 
-  static String _formatInr(int amount) {
-    if (amount < 0) return '-${_formatInr(-amount)}';
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }
 
 /// A single row in the vertical timeline.

@@ -225,7 +225,7 @@ class _SkuListTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '\u20b9${_formatInr(sku.basePrice)}',
+                '\u20b9${formatInr(sku.basePrice)}',
                 style: TextStyle(
                   fontFamily: YugmaFonts.mono,
                   fontSize: YugmaTypeScale.bodyLarge,
@@ -290,20 +290,4 @@ class _SkuListTile extends StatelessWidget {
     }
   }
 
-  /// Indian number formatting for prices.
-  static String _formatInr(int amount) {
-    if (amount < 1000) return amount.toString();
-    final str = amount.toString();
-    if (str.length <= 3) return str;
-    final lastThree = str.substring(str.length - 3);
-    final rest = str.substring(0, str.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }

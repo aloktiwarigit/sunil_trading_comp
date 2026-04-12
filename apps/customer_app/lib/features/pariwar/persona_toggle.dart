@@ -193,7 +193,7 @@ class PersonaToggleButton extends ConsumerWidget {
                 ),
                 const SizedBox(height: YugmaSpacing.s3),
                 Text(
-                  'कौन देख रहा है?',
+                  const AppStringsHi().personaSheetTitle,
                   style: TextStyle(
                     fontFamily: YugmaFonts.devaDisplay,
                     fontSize: YugmaTypeScale.h3,
@@ -241,7 +241,7 @@ class PersonaToggleButton extends ConsumerWidget {
                     controller: customLabelController,
                     maxLength: 20,
                     decoration: InputDecoration(
-                      hintText: 'नाम लिखिए',
+                      hintText: const AppStringsHi().personaCustomLabelHint,
                       hintStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
                       border: const OutlineInputBorder(),
                     ),
@@ -264,7 +264,7 @@ class PersonaToggleButton extends ConsumerWidget {
           );
         },
       ),
-    );
+    ).then((_) => customLabelController.dispose());
   }
 }
 

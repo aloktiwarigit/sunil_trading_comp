@@ -255,7 +255,7 @@ class ProjectDetailScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '₹${_formatInr(project.totalAmount)}',
+                  '₹${formatInr(project.totalAmount)}',
                   style: TextStyle(
                     fontFamily: YugmaFonts.mono,
                     fontSize: YugmaTypeScale.display,
@@ -1070,20 +1070,6 @@ class ProjectDetailScreen extends ConsumerWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }
 
 /// Line item row in the detail view.

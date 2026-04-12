@@ -964,4 +964,111 @@ abstract class AppStrings {
 
   /// "Remove" operator button.
   String get settingsRemoveOperator;
+
+  // =========================================================================
+  // §33 — Customer Udhaar Screen
+  // =========================================================================
+
+  /// Screen title: "उधार खाता"
+  String get udhaarScreenTitle;
+
+  /// Empty state: "अभी कोई उधार खाता नहीं है"
+  String get udhaarNoLedgers;
+
+  /// Open ledgers tab header: "चालू उधार"
+  String get udhaarOpenLedgers;
+
+  /// Closed ledgers tab header: "बंद हुए खाते"
+  String get udhaarClosedLedgers;
+
+  /// Summary label: "कुल बाकी"
+  String get udhaarTotalBaaki;
+
+  /// Settled badge: "चुकता"
+  String get udhaarSettledBadge;
+
+  /// Remaining balance label: "बाकी"
+  String get udhaarBaakiLabel;
+
+  /// Open accounts count: "N चालू खाते"
+  String udhaarOpenAccountsCount(int count);
+
+  /// Original amount prefix: "मूल राशि: ₹..."
+  String get udhaarOriginalAmountPrefix;
+
+  /// Partial payments count: "N किस्त चुकाई"
+  String udhaarPartialPaymentCount(int count);
+
+  /// Reminders sent count: "N रिमाइंडर भेजे गए"
+  String udhaarRemindersSentCount(int count);
+
+  // =========================================================================
+  // §34 — Persona Toggle
+  // =========================================================================
+
+  /// Sheet title: "कौन देख रहा है?"
+  String get personaSheetTitle;
+
+  /// Custom label hint: "नाम लिखिए"
+  String get personaCustomLabelHint;
+
+  // =========================================================================
+  // §35 — Large Text Toggle
+  // =========================================================================
+
+  /// Toggle label: "बड़ा अक्षर"
+  String get largeTextToggleLabel;
+
+  // =========================================================================
+  // §36 — Presence Banner
+  // =========================================================================
+
+  /// Return time suffix: ", [time] तक वापस"
+  String presenceReturnBy(String time);
+
+  /// Voice button tooltip: "आवाज़ सुनिए"
+  String get presenceListenVoice;
+
+  // =========================================================================
+  // §37 — Read Tracking
+  // =========================================================================
+
+  /// Seen label: "देखा गया"
+  String get readStatusSeen;
+
+  /// Seen by count: "देखा गया · N लोग"
+  String readStatusSeenByCount(int count);
+
+  // =========================================================================
+  // §38 — Shopkeeper Udhaar List
+  // =========================================================================
+
+  /// Toggle label for open ledgers: "खुले"
+  String get shopUdhaarToggleOpen;
+
+  /// Toggle label for closed ledgers: "बंद"
+  String get shopUdhaarToggleClosed;
+
+  /// Empty state for open ledgers: "कोई खुला उधार खाता नहीं"
+  String get shopUdhaarNoOpen;
+
+  /// Empty state for closed ledgers: "कोई बंद खाता नहीं"
+  String get shopUdhaarNoClosed;
+
+  // =========================================================================
+  // §39 — Shopkeeper Search
+  // =========================================================================
+
+  /// Search hint for orders: "खोजें — नाम, फ़ोन, रकम"
+  String get searchHintOrders;
+
+  // =========================================================================
+  // §40 — Shopkeeper Inventory Voice
+  // =========================================================================
+
+  /// Voice note button label: "🎤 आवाज़ नोट"
+  String get voiceNoteButtonLabel;
+
+  /// Voice note attached snackbar: "आवाज़ नोट जुड़ गया"
+  String get voiceNoteAttached;
 }

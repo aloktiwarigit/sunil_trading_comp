@@ -285,7 +285,7 @@ class _MetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.yugmaTheme;
-    final displayValue = isRupee ? '₹${_formatInr(value)}' : '$value';
+    final displayValue = isRupee ? '₹${formatInr(value)}' : '$value';
     final deltaColor = delta > 0
         ? theme.shopPrimary
         : delta < 0
@@ -347,21 +347,6 @@ class _MetricTile extends StatelessWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    if (amount < 0) return '-${_formatInr(-amount)}';
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }
 
 /// Simple horizontal bar chart using basic Flutter widgets.

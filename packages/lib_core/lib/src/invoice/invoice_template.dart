@@ -29,6 +29,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../models/line_item.dart';
+import '../utils/format_inr.dart';
 import '../models/project.dart';
 import '../theme/shop_theme_tokens.dart';
 
@@ -185,7 +186,7 @@ class InvoiceTemplate {
             children: [
               pw.Text('कुल: ', style: bodyBold),
               pw.Text(
-                '₹${_formatInr(project.totalAmount)}',
+                '₹${formatInr(project.totalAmount)}',
                 style: monoBold,
               ),
             ],
@@ -210,7 +211,7 @@ class InvoiceTemplate {
               children: [
                 pw.Text('बाकी: ', style: bodyBold),
                 pw.Text(
-                  '₹${_formatInr(payload.udhaarRunningBalance!)}',
+                  '₹${formatInr(payload.udhaarRunningBalance!)}',
                   style: monoBold,
                 ),
               ],
@@ -348,29 +349,11 @@ class InvoiceTemplate {
         return [
           item.skuName,
           '${item.quantity}',
-          '₹${_formatInr(effectivePrice)}',
-          '₹${_formatInr(lineTotal)}',
+          '₹${formatInr(effectivePrice)}',
+          '₹${formatInr(lineTotal)}',
         ];
       }).toList(),
     );
-  }
-
-  /// Indian lakh/thousand separators.
-  /// CR #5: handle negative amounts gracefully.
-  static String _formatInr(int amount) {
-    if (amount < 0) return '-${_formatInr(-amount)}';
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
   }
 
   /// Generate the filename per AC #8.

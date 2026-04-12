@@ -184,7 +184,7 @@ class _OrderCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '₹${_formatInr(project.totalAmount)}',
+                  '₹${formatInr(project.totalAmount)}',
                   style: theme.monoNumeral.copyWith(
                     fontSize: YugmaTypeScale.bodyLarge,
                     fontWeight: FontWeight.w700,
@@ -233,19 +233,4 @@ class _OrderCard extends StatelessWidget {
         ProjectState.cancelled => strings.stateBadgeCancelled,
       };
 
-  static String _formatInr(int amount) {
-    if (amount < 0) return '-${_formatInr(-amount)}';
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }

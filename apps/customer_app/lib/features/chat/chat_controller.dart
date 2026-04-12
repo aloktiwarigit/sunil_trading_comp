@@ -284,6 +284,7 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
           .doc(_projectId);
 
       // Atomic update: read line items, set finalPrice, recompute total.
+      var lineItemNotFound = false;
       await firestore.runTransaction((txn) async {
         final snap = await txn.get(projectRef);
         if (!snap.exists) return;
@@ -323,6 +324,7 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
             'acceptPriceProposal: lineItemId=$targetLineItemId not found '
             'in project=$_projectId — aborting',
           );
+          lineItemNotFound = true;
           return;
         }
 
@@ -354,38 +356,30 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
           'sentAt': FieldValue.serverTimestamp(),
           // Hindi source-of-truth for system messages (persisted in Firestore,
           // not locale-switched at render time).
-          'textBody': '₹${_formatInr(proposedPrice)} पर ${skuName ?? ''} पक्का हुआ',
+          'textBody': '₹${formatInr(proposedPrice)} पर ${skuName ?? ''} पक्का हुआ',
           'readByUids': <String>[],
         });
       });
+
+      // Surface error to UI if the line item was removed while proposal
+      // was pending (race condition between shopkeeper and customer).
+      if (lineItemNotFound) {
+        _log.warning('acceptPriceProposal: surfacing lineItemNotFound to UI');
+        throw Exception('lineItemNotFound:$targetLineItemId');
+      }
 
       // CR #8: invalidate draft controller so isAccepted updates.
       ref.invalidate(draftControllerProvider);
 
       _log.info('price proposal accepted: messageId=$messageId');
     } catch (e) {
-      // CR #1: log the error. The UI will show the Accept button again
-      // since isAccepted won't have flipped — the user can retry.
+      // CR #1: log the error. The Accept button remains enabled so the user
+      // can retry. Emit a warning-level log for Crashlytics breadcrumbs.
       _log.warning('acceptPriceProposal failed: $e');
+      Observability.crashlytics.log('acceptPriceProposal failed: $e');
     } finally {
       _acceptingProposal = false;
     }
-  }
-
-  /// Format INR with Indian lakh/thousand separators.
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
   }
 
   /// Load older messages (pagination — infinite scroll upward).

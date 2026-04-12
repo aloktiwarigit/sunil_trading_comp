@@ -59,10 +59,10 @@ class PaymentScreen extends ConsumerWidget {
           return switch (flowState.stage) {
             PaymentFlowStage.idle => _buildPaymentOptions(
                 context, ref, theme, flowState),
-            PaymentFlowStage.launching => _buildLoading(theme),
+            PaymentFlowStage.launching => _buildLoading(theme, strings),
             PaymentFlowStage.awaitingReturn => _buildAwaitingReturn(
                 context, ref, theme, flowState),
-            PaymentFlowStage.recording => _buildLoading(theme),
+            PaymentFlowStage.recording => _buildLoading(theme, strings),
             PaymentFlowStage.paid => _buildSuccess(
                 context, theme, flowState),
             PaymentFlowStage.error => _buildError(
@@ -106,7 +106,7 @@ class PaymentScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: YugmaSpacing.s2),
                 Text(
-                  '₹${_formatInr(total)}',
+                  '₹${formatInr(total)}',
                   style: theme.monoNumeral.copyWith(
                     fontSize: theme.isElderTier ? 36.0 : 28.0,
                     fontWeight: FontWeight.w700,
@@ -268,7 +268,7 @@ class PaymentScreen extends ConsumerWidget {
   // Stage: loading
   // ---------------------------------------------------------------------------
 
-  Widget _buildLoading(YugmaThemeExtension theme) {
+  Widget _buildLoading(YugmaThemeExtension theme, AppStrings strings) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -310,7 +310,7 @@ class PaymentScreen extends ConsumerWidget {
             const SizedBox(height: YugmaSpacing.s2),
             if (flowState.project != null)
               Text(
-                '₹${_formatInr(flowState.project!.totalAmount)}',
+                '₹${formatInr(flowState.project!.totalAmount)}',
                 style: theme.monoNumeral.copyWith(
                   fontSize: theme.isElderTier ? 28.0 : 22.0,
                   fontWeight: FontWeight.w700,
@@ -463,7 +463,7 @@ class PaymentScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '₹${_formatInr(total)}',
+                '₹${formatInr(total)}',
                 style: theme.monoNumeral.copyWith(
                   fontSize: theme.isElderTier ? 28.0 : 22.0,
                   fontWeight: FontWeight.w700,
@@ -592,24 +592,6 @@ class PaymentScreen extends ConsumerWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }
 
 /// Tile for an alternative payment method in the bottom sheet.

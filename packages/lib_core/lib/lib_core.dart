@@ -105,3 +105,7 @@ export 'src/routing/yugma_page_transition.dart';
 export 'src/services/phone_upgrade_coordinator.dart';
 export 'src/services/session_bootstrap.dart';
 export 'src/services/upi_intent_builder.dart';
+
+// ---------- Utilities ----------
+export 'src/utils/format_inr.dart';
+export 'src/utils/retry_with_backoff.dart';

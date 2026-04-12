@@ -47,6 +47,7 @@ final voicePlaybackProvider =
 class VoicePlaybackNotifier extends StateNotifier<VoicePlaybackState> {
   VoicePlaybackNotifier() : super(const VoicePlaybackState());
 
+  bool _disposed = false;
   AudioPlayer? _player;
   StreamSubscription<Duration>? _positionSub;
   StreamSubscription<PlayerState>? _playerStateSub;
@@ -103,7 +104,7 @@ class VoicePlaybackNotifier extends StateNotifier<VoicePlaybackState> {
         final totalMs = _player!.duration?.inMilliseconds ?? 1;
         if (totalMs > 0) {
           final progress = (position.inMilliseconds / totalMs).clamp(0.0, 1.0);
-          if (mounted) {
+          if (!_disposed) {
             state = VoicePlaybackState(
               activeVoiceNoteId: voiceNoteId,
               isPlaying: state.isPlaying,
@@ -118,7 +119,7 @@ class VoicePlaybackNotifier extends StateNotifier<VoicePlaybackState> {
       _playerStateSub?.cancel();
       _playerStateSub = _player!.playerStateStream.listen((playerState) {
         if (playerState.processingState == ProcessingState.completed) {
-          if (mounted) {
+          if (!_disposed) {
             stop();
           }
         }
@@ -127,7 +128,7 @@ class VoicePlaybackNotifier extends StateNotifier<VoicePlaybackState> {
       await _player!.play();
     } catch (e) {
       // On error (network, storage, etc.), reset to idle.
-      if (mounted) {
+      if (!_disposed) {
         state = const VoicePlaybackState();
       }
     }
@@ -151,13 +152,14 @@ class VoicePlaybackNotifier extends StateNotifier<VoicePlaybackState> {
     _positionSub?.cancel();
     _playerStateSub?.cancel();
     await _player?.stop();
-    if (mounted) {
+    if (!_disposed) {
       state = const VoicePlaybackState();
     }
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _positionSub?.cancel();
     _playerStateSub?.cancel();
     _player?.dispose();

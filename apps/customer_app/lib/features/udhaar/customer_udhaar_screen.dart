@@ -59,7 +59,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
         backgroundColor: theme.shopPrimary,
         foregroundColor: theme.shopTextOnPrimary,
         title: Text(
-          'उधार खाता',
+          strings.udhaarScreenTitle,
           style: TextStyle(
             fontFamily: theme.fontFamilyDevanagariDisplay,
             fontSize: YugmaTypeScale.h3,
@@ -82,7 +82,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.all(YugmaSpacing.s4),
                 child: Text(
-                  'अभी कोई उधार खाता नहीं है',
+                  strings.udhaarNoLedgers,
                   style: theme.bodyDeva.copyWith(
                     color: theme.shopTextMuted,
                   ),
@@ -108,7 +108,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
                 // Open ledgers
                 if (open.isNotEmpty) ...[
                   Text(
-                    'चालू उधार',
+                    strings.udhaarOpenLedgers,
                     style: theme.bodyDeva.copyWith(
                       fontWeight: FontWeight.w700,
                       fontSize: YugmaTypeScale.bodyLarge,
@@ -123,7 +123,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
                 if (closed.isNotEmpty) ...[
                   const SizedBox(height: YugmaSpacing.s4),
                   Text(
-                    'बंद हुए खाते',
+                    strings.udhaarClosedLedgers,
                     style: theme.bodyDeva.copyWith(
                       fontWeight: FontWeight.w700,
                       fontSize: YugmaTypeScale.bodyLarge,
@@ -165,12 +165,12 @@ class CustomerUdhaarScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'कुल बाकी',
+            strings.udhaarTotalBaaki,
             style: theme.captionDeva,
           ),
           const SizedBox(height: YugmaSpacing.s1),
           Text(
-            '₹${_formatInr(totalBaaki)}',
+            '₹${formatInr(totalBaaki)}',
             style: theme.monoNumeral.copyWith(
               fontSize: YugmaTypeScale.display,
               fontWeight: FontWeight.w700,
@@ -178,7 +178,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
           ),
           const SizedBox(height: YugmaSpacing.s1),
           Text(
-            '${openLedgers.length} चालू खाते',
+            strings.udhaarOpenAccountsCount(openLedgers.length),
             style: theme.captionDeva,
           ),
         ],
@@ -219,7 +219,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'मूल राशि: ₹${_formatInr(ledger.recordedAmount)}',
+                    '${strings.udhaarOriginalAmountPrefix}: ₹${formatInr(ledger.recordedAmount)}',
                     style: theme.bodyDeva.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -236,7 +236,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(YugmaRadius.sm),
                     ),
                     child: Text(
-                      'चुकता',
+                      strings.udhaarSettledBadge,
                       style: theme.captionDeva.copyWith(
                         color: theme.shopCommit,
                         fontWeight: FontWeight.w600,
@@ -250,12 +250,12 @@ class CustomerUdhaarScreen extends ConsumerWidget {
             // Running balance
             if (!isClosed) ...[
               Text(
-                'बाकी',
+                strings.udhaarBaakiLabel,
                 style: theme.captionDeva,
               ),
               const SizedBox(height: 2),
               Text(
-                '₹${_formatInr(ledger.runningBalance)}',
+                '₹${formatInr(ledger.runningBalance)}',
                 style: theme.monoNumeral,
               ),
               const SizedBox(height: YugmaSpacing.s2),
@@ -274,7 +274,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: YugmaSpacing.s1),
                     Text(
-                      '${ledger.partialPaymentReferences.length} किस्त चुकाई',
+                      strings.udhaarPartialPaymentCount(ledger.partialPaymentReferences.length),
                       style: theme.captionDeva,
                     ),
                   ],
@@ -294,7 +294,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: YugmaSpacing.s1),
                     Text(
-                      '${ledger.reminderCountLifetime} रिमाइंडर भेजे गए',
+                      strings.udhaarRemindersSentCount(ledger.reminderCountLifetime),
                       style: theme.captionDeva,
                     ),
                   ],
@@ -316,20 +316,4 @@ class CustomerUdhaarScreen extends ConsumerWidget {
     );
   }
 
-  /// Indian lakh/thousand separators.
-  static String _formatInr(int amount) {
-    if (amount < 0) return '-${_formatInr(-amount)}';
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }

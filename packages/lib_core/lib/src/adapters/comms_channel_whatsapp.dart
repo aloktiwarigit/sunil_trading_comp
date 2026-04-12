@@ -38,6 +38,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logging/logging.dart';
 
 import '../models/message.dart';
+import '../utils/format_inr.dart';
 import 'comms_channel.dart';
 
 /// WhatsApp fallback — returns [ExternalConversationHandle] that wraps a
@@ -220,7 +221,7 @@ class CommsChannelWhatsApp implements CommsChannel {
   }) {
     // Format INR with Western numerals per UX Spec §5.5 numerical guidance
     // (Devanagari numerals are used only for dates/ordinals, not prices).
-    final formattedAmount = _formatInr(totalAmount);
+    final formattedAmount = formatInr(totalAmount);
 
     return [
       '🛍️ $shopDisplayName',
@@ -231,26 +232,6 @@ class CommsChannelWhatsApp implements CommsChannel {
       '',
       'नमस्ते! मेरा यह ऑर्डर है। कृपया मदद कीजिए।',
     ].join('\n');
-  }
-
-  /// Format INR rupee amount with standard Indian lakh/thousand separators.
-  /// Example: 22000 → "22,000", 150000 → "1,50,000".
-  static String _formatInr(int amount) {
-    if (amount < 1000) return amount.toString();
-    final str = amount.toString();
-    if (str.length <= 3) return str;
-    // Indian format: last 3 digits, then groups of 2.
-    final lastThree = str.substring(str.length - 3);
-    final rest = str.substring(0, str.length - 3);
-    final buffer = StringBuffer();
-    // Walk `rest` from the right, insert comma every 2 digits.
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
   }
 
   static int? _asInt(Object? value) {

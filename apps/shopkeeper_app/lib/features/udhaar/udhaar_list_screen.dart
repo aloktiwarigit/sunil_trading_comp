@@ -61,7 +61,7 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
         backgroundColor: YugmaColors.primary,
         foregroundColor: YugmaColors.textOnPrimary,
         title: Text(
-          'उधार खाता',
+          strings.udhaarScreenTitle,
           style: TextStyle(
             fontFamily: YugmaFonts.devaDisplay,
             fontSize: YugmaTypeScale.h3,
@@ -72,7 +72,7 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
           TextButton(
             onPressed: () => setState(() => _showClosed = !_showClosed),
             child: Text(
-              _showClosed ? 'खुले' : 'बंद',
+              _showClosed ? strings.shopUdhaarToggleOpen : strings.shopUdhaarToggleClosed,
               style: TextStyle(
                 fontFamily: YugmaFonts.devaBody,
                 color: YugmaColors.textOnPrimary,
@@ -100,8 +100,8 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
                 padding: const EdgeInsets.all(YugmaSpacing.s8),
                 child: Text(
                   _showClosed
-                      ? 'कोई बंद खाता नहीं'
-                      : 'कोई खुला उधार खाता नहीं',
+                      ? strings.shopUdhaarNoClosed
+                      : strings.shopUdhaarNoOpen,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: YugmaFonts.devaBody,
@@ -204,7 +204,7 @@ class _UdhaarCard extends ConsumerWidget {
               children: [
                 // Running balance
                 Text(
-                  '₹${_formatInr(ledger.runningBalance)}',
+                  '₹${formatInr(ledger.runningBalance)}',
                   style: TextStyle(
                     fontFamily: YugmaFonts.mono,
                     fontSize: YugmaTypeScale.bodyLarge,
@@ -216,7 +216,7 @@ class _UdhaarCard extends ConsumerWidget {
                 ),
                 const SizedBox(width: YugmaSpacing.s2),
                 Text(
-                  '/ ₹${_formatInr(ledger.recordedAmount)}',
+                  '/ ₹${formatInr(ledger.recordedAmount)}',
                   style: TextStyle(
                     fontFamily: YugmaFonts.mono,
                     fontSize: YugmaTypeScale.caption,
@@ -277,19 +277,4 @@ class _UdhaarCard extends ConsumerWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    if (amount < 0) return '-${_formatInr(-amount)}';
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }

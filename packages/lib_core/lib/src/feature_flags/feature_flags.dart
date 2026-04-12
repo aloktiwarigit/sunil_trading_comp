@@ -58,4 +58,10 @@ class FeatureFlags {
 
   static const String cloudinaryUploadsBlocked = 'cloudinary_uploads_blocked';
   static const String firestoreWritesBlocked = 'firestore_writes_blocked';
+
+  // ---------- Media adapter config ----------
+
+  /// Cloudinary cloud_name for catalog image delivery URLs.
+  /// Default: dev cloud name. Overridden per environment in Remote Config.
+  static const String cloudinaryCloudName = 'cloudinary_cloud_name';
 }

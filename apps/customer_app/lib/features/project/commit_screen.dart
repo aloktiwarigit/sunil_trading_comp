@@ -151,7 +151,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                           ),
                         ),
                         Text(
-                          '${item.quantity} × ₹${_formatInr(item.unitPriceInr)}',
+                          '${item.quantity} × ₹${formatInr(item.unitPriceInr)}',
                           style: theme.monoNumeral,
                         ),
                       ],
@@ -195,7 +195,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                       .copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  '₹${_formatInr(total)}',
+                  '₹${formatInr(total)}',
                   style: theme.monoNumeral.copyWith(
                     fontSize: theme.isElderTier ? 22.0 : 18.0,
                     fontWeight: FontWeight.w700,
@@ -470,7 +470,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                             child: Text(item.skuName, style: theme.bodyDeva),
                           ),
                           Text(
-                            '${item.quantity} × ₹${_formatInr(item.unitPriceInr)}',
+                            '${item.quantity} × ₹${formatInr(item.unitPriceInr)}',
                             style: theme.monoNumeral,
                           ),
                         ],
@@ -489,7 +489,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                           .copyWith(fontWeight: FontWeight.w700),
                     ),
                     Text(
-                      '₹${_formatInr(total)}',
+                      '₹${formatInr(total)}',
                       style: theme.monoNumeral.copyWith(
                         fontSize: theme.isElderTier ? 22.0 : 18.0,
                         fontWeight: FontWeight.w700,
@@ -603,22 +603,4 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }

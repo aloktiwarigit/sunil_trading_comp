@@ -37,8 +37,9 @@ class PresenceBanner extends StatelessWidget {
     }
 
     final theme = context.yugmaTheme;
+    const strings = AppStringsHi();
     final returnText = returnTime != null && returnTime!.isNotEmpty
-        ? ', $returnTime तक वापस'
+        ? strings.presenceReturnBy(returnTime!)
         : '';
 
     return Container(
@@ -82,7 +83,7 @@ class PresenceBanner extends StatelessWidget {
                 color: theme.shopPrimary,
                 size: 24,
               ),
-              tooltip: 'आवाज़ सुनिए',
+              tooltip: strings.presenceListenVoice,
             ),
         ],
       ),

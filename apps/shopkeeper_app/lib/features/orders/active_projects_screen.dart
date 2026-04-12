@@ -85,7 +85,7 @@ class _ActiveProjectsScreenState extends ConsumerState<ActiveProjectsScreen> {
                 color: YugmaColors.textPrimary,
               ),
               decoration: InputDecoration(
-                hintText: 'खोजें — नाम, फ़ोन, रकम',
+                hintText: strings.searchHintOrders,
                 hintStyle: TextStyle(
                   fontFamily: YugmaFonts.devaBody,
                   fontSize: YugmaTypeScale.body,
@@ -312,7 +312,7 @@ class _ProjectCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '₹${_formatInr(project.totalAmount)}',
+                  '₹${formatInr(project.totalAmount)}',
                   style: TextStyle(
                     fontFamily: YugmaFonts.enBody,
                     fontSize: YugmaTypeScale.bodyLarge,
@@ -351,20 +351,6 @@ class _ProjectCard extends StatelessWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }
 
 /// Devanagari state badge with color coding.

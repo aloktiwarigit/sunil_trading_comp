@@ -27,6 +27,7 @@
 //   - mythic: शुभ / मंगल / मंदिर / धर्म / तीर्थ / पूज्य / आशीर्वाद / स्वागतम् / उत्पाद / गुणवत्ता / श्रेष्ठ (absent ✓)
 // =============================================================================
 
+import '../utils/format_inr.dart';
 import 'strings_base.dart';
 
 /// Devanagari implementation of [AppStrings]. Consume via
@@ -184,7 +185,7 @@ class AppStringsHi extends AppStrings {
       'सुनील भैया की पेशकश — $skuName';
 
   @override
-  String proposalPriceLine(int amount) => '₹${_formatInr(amount)}';
+  String proposalPriceLine(int amount) => '₹${formatInr(amount)}';
 
   @override
   String get proposalAcceptButton => 'मंज़ूर है';
@@ -194,7 +195,7 @@ class AppStringsHi extends AppStrings {
 
   @override
   String proposalAcceptedSystemMessage(int amount, String skuName) =>
-      '₹${_formatInr(amount)} पर $skuName पक्का हुआ';
+      '₹${formatInr(amount)} पर $skuName पक्का हुआ';
 
   @override
   String get proposalOriginalPriceLabel => 'पहले का दाम';
@@ -319,14 +320,14 @@ class AppStringsHi extends AppStrings {
 
   @override
   String udhaarBalance(int amount) =>
-      'सुनील भैया में बाकी: ₹${_formatInr(amount)}';
+      'सुनील भैया में बाकी: ₹${formatInr(amount)}';
 
   @override
   String get deliveryConfirmed => 'सुनील भैया ने ऑर्डर डिलीवर कर दिया';
 
   @override
   String udhaarReminderPush(int amount) =>
-      'आपका खाता: सुनील भैया में ₹${_formatInr(amount)} बाकी';
+      'आपका खाता: सुनील भैया में ₹${formatInr(amount)} बाकी';
 
   // ---- §7 Empty states ----
 
@@ -396,7 +397,7 @@ class AppStringsHi extends AppStrings {
   String get receiptCancelledWatermark => 'रद्द';
 
   @override
-  String receiptUdhaarBaaki(int amount) => 'बाकी: ₹${_formatInr(amount)}';
+  String receiptUdhaarBaaki(int amount) => 'बाकी: ₹${formatInr(amount)}';
 
   @override
   String get receiptCustomerFallback => 'ग्राहक';
@@ -893,29 +894,95 @@ class AppStringsHi extends AppStrings {
   @override
   String get settingsRemoveOperator => 'हटाइए';
 
-  // ---------------------------------------------------------------------------
-  // Internal helpers
-  // ---------------------------------------------------------------------------
+  // ---- §33 Customer Udhaar Screen ----
 
-  /// Format INR rupee amount with Indian lakh/thousand separators.
-  /// Examples: 22000 → "22,000"; 150000 → "1,50,000".
-  ///
-  /// Western numerals per UX Spec §5.4 — prices always use 0-9, not ०-९,
-  /// because UPI / WhatsApp / every other surface uses Western numerals
-  /// and consistency with the user's broader digital life wins over purity.
-  static String _formatInr(int amount) {
-    if (amount < 1000) return amount.toString();
-    final str = amount.toString();
-    if (str.length <= 3) return str;
-    final lastThree = str.substring(str.length - 3);
-    final rest = str.substring(0, str.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
+  @override
+  String get udhaarScreenTitle => 'उधार खाता';
+
+  @override
+  String get udhaarNoLedgers => 'अभी कोई उधार खाता नहीं है';
+
+  @override
+  String get udhaarOpenLedgers => 'चालू उधार';
+
+  @override
+  String get udhaarClosedLedgers => 'बंद हुए खाते';
+
+  @override
+  String get udhaarTotalBaaki => 'कुल बाकी';
+
+  @override
+  String get udhaarSettledBadge => 'चुकता';
+
+  @override
+  String get udhaarBaakiLabel => 'बाकी';
+
+  @override
+  String udhaarOpenAccountsCount(int count) => '$count चालू खाते';
+
+  @override
+  String get udhaarOriginalAmountPrefix => 'मूल राशि';
+
+  @override
+  String udhaarPartialPaymentCount(int count) => '$count किस्त चुकाई';
+
+  @override
+  String udhaarRemindersSentCount(int count) => '$count रिमाइंडर भेजे गए';
+
+  // ---- §34 Persona Toggle ----
+
+  @override
+  String get personaSheetTitle => 'कौन देख रहा है?';
+
+  @override
+  String get personaCustomLabelHint => 'नाम लिखिए';
+
+  // ---- §35 Large Text Toggle ----
+
+  @override
+  String get largeTextToggleLabel => 'बड़ा अक्षर';
+
+  // ---- §36 Presence Banner ----
+
+  @override
+  String presenceReturnBy(String time) => ', $time तक वापस';
+
+  @override
+  String get presenceListenVoice => 'आवाज़ सुनिए';
+
+  // ---- §37 Read Tracking ----
+
+  @override
+  String get readStatusSeen => 'देखा गया';
+
+  @override
+  String readStatusSeenByCount(int count) => 'देखा गया · $count लोग';
+
+  // ---- §38 Shopkeeper Udhaar List ----
+
+  @override
+  String get shopUdhaarToggleOpen => 'खुले';
+
+  @override
+  String get shopUdhaarToggleClosed => 'बंद';
+
+  @override
+  String get shopUdhaarNoOpen => 'कोई खुला उधार खाता नहीं';
+
+  @override
+  String get shopUdhaarNoClosed => 'कोई बंद खाता नहीं';
+
+  // ---- §39 Shopkeeper Search ----
+
+  @override
+  String get searchHintOrders => 'खोजें — नाम, फ़ोन, रकम';
+
+  // ---- §40 Shopkeeper Inventory Voice ----
+
+  @override
+  String get voiceNoteButtonLabel => '🎤 आवाज़ नोट';
+
+  @override
+  String get voiceNoteAttached => 'आवाज़ नोट जुड़ गया';
+
 }

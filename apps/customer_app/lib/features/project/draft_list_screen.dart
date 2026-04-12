@@ -82,21 +82,6 @@ class DraftListScreen extends ConsumerWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
-
   Widget _buildEmptyState(BuildContext context, YugmaThemeExtension theme) {
     return Center(
       child: Padding(
@@ -301,7 +286,7 @@ class DraftListScreen extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    '\u20B9${_formatInr(_computeTotal(draftState))}',
+                    '\u20B9${formatInr(_computeTotal(draftState))}',
                     style: theme.monoNumeral.copyWith(
                       fontSize: theme.isElderTier ? 20.0 : 17.0,
                       fontWeight: FontWeight.w700,
@@ -394,7 +379,7 @@ class _DraftLineItemTile extends StatelessWidget {
                 ),
                 const SizedBox(height: YugmaSpacing.s1),
                 Text(
-                  '\u20B9${_formatInr(item.unitPriceInr)}',
+                  '\u20B9${formatInr(item.unitPriceInr)}',
                   style: theme.monoNumeral.copyWith(
                     fontSize: theme.isElderTier ? 18.0 : 15.0,
                   ),
@@ -448,20 +433,6 @@ class _DraftLineItemTile extends StatelessWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }
 
 /// Small quantity +/- button.

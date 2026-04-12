@@ -15,6 +15,7 @@
 import 'package:flutter/material.dart';
 
 import '../../locale/strings_base.dart';
+import '../../utils/format_inr.dart';
 import '../../models/inventory_sku.dart';
 import '../../theme/tokens.dart';
 import '../../theme/yugma_theme_extension.dart';
@@ -106,7 +107,7 @@ class SkuDetailCard extends StatelessWidget {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
-                        '\u20B9${_formatInr(sku.basePrice)}',
+                        '\u20B9${formatInr(sku.basePrice)}',
                         style: theme.monoNumeral.copyWith(
                           fontSize: theme.isElderTier ? 28.0 : 22.0,
                         ),
@@ -222,22 +223,6 @@ class SkuDetailCard extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  /// Indian number formatting: 17,500 not 17500; 1,50,000 not 150000.
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
   }
 
   static String _materialLabel(SkuMaterial material) {

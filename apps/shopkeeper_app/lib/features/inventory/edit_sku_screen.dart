@@ -248,7 +248,7 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
             child: OutlinedButton.icon(
               onPressed: () => _showVoiceRecorder(context, sku, strings),
               icon: const Icon(Icons.mic, size: 20),
-              label: Text('🎤 आवाज़ नोट'),
+              label: Text(strings.voiceNoteButtonLabel),
               style: OutlinedButton.styleFrom(
                 foregroundColor: YugmaColors.accent,
                 side: BorderSide(color: YugmaColors.accent),
@@ -401,7 +401,7 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
 
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('आवाज़ नोट जुड़ गया')),
+                SnackBar(content: Text(strings.voiceNoteAttached)),
               );
             }
           } catch (e) {

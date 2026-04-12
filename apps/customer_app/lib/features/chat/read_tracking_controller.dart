@@ -75,9 +75,10 @@ final readTrackingProvider = Provider<ReadTrackingController>((ref) {
 /// P2.7 AC #3: helper to build "देखा गया" label from readByUids.
 /// Maps UIDs to persona labels if Decision Circle data is available.
 String readStatusLabel(List<String> readByUids, String currentUid) {
+  const strings = AppStringsHi();
   // Filter out current user
   final others = readByUids.where((uid) => uid != currentUid).toList();
   if (others.isEmpty) return '';
-  if (others.length == 1) return 'देखा गया';
-  return 'देखा गया · ${others.length} लोग';
+  if (others.length == 1) return strings.readStatusSeen;
+  return strings.readStatusSeenByCount(others.length);
 }
