@@ -112,6 +112,27 @@ abstract class AppStrings {
   /// Golden Hour toggle — switch BACK to beautiful view.
   String get goldenHourToggleBeautiful;
 
+  /// Golden Hour capture screen title.
+  String get goldenHourTitle;
+
+  /// Golden Hour light guide instruction.
+  String get goldenHourLightGuide;
+
+  /// Golden Hour capture button label.
+  String get goldenHourCaptureButton;
+
+  /// Golden Hour hero photo tier label.
+  String get goldenHourHeroLabel;
+
+  /// Golden Hour working photo tier label.
+  String get goldenHourWorkingLabel;
+
+  /// Golden Hour retake button.
+  String get goldenHourRetake;
+
+  /// Golden Hour save button.
+  String get goldenHourSave;
+
   // =========================================================================
   // §2 — Curated shortlists (UX Spec §5.5 #3–5)
   // =========================================================================

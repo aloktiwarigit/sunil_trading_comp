@@ -415,33 +415,32 @@ class _CreateSkuScreenState extends ConsumerState<CreateSkuScreen> {
         );
   }
 
-  /// Domain-grounded category display names (Devanagari).
+  // SU002 fix: Hindi category and material display names.
   String _categoryDisplayName(SkuCategory c) {
     switch (c) {
       case SkuCategory.steelAlmirah:
-        return 'Steel Almirah';
+        return 'स्टील अलमारी';
       case SkuCategory.woodenWardrobe:
-        return 'Wooden Wardrobe';
+        return 'लकड़ी की अलमारी';
       case SkuCategory.modular:
-        return 'Modular';
+        return 'मॉड्यूलर';
       case SkuCategory.dressing:
-        return 'Dressing Table';
+        return 'ड्रेसिंग टेबल';
       case SkuCategory.sideCabinet:
-        return 'Side Cabinet';
+        return 'साइड कैबिनेट';
     }
   }
 
-  /// Domain-grounded material display names.
   String _materialDisplayName(SkuMaterial m) {
     switch (m) {
       case SkuMaterial.steel:
-        return 'Steel';
+        return 'स्टील';
       case SkuMaterial.woodSheesham:
-        return 'Sheesham';
+        return 'शीशम';
       case SkuMaterial.woodTeak:
-        return 'Teak';
+        return 'सागौन';
       case SkuMaterial.plyLaminate:
-        return 'Ply / Laminate';
+        return 'प्लाई / लेमिनेट';
     }
   }
 }

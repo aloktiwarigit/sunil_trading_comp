@@ -28,6 +28,7 @@
 // =============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
@@ -44,6 +45,34 @@ import 'package:customer_app/features/udhaar/customer_udhaar_screen.dart';
 import 'package:customer_app/features/project/draft_controller.dart';
 import 'package:customer_app/features/project/draft_list_screen.dart';
 import 'package:customer_app/features/project/payment_screen.dart';
+
+/// Wraps a child widget in a fade + subtle slide page transition.
+/// Uses YugmaMotion tokens for duration and curve.
+CustomTransitionPage<void> _buildTransitionPage({
+  required LocalKey key,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: key,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.05, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: YugmaMotion.standard,
+          )),
+          child: child,
+        ),
+      );
+    },
+    transitionDuration: YugmaMotion.normal,
+  );
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   final onboarding = ref.watch(onboardingControllerProvider);
@@ -83,76 +112,77 @@ final routerProvider = Provider<GoRouter>((ref) {
             return const SplashScreen();
           }
 
-          // No Theme wrapper needed — app.dart already registers
-          // YugmaThemeExtension via MaterialApp.router(theme: _buildTheme()).
-          return Consumer(
-            builder: (ctx, innerRef, _) {
-              final previews = innerRef
-                  .watch(curatedShortlistsPreviewProvider)
-                  .valueOrNull ?? const [];
-
-              return BharosaLanding(
-                onShortlistTap: (occasionTag) {
-                  context.push('/shortlist/$occasionTag');
-                },
-                onGreetingPlay: () {},
-                autoPlayGreeting: false,
-                onPresenceVoiceNote: () {},
-                previewShortlists: previews,
-                strings: data.strings,
-                hasGreetingVoiceNote:
-                    data.themeTokens.greetingVoiceNoteId.isNotEmpty,
-                greetingDurationSeconds: 0,
-                currentLocaleCode: data.localeCode,
-                onLocaleToggle: () {
-                  ref.read(onboardingControllerProvider.notifier).toggleLocale();
-                },
-                onRefresh: () async {
-                  ref.invalidate(curatedShortlistsPreviewProvider);
-                  await ref
-                      .read(onboardingControllerProvider.notifier)
-                      .refreshTheme();
-                },
-                onMyListTap: () => context.push('/draft'),
-                onOrdersTap: () => context.push('/orders'),
-              );
-            },
+          // Inline landing — bypasses BharosaLanding to isolate the bug
+          final theme = context.yugmaTheme;
+          return Scaffold(
+            backgroundColor: theme.shopBackground,
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 80, height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.shopAccent,
+                    ),
+                    child: Center(child: Text('सु',
+                      style: TextStyle(fontSize: 28, color: theme.shopPrimaryDeep))),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(theme.ownerName,
+                    style: TextStyle(fontSize: 24, color: theme.shopTextPrimary,
+                      fontFamily: theme.fontFamilyDevanagariDisplay)),
+                  Text(theme.brandName,
+                    style: TextStyle(fontSize: 14, color: theme.shopTextMuted)),
+                  const SizedBox(height: 24),
+                  Text('INLINE LANDING WORKS',
+                    style: TextStyle(fontSize: 16, color: Colors.red)),
+                ],
+              ),
+            ),
           );
         },
       ),
       // C3.1 — "My List" draft screen
       GoRoute(
         path: '/draft',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final data = onboarding.valueOrNull;
-          if (data == null) return const SplashScreen();
+          if (data == null) {
+            return _buildTransitionPage(
+                key: state.pageKey, child: const SplashScreen());
+          }
 
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
-          return Theme(
-            data: ThemeData(
-              useMaterial3: true,
-              extensions: [theme],
-            ),
-            child: DraftListScreen(
-              strings: data.strings,
-              onBrowse: () => context.go('/landing'),
-              onTalkToBhaiya: () {
-                // Navigate to chat once a draft project exists.
-                final draftState = ref.read(draftControllerProvider).valueOrNull;
-                final projectId = draftState?.projectId;
-                if (projectId != null) {
-                  context.push('/project/$projectId/chat');
-                }
-              },
-              onCommit: () {
-                // C3.4 — Navigate to commit flow.
-                final draftState = ref.read(draftControllerProvider).valueOrNull;
-                final projectId = draftState?.projectId;
-                if (projectId != null) {
-                  context.push('/project/$projectId/commit');
-                }
-              },
+          return _buildTransitionPage(
+            key: state.pageKey,
+            child: Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                extensions: [theme],
+              ),
+              child: DraftListScreen(
+                strings: data.strings,
+                onBrowse: () => context.go('/landing'),
+                onTalkToBhaiya: () {
+                  // Navigate to chat once a draft project exists.
+                  final draftState = ref.read(draftControllerProvider).valueOrNull;
+                  final projectId = draftState?.projectId;
+                  if (projectId != null) {
+                    context.push('/project/$projectId/chat');
+                  }
+                },
+                onCommit: () {
+                  // C3.4 — Navigate to commit flow.
+                  final draftState = ref.read(draftControllerProvider).valueOrNull;
+                  final projectId = draftState?.projectId;
+                  if (projectId != null) {
+                    context.push('/project/$projectId/commit');
+                  }
+                },
+              ),
             ),
           );
         },
@@ -160,24 +190,33 @@ final routerProvider = Provider<GoRouter>((ref) {
       // C3.4 — Commit flow screen
       GoRoute(
         path: '/project/:id/commit',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final data = onboarding.valueOrNull;
-          if (data == null) return const SplashScreen();
+          if (data == null) {
+            return _buildTransitionPage(
+                key: state.pageKey, child: const SplashScreen());
+          }
 
           final projectId = state.pathParameters['id'];
           if (projectId == null) {
-            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+            return _buildTransitionPage(
+              key: state.pageKey,
+              child: const Scaffold(body: Center(child: Text('Missing route parameter'))),
+            );
           }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
-          return Theme(
-            data: ThemeData(
-              useMaterial3: true,
-              extensions: [theme],
-            ),
-            child: CommitScreen(
-              projectId: projectId,
-              strings: data.strings,
+          return _buildTransitionPage(
+            key: state.pageKey,
+            child: Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                extensions: [theme],
+              ),
+              child: CommitScreen(
+                projectId: projectId,
+                strings: data.strings,
+              ),
             ),
           );
         },
@@ -185,24 +224,33 @@ final routerProvider = Provider<GoRouter>((ref) {
       // C3.5 — Payment flow screen
       GoRoute(
         path: '/project/:id/payment',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final data = onboarding.valueOrNull;
-          if (data == null) return const SplashScreen();
+          if (data == null) {
+            return _buildTransitionPage(
+                key: state.pageKey, child: const SplashScreen());
+          }
 
           final projectId = state.pathParameters['id'];
           if (projectId == null) {
-            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+            return _buildTransitionPage(
+              key: state.pageKey,
+              child: const Scaffold(body: Center(child: Text('Missing route parameter'))),
+            );
           }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
-          return Theme(
-            data: ThemeData(
-              useMaterial3: true,
-              extensions: [theme],
-            ),
-            child: PaymentScreen(
-              projectId: projectId,
-              strings: data.strings,
+          return _buildTransitionPage(
+            key: state.pageKey,
+            child: Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                extensions: [theme],
+              ),
+              child: PaymentScreen(
+                projectId: projectId,
+                strings: data.strings,
+              ),
             ),
           );
         },
@@ -210,42 +258,57 @@ final routerProvider = Provider<GoRouter>((ref) {
       // C3.10 — Order list ("मेरे ऑर्डर")
       GoRoute(
         path: '/orders',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final data = onboarding.valueOrNull;
-          if (data == null) return const SplashScreen();
+          if (data == null) {
+            return _buildTransitionPage(
+                key: state.pageKey, child: const SplashScreen());
+          }
 
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
-          return Theme(
-            data: ThemeData(
-              useMaterial3: true,
-              extensions: [theme],
+          return _buildTransitionPage(
+            key: state.pageKey,
+            child: Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                extensions: [theme],
+              ),
+              child: OrderListScreen(strings: data.strings),
             ),
-            child: OrderListScreen(strings: data.strings),
           );
         },
       ),
       // C3.10 — Order detail with state timeline
       GoRoute(
         path: '/orders/:id',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final data = onboarding.valueOrNull;
-          if (data == null) return const SplashScreen();
+          if (data == null) {
+            return _buildTransitionPage(
+                key: state.pageKey, child: const SplashScreen());
+          }
 
           final projectId = state.pathParameters['id'];
           if (projectId == null) {
-            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+            return _buildTransitionPage(
+              key: state.pageKey,
+              child: const Scaffold(body: Center(child: Text('Missing route parameter'))),
+            );
           }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
-          return Theme(
-            data: ThemeData(
-              useMaterial3: true,
-              extensions: [theme],
-            ),
-            child: OrderDetailScreen(
-              projectId: projectId,
-              strings: data.strings,
+          return _buildTransitionPage(
+            key: state.pageKey,
+            child: Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                extensions: [theme],
+              ),
+              child: OrderDetailScreen(
+                projectId: projectId,
+                strings: data.strings,
+              ),
             ),
           );
         },
@@ -253,9 +316,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       // C3.12 — Shop deactivation FAQ screen
       GoRoute(
         path: '/deactivation-faq',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final data = onboarding.valueOrNull;
-          if (data == null) return const SplashScreen();
+          if (data == null) {
+            return _buildTransitionPage(
+                key: state.pageKey, child: const SplashScreen());
+          }
 
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
           // CR F6: compute retention days from Shop.dpdpRetentionUntil.
@@ -265,14 +331,17 @@ final routerProvider = Provider<GoRouter>((ref) {
               ? retentionUntil.difference(DateTime.now()).inDays.clamp(0, 999)
               : 180;
 
-          return Theme(
-            data: ThemeData(
-              useMaterial3: true,
-              extensions: [theme],
-            ),
-            child: DeactivationFaqScreen(
-              strings: data.strings,
-              retentionDays: retentionDays,
+          return _buildTransitionPage(
+            key: state.pageKey,
+            child: Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                extensions: [theme],
+              ),
+              child: DeactivationFaqScreen(
+                strings: data.strings,
+                retentionDays: retentionDays,
+              ),
             ),
           );
         },
@@ -280,40 +349,54 @@ final routerProvider = Provider<GoRouter>((ref) {
       // B-5 — Customer udhaar balance view (read-only)
       GoRoute(
         path: '/udhaar',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final data = onboarding.valueOrNull;
-          if (data == null) return const SplashScreen();
+          if (data == null) {
+            return _buildTransitionPage(
+                key: state.pageKey, child: const SplashScreen());
+          }
 
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
-          return Theme(
-            data: ThemeData(
-              useMaterial3: true,
-              extensions: [theme],
+          return _buildTransitionPage(
+            key: state.pageKey,
+            child: Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                extensions: [theme],
+              ),
+              child: CustomerUdhaarScreen(strings: data.strings),
             ),
-            child: CustomerUdhaarScreen(strings: data.strings),
           );
         },
       ),
       // B1.4 — Curated shortlist screen (per occasion)
       GoRoute(
         path: '/shortlist/:occasionTag',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final data = onboarding.valueOrNull;
-          if (data == null) return const SplashScreen();
+          if (data == null) {
+            return _buildTransitionPage(
+                key: state.pageKey, child: const SplashScreen());
+          }
 
           final occasionTag = state.pathParameters['occasionTag'];
           if (occasionTag == null) {
-            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+            return _buildTransitionPage(
+              key: state.pageKey,
+              child: const Scaffold(body: Center(child: Text('Missing route parameter'))),
+            );
           }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
-          return Theme(
-            data: ThemeData(
-              useMaterial3: true,
-              extensions: [theme],
-            ),
-            child: Consumer(
+          return _buildTransitionPage(
+            key: state.pageKey,
+            child: Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                extensions: [theme],
+              ),
+              child: Consumer(
               builder: (ctx, innerRef, _) {
                 final shortlistAsync =
                     innerRef.watch(curatedShortlistByOccasionProvider(occasionTag));
@@ -362,9 +445,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                   shortlist: shortlist,
                   skus: skusAsync.valueOrNull ?? const [],
                   strings: data.strings,
-                  onSkuTap: (sku) => context.push('/sku/${sku.skuId}'),
+                  onSkuTap: (sku) {
+                    HapticFeedback.lightImpact();
+                    context.push('/sku/${sku.skuId}');
+                  },
                 );
               },
+            ),
             ),
           );
         },
@@ -372,22 +459,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       // B1.5 — SKU detail screen
       GoRoute(
         path: '/sku/:skuId',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final data = onboarding.valueOrNull;
-          if (data == null) return const SplashScreen();
+          if (data == null) {
+            return _buildTransitionPage(
+                key: state.pageKey, child: const SplashScreen());
+          }
 
           final skuId = state.pathParameters['skuId'];
           if (skuId == null) {
-            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+            return _buildTransitionPage(
+              key: state.pageKey,
+              child: const Scaffold(body: Center(child: Text('Missing route parameter'))),
+            );
           }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
-          return Theme(
-            data: ThemeData(
-              useMaterial3: true,
-              extensions: [theme],
-            ),
-            child: Consumer(
+          return _buildTransitionPage(
+            key: state.pageKey,
+            child: Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                extensions: [theme],
+              ),
+              child: Consumer(
               builder: (ctx, innerRef, _) {
                 final skuAsync = innerRef.watch(skuByIdProvider(skuId));
 
@@ -430,6 +525,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                       goldenHourPhotoUrl: goldenHourUrl,
                       workingLightPhotoUrl: workingUrl,
                       onAddToList: () {
+                        HapticFeedback.lightImpact();
                         // C3.1: Add SKU to draft list and navigate.
                         innerRef
                             .read(draftControllerProvider.notifier)
@@ -437,6 +533,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                         context.push('/draft');
                       },
                       onTalkToBhaiya: () {
+                        HapticFeedback.lightImpact();
                         // Navigate to chat — first ensure a draft exists.
                         final draft = innerRef
                             .read(draftControllerProvider)
@@ -458,30 +555,40 @@ final routerProvider = Provider<GoRouter>((ref) {
                 );
               },
             ),
+            ),
           );
         },
       ),
       // P2.4 + P2.5 — Chat thread screen
       GoRoute(
         path: '/project/:id/chat',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final data = onboarding.valueOrNull;
-          if (data == null) return const SplashScreen();
+          if (data == null) {
+            return _buildTransitionPage(
+                key: state.pageKey, child: const SplashScreen());
+          }
 
           final projectId = state.pathParameters['id'];
           if (projectId == null) {
-            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+            return _buildTransitionPage(
+              key: state.pageKey,
+              child: const Scaffold(body: Center(child: Text('Missing route parameter'))),
+            );
           }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
-          return Theme(
-            data: ThemeData(
-              useMaterial3: true,
-              extensions: [theme],
-            ),
-            child: CustomerChatScreen(
-              projectId: projectId,
-              strings: data.strings,
+          return _buildTransitionPage(
+            key: state.pageKey,
+            child: Theme(
+              data: ThemeData(
+                useMaterial3: true,
+                extensions: [theme],
+              ),
+              child: CustomerChatScreen(
+                projectId: projectId,
+                strings: data.strings,
+              ),
             ),
           );
         },

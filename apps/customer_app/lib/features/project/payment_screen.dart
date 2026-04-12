@@ -300,11 +300,22 @@ class PaymentScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.check_circle,
-              size: 80,
-              color: theme.shopCommit,
-              semanticLabel: 'Payment successful',
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: 1.0),
+              duration: YugmaMotion.normal,
+              curve: Curves.easeOutBack,
+              builder: (context, value, child) {
+                return Transform.scale(
+                  scale: value,
+                  child: child,
+                );
+              },
+              child: Icon(
+                Icons.check_circle,
+                size: 80,
+                color: theme.shopCommit,
+                semanticLabel: 'Payment successful',
+              ),
             ),
             const SizedBox(height: YugmaSpacing.s4),
             Text(

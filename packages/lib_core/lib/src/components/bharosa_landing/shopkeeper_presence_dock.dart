@@ -8,6 +8,7 @@
 // Contains: face frame (44dp), name, presence status, voice-note play.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../locale/strings_base.dart';
 import '../../theme/tokens.dart';
@@ -132,7 +133,10 @@ class ShopkeeperPresenceDock extends StatelessWidget {
             elevation: 2,
             child: InkWell(
               customBorder: const CircleBorder(),
-              onTap: onVoiceNote,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onVoiceNote();
+              },
               child: SizedBox(
                 width: theme.tapTargetMin * 0.83,
                 height: theme.tapTargetMin * 0.83,
@@ -169,7 +173,10 @@ class _DockNavButton extends StatelessWidget {
       padding: const EdgeInsets.only(right: YugmaSpacing.s1),
       child: InkWell(
         customBorder: const CircleBorder(),
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         child: SizedBox(
           width: size,
           height: size,

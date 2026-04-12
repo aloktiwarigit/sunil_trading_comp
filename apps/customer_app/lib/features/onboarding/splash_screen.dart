@@ -13,8 +13,40 @@ import 'package:lib_core/lib_core.dart';
 
 /// Boot splash with Devanagari branding. Shown for <2 seconds while
 /// anonymous auth + ShopThemeTokens load in parallel.
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    final curved = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(curved);
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(curved);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +55,11 @@ class SplashScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: YugmaColors.background,
       body: Center(
-        child: Column(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Devanagari-initial circle (same visual vocabulary as D4 fallback)
@@ -95,6 +131,8 @@ class SplashScreen extends StatelessWidget {
               ),
             ),
           ],
+        ),
+          ),
         ),
       ),
     );

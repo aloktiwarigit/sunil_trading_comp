@@ -17,6 +17,7 @@
 // Maps to UX Spec §8.1, §8.2, §8.3.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../locale/strings_base.dart';
 import '../../theme/tokens.dart';
@@ -162,110 +163,129 @@ class _BharosaLandingState extends State<BharosaLanding>
           onMyListTap: widget.onMyListTap,
           onOrdersTap: widget.onOrdersTap,
         ),
-        body: Column(
-          children: [
-            // Hero
-            Container(
-              height: 240,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [theme.shopSecondary, theme.shopPrimary, theme.shopPrimaryDeep],
+        // CP012: Use CustomScrollView + SliverFillRemaining to avoid
+        // Expanded-inside-SingleChildScrollView anti-pattern while
+        // keeping pull-to-refresh and proper viewport fill.
+        body: CustomScrollView(
+          slivers: [
+            // Hero — pinned height, not scrollable off-screen
+            SliverToBoxAdapter(
+              child: Container(
+                height: 240,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [theme.shopSecondary, theme.shopPrimary, theme.shopPrimaryDeep],
+                  ),
                 ),
-              ),
-              child: SafeArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const ShopkeeperFaceFrame(size: 80),
-                    const SizedBox(height: 8),
-                    Text(
-                      theme.ownerName,
-                      style: TextStyle(
-                        fontFamily: theme.fontFamilyDevanagariDisplay,
-                        fontSize: 24,
-                        color: theme.shopTextOnPrimary,
+                child: SafeArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const ShopkeeperFaceFrame(size: 80),
+                      const SizedBox(height: 8),
+                      Text(
+                        theme.ownerName,
+                        style: TextStyle(
+                          fontFamily: theme.fontFamilyDevanagariDisplay,
+                          fontSize: 24,
+                          color: theme.shopTextOnPrimary,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '${theme.brandName} · ${theme.marketArea}',
-                      style: TextStyle(
-                        fontFamily: theme.fontFamilyDevanagariBody,
-                        fontSize: 12,
-                        color: theme.shopTextOnPrimary.withValues(alpha: 0.85),
+                      Text(
+                        '${theme.brandName} · ${theme.marketArea}',
+                        style: TextStyle(
+                          fontFamily: theme.fontFamilyDevanagariBody,
+                          fontSize: 12,
+                          color: theme.shopTextOnPrimary.withValues(alpha: 0.85),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
             // Meta bar
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: theme.shopSurface,
-              child: Text(
-                widget.strings.metaBarYearsInBusiness(
-                  DateTime.now().year - theme.establishedYear,
-                  theme.establishedYear,
-                ),
-                style: TextStyle(
-                  fontFamily: theme.fontFamilyDevanagariBody,
-                  fontSize: 12,
-                  color: theme.shopTextMuted,
-                ),
-              ),
-            ),
-            // Shortlist tiles
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                widget.strings.shortlistPreviewHeadline(theme.ownerName),
-                style: TextStyle(
-                  fontFamily: theme.fontFamilyDevanagariDisplay,
-                  fontSize: 14,
-                  color: theme.shopPrimary,
+            SliverToBoxAdapter(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                color: theme.shopSurface,
+                child: Text(
+                  widget.strings.metaBarYearsInBusiness(
+                    DateTime.now().year - theme.establishedYear,
+                    theme.establishedYear,
+                  ),
+                  style: TextStyle(
+                    fontFamily: theme.fontFamilyDevanagariBody,
+                    fontSize: 12,
+                    color: theme.shopTextMuted,
+                  ),
                 ),
               ),
             ),
-            SizedBox(
-              height: tileSize,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: widget.previewShortlists.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, i) {
-                  final s = widget.previewShortlists[i];
-                  return GestureDetector(
-                    onTap: () => widget.onShortlistTap(s.occasionTag),
-                    child: Container(
-                      width: tileSize,
-                      height: tileSize,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [theme.shopPrimary, theme.shopPrimaryDeep],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      alignment: Alignment.bottomLeft,
-                      child: Text(
-                        s.occasionLabel,
-                        style: TextStyle(
-                          fontFamily: theme.fontFamilyDevanagariDisplay,
-                          fontSize: 13,
-                          color: theme.shopAccentGlow,
-                        ),
-                      ),
-                    ),
-                  );
-                },
+            // Shortlist heading + horizontal tile scroll
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  widget.strings.shortlistPreviewHeadline(theme.ownerName),
+                  style: TextStyle(
+                    fontFamily: theme.fontFamilyDevanagariDisplay,
+                    fontSize: 14,
+                    color: theme.shopPrimary,
+                  ),
+                ),
               ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: tileSize,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: widget.previewShortlists.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, i) {
+                    final s = widget.previewShortlists[i];
+                    return GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        widget.onShortlistTap(s.occasionTag);
+                      },
+                      child: Container(
+                        width: tileSize,
+                        height: tileSize,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [theme.shopPrimary, theme.shopPrimaryDeep],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        alignment: Alignment.bottomLeft,
+                        child: Text(
+                          s.occasionLabel,
+                          style: TextStyle(
+                            fontFamily: theme.fontFamilyDevanagariDisplay,
+                            fontSize: 13,
+                            color: theme.shopAccentGlow,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            // Fill remaining viewport so background extends
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: const SizedBox.shrink(),
             ),
           ],
         ),
@@ -704,7 +724,10 @@ class _ShortlistTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(YugmaRadius.md),
         child: Container(
           width: size,

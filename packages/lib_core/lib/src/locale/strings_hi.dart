@@ -90,6 +90,20 @@ class AppStringsHi extends AppStrings {
 
   @override
   String get goldenHourToggleBeautiful => 'सुंदर रूप';
+  @override
+  String get goldenHourTitle => 'Golden Hour फ़ोटो';
+  @override
+  String get goldenHourLightGuide => 'सूरज की रोशनी तिरछी पड़नी चाहिए';
+  @override
+  String get goldenHourCaptureButton => 'फ़ोटो लीजिए';
+  @override
+  String get goldenHourHeroLabel => 'Hero फ़ोटो';
+  @override
+  String get goldenHourWorkingLabel => 'Working फ़ोटो';
+  @override
+  String get goldenHourRetake => 'दुबारा लीजिए';
+  @override
+  String get goldenHourSave => 'सहेजिए';
 
   // ---- §2 Curated shortlists ----
 

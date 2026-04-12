@@ -48,6 +48,8 @@ class _GoldenHourCaptureScreenState
   Uint8List? _capturedBytes;
   bool _uploading = false;
   String _selectedTier = 'hero'; // 'hero' or 'working'
+  // F012/SU003 fix: use AppStrings instead of hardcoded Devanagari.
+  final AppStrings _strings = const AppStringsHi();
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +59,7 @@ class _GoldenHourCaptureScreenState
         backgroundColor: YugmaColors.primary,
         foregroundColor: YugmaColors.textOnPrimary,
         title: Text(
-          'Golden Hour फ़ोटो',
+          _strings.goldenHourTitle,
           style: TextStyle(
             fontFamily: YugmaFonts.devaDisplay,
             fontSize: YugmaTypeScale.h3,
@@ -96,7 +98,7 @@ class _GoldenHourCaptureScreenState
                 ),
                 const SizedBox(height: YugmaSpacing.s2),
                 Text(
-                  'सूरज की रोशनी तिरछी पड़नी चाहिए',
+                  _strings.goldenHourLightGuide,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: YugmaFonts.devaBody,
@@ -139,7 +141,7 @@ class _GoldenHourCaptureScreenState
           ),
           const SizedBox(height: YugmaSpacing.s2),
           Text(
-            'फ़ोटो लीजिए',
+            _strings.goldenHourCaptureButton,
             style: TextStyle(
               fontFamily: YugmaFonts.devaBody,
               fontSize: YugmaTypeScale.caption,
@@ -201,7 +203,7 @@ class _GoldenHourCaptureScreenState
                 child: ChoiceChip(
                   selected: _selectedTier == 'hero',
                   label: Text(
-                    'Hero फ़ोटो',
+                    _strings.goldenHourHeroLabel,
                     style: TextStyle(fontFamily: YugmaFonts.devaBody),
                   ),
                   selectedColor: YugmaColors.primary.withValues(alpha: 0.15),
@@ -214,7 +216,7 @@ class _GoldenHourCaptureScreenState
                 child: ChoiceChip(
                   selected: _selectedTier == 'working',
                   label: Text(
-                    'Working फ़ोटो',
+                    _strings.goldenHourWorkingLabel,
                     style: TextStyle(fontFamily: YugmaFonts.devaBody),
                   ),
                   selectedColor: YugmaColors.primary.withValues(alpha: 0.15),
@@ -236,7 +238,7 @@ class _GoldenHourCaptureScreenState
                     foregroundColor: YugmaColors.textSecondary,
                   ),
                   child: Text(
-                    'दुबारा लीजिए',
+                    _strings.goldenHourRetake,
                     style: TextStyle(fontFamily: YugmaFonts.devaBody),
                   ),
                 ),
@@ -262,7 +264,7 @@ class _GoldenHourCaptureScreenState
                             color: YugmaColors.textOnPrimary,
                           ),
                         )
-                      : Text('सहेजिए'),
+                      : Text(_strings.goldenHourSave),
                 ),
               ),
             ],

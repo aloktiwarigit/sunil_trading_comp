@@ -84,6 +84,20 @@ class AppStringsEn extends AppStrings {
 
   @override
   String get goldenHourToggleBeautiful => 'Beautiful view';
+  @override
+  String get goldenHourTitle => 'Golden Hour Photo';
+  @override
+  String get goldenHourLightGuide => 'Sunlight should fall at an angle';
+  @override
+  String get goldenHourCaptureButton => 'Take photo';
+  @override
+  String get goldenHourHeroLabel => 'Hero photo';
+  @override
+  String get goldenHourWorkingLabel => 'Working photo';
+  @override
+  String get goldenHourRetake => 'Retake';
+  @override
+  String get goldenHourSave => 'Save';
 
   // ---- §2 Curated shortlists ----
 

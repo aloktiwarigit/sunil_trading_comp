@@ -13,6 +13,7 @@
 //   - ALL theme via YugmaColors/YugmaFonts
 // =============================================================================
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,9 +21,55 @@ import 'package:lib_core/lib_core.dart';
 
 import '../auth/auth_controller.dart';
 import '../auth/role_gate.dart';
+import '../presence/presence_toggle_screen.dart';
 import 'media_spend_tile.dart';
 import 'nps_card.dart';
 import 'todays_task_card.dart';
+
+// ---------------------------------------------------------------------------
+// SU006: Dashboard count badge providers (Firestore-backed)
+// ---------------------------------------------------------------------------
+
+/// Streams the shop's current presence status from Firestore.
+final _shopPresenceProvider = StreamProvider<PresenceStatus>((ref) {
+  final shopId = ref.read(shopIdProviderProvider).shopId;
+  return FirebaseFirestore.instance
+      .collection('shops')
+      .doc(shopId)
+      .snapshots()
+      .map((snap) {
+    final data = snap.data();
+    final raw = data?['presenceStatus'] as String? ?? 'available';
+    return PresenceStatus.values.firstWhere(
+      (s) => s.name == raw,
+      orElse: () => PresenceStatus.available,
+    );
+  });
+});
+
+/// Streams the count of orders with status != 'delivered' for this shop.
+final _pendingOrdersCountProvider = StreamProvider<int>((ref) {
+  final shopId = ref.read(shopIdProviderProvider).shopId;
+  return FirebaseFirestore.instance
+      .collection('shops')
+      .doc(shopId)
+      .collection('projects')
+      .where('status', isNotEqualTo: 'delivered')
+      .snapshots()
+      .map((snap) => snap.docs.length);
+});
+
+/// Streams the count of open udhaar entries (unpaid) for this shop.
+final _openUdhaarCountProvider = StreamProvider<int>((ref) {
+  final shopId = ref.read(shopIdProviderProvider).shopId;
+  return FirebaseFirestore.instance
+      .collection('shops')
+      .doc(shopId)
+      .collection('udhaar')
+      .where('status', isEqualTo: 'unpaid')
+      .snapshots()
+      .map((snap) => snap.docs.length);
+});
 
 /// The ops app home dashboard — the primary screen after successful auth.
 class HomeDashboard extends ConsumerWidget {
@@ -80,6 +127,9 @@ class HomeDashboard extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.only(top: YugmaSpacing.s4),
           children: [
+            // SU007: Shop presence status indicator
+            _PresenceStatusBanner(strings: strings),
+
             // Operator greeting
             if (operator != null)
               Padding(
@@ -197,13 +247,15 @@ class _InventorySection extends StatelessWidget {
 }
 
 /// Orders section — tappable card that navigates to /orders (S4.6).
-class _OrdersSection extends StatelessWidget {
+/// SU006: shows pending order count badge.
+class _OrdersSection extends ConsumerWidget {
   const _OrdersSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = context.yugmaTheme;
     final strings = const AppStringsHi();
+    final pendingCount = ref.watch(_pendingOrdersCountProvider).valueOrNull ?? 0;
 
     return GestureDetector(
       onTap: () => context.push('/orders'),
@@ -237,6 +289,8 @@ class _OrdersSection extends StatelessWidget {
               ),
             ),
             const Spacer(),
+            if (pendingCount > 0)
+              _CountBadge(count: pendingCount, theme: theme),
             Icon(
               Icons.chevron_right,
               color: theme.shopTextMuted,
@@ -390,13 +444,16 @@ class _DashboardSection extends StatelessWidget {
 }
 
 /// S4.10 — Udhaar section (ledger management).
-class _UdhaarSection extends StatelessWidget {
+/// SU006: shows open udhaar count badge.
+class _UdhaarSection extends ConsumerWidget {
   const _UdhaarSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final strings = const AppStringsHi();
     final theme = context.yugmaTheme;
+    final openCount = ref.watch(_openUdhaarCountProvider).valueOrNull ?? 0;
+
     return GestureDetector(
       onTap: () => context.push('/udhaar'),
       child: Container(
@@ -429,9 +486,115 @@ class _UdhaarSection extends StatelessWidget {
               ),
             ),
             const Spacer(),
+            if (openCount > 0)
+              _CountBadge(count: openCount, theme: theme),
             Icon(
               Icons.chevron_right,
               color: theme.shopTextMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SU006: Reusable count badge widget for dashboard section cards.
+// ---------------------------------------------------------------------------
+class _CountBadge extends StatelessWidget {
+  final int count;
+  final YugmaThemeExtension theme;
+
+  const _CountBadge({required this.count, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: YugmaSpacing.s2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: YugmaSpacing.s2,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: theme.shopAccent,
+        borderRadius: BorderRadius.circular(YugmaRadius.pill),
+      ),
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        style: TextStyle(
+          fontFamily: theme.fontFamilyEnglishBody,
+          fontSize: YugmaTypeScale.caption,
+          fontWeight: FontWeight.w700,
+          color: theme.shopPrimaryDeep,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SU007: Presence status banner at top of dashboard.
+// ---------------------------------------------------------------------------
+class _PresenceStatusBanner extends ConsumerWidget {
+  final AppStrings strings;
+
+  const _PresenceStatusBanner({required this.strings});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = context.yugmaTheme;
+    final presenceAsync = ref.watch(_shopPresenceProvider);
+    final status = presenceAsync.valueOrNull ?? PresenceStatus.available;
+
+    final isAvailable = status == PresenceStatus.available;
+    final dotColor = isAvailable
+        ? const Color(0xFF3D5C2A) // success green (matches dock dot)
+        : theme.shopTextMuted;
+
+    return GestureDetector(
+      onTap: () => context.push('/presence'),
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: YugmaSpacing.s4,
+          vertical: YugmaSpacing.s2,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: YugmaSpacing.s4,
+          vertical: YugmaSpacing.s3,
+        ),
+        decoration: BoxDecoration(
+          color: theme.shopSurface,
+          borderRadius: BorderRadius.circular(YugmaRadius.md),
+          border: Border.all(
+            color: isAvailable
+                ? const Color(0xFF3D5C2A).withValues(alpha: 0.3)
+                : theme.shopDivider,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: YugmaSpacing.s3),
+            Text(
+              status.label(strings),
+              style: theme.bodyDeva.copyWith(
+                color: theme.shopTextPrimary,
+                fontSize: YugmaTypeScale.body,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.edit_outlined,
+              color: theme.shopTextMuted,
+              size: 16,
             ),
           ],
         ),
