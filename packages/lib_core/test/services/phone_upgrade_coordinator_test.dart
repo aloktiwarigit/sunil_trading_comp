@@ -23,6 +23,7 @@
 //   - Returns PhoneUpgradePath.collisionMerger with orphanedAnonymousUid set
 // =============================================================================
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -142,6 +143,64 @@ class _CollisionSimulatingAuthProvider implements AuthProvider {
   }
 }
 
+/// A FakeAuthProvider that simulates the happy path (no collision).
+/// linkWithCredential succeeds, UID preserved, user becomes phone-verified.
+///
+/// Bypasses firebase_auth_mocks 0.14.x's broken linkWithCredential
+/// assertion (`mockUser.isAnonymous == isAnonymous`) which fails because
+/// the mock doesn't handle the anonymous→phone-verified state transition.
+class _HappyPathAuthProvider implements AuthProvider {
+  _HappyPathAuthProvider();
+
+  static const _anonUid = 'anon-uid-1';
+  AppUser? _currentUser;
+
+  @override
+  Stream<AppUser?> get authStateChanges => Stream.value(_currentUser);
+
+  @override
+  AppUser? get currentUser => _currentUser;
+
+  @override
+  Future<AppUser> signInAnonymous() async {
+    _currentUser = const AppUser(
+      uid: _anonUid,
+      tier: AuthTier.anonymous,
+      isAnonymous: true,
+      isPhoneVerified: false,
+    );
+    return _currentUser!;
+  }
+
+  @override
+  Future<PhoneVerificationResult> requestPhoneVerification(
+          String phoneE164) async =>
+      const PhoneVerificationResult(
+        verificationId: 'test-vid',
+        codeExpiry: Duration(seconds: 60),
+      );
+
+  @override
+  Future<AppUser> confirmPhoneVerification(
+      String verificationId, String code) async {
+    // Happy path: linkWithCredential succeeds, UID preserved.
+    _currentUser = const AppUser(
+      uid: _anonUid, // UID preserved per SAD §4 Flow 1
+      tier: AuthTier.phoneVerified,
+      isAnonymous: false,
+      isPhoneVerified: true,
+      phoneNumber: '+919876543210',
+    );
+    return _currentUser!;
+  }
+
+  @override
+  Future<AppUser> signInWithGoogle() => throw UnimplementedError();
+
+  @override
+  Future<void> signOut() async => _currentUser = null;
+}
+
 void main() {
   const shopId = 'sunil-trading-company';
   const phoneE164 = '+919876543210';
@@ -149,22 +208,13 @@ void main() {
 
   group('PhoneUpgradeCoordinator — happy path (PRD I6.2 ACs #1-#3)', () {
     late FakeFirebaseFirestore firestore;
-    late MockFirebaseAuth mockAuth;
-    late AuthProviderFirebase authProvider;
+    late _HappyPathAuthProvider authProvider;
     late CustomerRepo customerRepo;
     late PhoneUpgradeCoordinator coordinator;
 
     setUp(() async {
       firestore = FakeFirebaseFirestore();
-      mockAuth = MockFirebaseAuth(
-        mockUser: MockUser(
-          isAnonymous: false,
-          uid: 'anon-uid-1', // Becomes phone-verified after linkWithCredential
-          phoneNumber: phoneE164,
-        ),
-        signedIn: false, // Start signed-out so we can sign in anonymously
-      );
-      authProvider = AuthProviderFirebase(auth: mockAuth);
+      authProvider = _HappyPathAuthProvider();
       customerRepo = CustomerRepo(
         firestore: firestore,
         shopIdProvider: const ShopIdProvider(shopId),
@@ -192,8 +242,8 @@ void main() {
       expect(result.path, PhoneUpgradePath.happyPath);
       expect(result.orphanedAnonymousUid, isNull);
       expect(result.user.isPhoneVerified, isTrue);
-      // UID may or may not survive depending on MockFirebaseAuth semantics —
-      // what matters is the happy path executed without collision.
+      expect(result.user.uid, equals(anonUidBefore),
+          reason: 'UID must be preserved per SAD §4 Flow 1');
       expect(result.user.phoneNumber, equals(phoneE164));
 
       // PRD I6.2 AC #3: Customer doc updated with phoneVerifiedAt + phoneNumber
@@ -207,9 +257,6 @@ void main() {
       expect(custDoc.data()!['isPhoneVerified'], isTrue);
       expect(custDoc.data()!['phoneNumber'], equals(phoneE164));
       expect(custDoc.data()!['phoneVerifiedAt'], isNotNull);
-
-      // Use anonUidBefore so analyzer doesn't flag unused_local_variable.
-      expect(anonUidBefore, isNotEmpty);
     });
   });
 
@@ -360,7 +407,7 @@ void main() {
         'dest customer doc exists before and is not touched on migration '
         'failure', () async {
       // Seed the dest doc with a known timestamp so we can detect any write.
-      final originalDestTimestamp = DateTime(2020, 1, 1);
+      final originalDestTimestamp = Timestamp.fromDate(DateTime(2020, 1, 1));
       await firestore
           .collection('shops')
           .doc(shopId)
