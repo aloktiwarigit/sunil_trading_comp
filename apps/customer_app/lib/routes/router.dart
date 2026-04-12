@@ -174,7 +174,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final data = onboarding.valueOrNull;
           if (data == null) return const SplashScreen();
 
-          final projectId = state.pathParameters['id']!;
+          final projectId = state.pathParameters['id'];
+          if (projectId == null) {
+            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+          }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
           return Theme(
@@ -196,7 +199,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final data = onboarding.valueOrNull;
           if (data == null) return const SplashScreen();
 
-          final projectId = state.pathParameters['id']!;
+          final projectId = state.pathParameters['id'];
+          if (projectId == null) {
+            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+          }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
           return Theme(
@@ -236,7 +242,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final data = onboarding.valueOrNull;
           if (data == null) return const SplashScreen();
 
-          final projectId = state.pathParameters['id']!;
+          final projectId = state.pathParameters['id'];
+          if (projectId == null) {
+            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+          }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
           return Theme(
@@ -303,7 +312,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final data = onboarding.valueOrNull;
           if (data == null) return const SplashScreen();
 
-          final occasionTag = state.pathParameters['occasionTag']!;
+          final occasionTag = state.pathParameters['occasionTag'];
+          if (occasionTag == null) {
+            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+          }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
           return Theme(
@@ -367,7 +379,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final data = onboarding.valueOrNull;
           if (data == null) return const SplashScreen();
 
-          final skuId = state.pathParameters['skuId']!;
+          final skuId = state.pathParameters['skuId'];
+          if (skuId == null) {
+            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+          }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
           return Theme(
@@ -456,7 +471,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final data = onboarding.valueOrNull;
           if (data == null) return const SplashScreen();
 
-          final projectId = state.pathParameters['id']!;
+          final projectId = state.pathParameters['id'];
+          if (projectId == null) {
+            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+          }
           final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
 
           return Theme(

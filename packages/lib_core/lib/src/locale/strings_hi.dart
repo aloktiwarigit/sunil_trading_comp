@@ -228,6 +228,9 @@ class AppStringsHi extends AppStrings {
   String get otpCodeExpired => 'OTP की समय सीमा बीत गई — दुबारा भेजिए';
 
   @override
+  String otpResendCountdown(int seconds) => '$seconds सेकंड में फिर भेजें';
+
+  @override
   String get commitSuccessTitle => 'ऑर्डर पक्का हुआ!';
 
   @override

@@ -265,6 +265,9 @@ abstract class AppStrings {
   /// OTP code expired error.
   String get otpCodeExpired;
 
+  /// OTP resend cooldown countdown text with remaining seconds.
+  String otpResendCountdown(int seconds);
+
   /// Post-commit confirmation title.
   String get commitSuccessTitle;
 

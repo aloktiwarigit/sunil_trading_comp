@@ -222,6 +222,9 @@ class AppStringsEn extends AppStrings {
   String get otpCodeExpired => 'OTP expired — please resend';
 
   @override
+  String otpResendCountdown(int seconds) => 'Resend in ${seconds}s';
+
+  @override
   String get commitSuccessTitle => 'Order confirmed!';
 
   @override

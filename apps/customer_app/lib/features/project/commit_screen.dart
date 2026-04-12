@@ -287,40 +287,55 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
             ),
           ),
           const SizedBox(height: YugmaSpacing.s6),
-          // Send OTP button
-          SizedBox(
-            height: theme.tapTargetMin,
-            child: ElevatedButton(
-              onPressed: () {
-                var raw = _phoneController.text.trim();
-                if (raw.isEmpty) return;
-                // Strip non-digits and normalize to E.164 (India).
-                raw = raw.replaceAll(RegExp(r'[^0-9]'), '');
-                // Handle if user entered with country code.
-                if (raw.startsWith('91') && raw.length > 10) {
-                  raw = raw.substring(2);
-                }
-                if (raw.length != 10) return; // Indian mobile = 10 digits
-                final phoneE164 = '+91$raw';
-                ref
-                    .read(commitControllerProvider(widget.projectId).notifier)
-                    .sendOtp(phoneE164);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.shopPrimary,
-                foregroundColor: theme.shopTextOnPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+          // Send OTP button (with cooldown guard)
+          Builder(builder: (context) {
+            final controller = ref.read(
+                commitControllerProvider(widget.projectId).notifier);
+            final cooldown = controller.otpCooldownSeconds;
+            final isCoolingDown = cooldown > 0;
+
+            return SizedBox(
+              height: theme.tapTargetMin,
+              child: ElevatedButton(
+                onPressed: isCoolingDown
+                    ? null
+                    : () {
+                        var raw = _phoneController.text.trim();
+                        if (raw.isEmpty) return;
+                        // Strip non-digits and normalize to E.164 (India).
+                        raw = raw.replaceAll(RegExp(r'[^0-9]'), '');
+                        // Handle if user entered with country code.
+                        if (raw.startsWith('91') && raw.length > 10) {
+                          raw = raw.substring(2);
+                        }
+                        if (raw.length != 10) return; // Indian mobile = 10 digits
+                        final phoneE164 = '+91$raw';
+                        controller.sendOtp(phoneE164);
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.shopPrimary,
+                  foregroundColor: theme.shopTextOnPrimary,
+                  disabledBackgroundColor:
+                      theme.shopPrimary.withOpacity(0.4),
+                  disabledForegroundColor:
+                      theme.shopTextOnPrimary.withOpacity(0.6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  ),
+                  textStyle: TextStyle(
+                    fontFamily: theme.fontFamilyDevanagariBody,
+                    fontSize: theme.isElderTier ? 18.0 : 15.0,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                textStyle: TextStyle(
-                  fontFamily: theme.fontFamilyDevanagariBody,
-                  fontSize: theme.isElderTier ? 18.0 : 15.0,
-                  fontWeight: FontWeight.w600,
+                child: Text(
+                  isCoolingDown
+                      ? widget.strings.otpResendCountdown(cooldown)
+                      : widget.strings.otpSendButton,
                 ),
               ),
-              child: Text(widget.strings.otpSendButton),
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );
@@ -396,6 +411,33 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
               child: Text(widget.strings.otpVerifyButton),
             ),
           ),
+          const SizedBox(height: YugmaSpacing.s4),
+          // Resend OTP with cooldown
+          Builder(builder: (context) {
+            final controller = ref.read(
+                commitControllerProvider(widget.projectId).notifier);
+            final cooldown = controller.otpCooldownSeconds;
+            final isCoolingDown = cooldown > 0;
+            final flowState = ref.read(
+                commitControllerProvider(widget.projectId)).valueOrNull;
+
+            return TextButton(
+              onPressed: isCoolingDown || flowState?.phoneE164 == null
+                  ? null
+                  : () => controller.sendOtp(flowState!.phoneE164!),
+              child: Text(
+                isCoolingDown
+                    ? widget.strings.otpResendCountdown(cooldown)
+                    : widget.strings.otpSendButton,
+                style: theme.bodyDeva.copyWith(
+                  color: isCoolingDown
+                      ? theme.shopTextSecondary
+                      : theme.shopPrimary,
+                  fontSize: theme.isElderTier ? 16.0 : 14.0,
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );
