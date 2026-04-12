@@ -63,6 +63,7 @@ export 'src/models/project.dart';
 export 'src/models/chat_thread.dart';
 export 'src/models/message.dart';
 export 'src/models/udhaar_ledger.dart';
+export 'src/models/customer_memory.dart';
 export 'src/models/operator.dart';
 export 'src/models/inventory_sku.dart';
 export 'src/models/curated_shortlist.dart';
@@ -78,6 +79,7 @@ export 'src/repositories/project_repo.dart';
 export 'src/repositories/chat_thread_repo.dart';
 export 'src/repositories/udhaar_ledger_repo.dart';
 export 'src/repositories/customer_repo.dart';
+export 'src/repositories/customer_memory_repo.dart';
 export 'src/repositories/operator_repo.dart';
 export 'src/repositories/inventory_sku_repo.dart';
 export 'src/repositories/curated_shortlist_repo.dart';
@@ -88,6 +90,9 @@ export 'src/components/bharosa_landing/bharosa_landing_barrel.dart';
 export 'src/components/voice_note_player.dart';
 export 'src/components/browse/browse_barrel.dart';
 export 'src/components/chat/chat_barrel.dart';
+
+// ---------- Invoice (B1.13 Devanagari receipt — client-side PDF) ----------
+export 'src/invoice/invoice_template.dart';
 
 // ---------- Services (orchestration over adapters + repositories) ----------
 export 'src/services/phone_upgrade_coordinator.dart';

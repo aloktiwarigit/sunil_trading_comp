@@ -672,4 +672,38 @@ abstract class AppStrings {
 
   /// Overpayment error.
   String get udhaarOverpaymentError;
+
+  // =========================================================================
+  // §23 — S4.9 Customer memory editing (Sprint 11)
+  // =========================================================================
+
+  /// "Edit memory" button on customer info card.
+  String get memoryEditButton;
+
+  /// Memory sheet title.
+  String get memorySheetTitle;
+
+  /// "Notes" field label.
+  String get memoryNotesLabel;
+
+  /// "Relationship notes" field label.
+  String get memoryRelationshipLabel;
+
+  /// "Preferred occasions" field label.
+  String get memoryOccasionsLabel;
+
+  /// "Price range" field label.
+  String get memoryPriceRangeLabel;
+
+  /// "Min price" field label.
+  String get memoryPriceMinLabel;
+
+  /// "Max price" field label.
+  String get memoryPriceMaxLabel;
+
+  /// Auto-saved confirmation.
+  String get memorySaved;
+
+  /// "New customer — first time" placeholder (B1.11 edge #2).
+  String get memoryNewCustomerPlaceholder;
 }

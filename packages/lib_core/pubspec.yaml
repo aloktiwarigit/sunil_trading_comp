@@ -44,6 +44,9 @@ dependencies:
   # ---- Networking ----
   http: ^1.2.2
 
+  # ---- PDF generation (B1.13 Devanagari receipt — client-side per ADR-015) ----
+  pdf: ^3.11.1
+
   # ---- Logging ----
   logging: ^1.2.0
 

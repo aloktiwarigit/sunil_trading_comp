@@ -605,6 +605,29 @@ class AppStringsEn extends AppStrings {
   @override
   String get udhaarOverpaymentError => 'Amount exceeds balance';
 
+  // ---- §23 S4.9 Customer memory editing ----
+
+  @override
+  String get memoryEditButton => 'Edit memory';
+  @override
+  String get memorySheetTitle => 'Customer memory';
+  @override
+  String get memoryNotesLabel => 'Notes';
+  @override
+  String get memoryRelationshipLabel => 'Relationships';
+  @override
+  String get memoryOccasionsLabel => 'Buying occasions';
+  @override
+  String get memoryPriceRangeLabel => 'Budget';
+  @override
+  String get memoryPriceMinLabel => 'Min (₹)';
+  @override
+  String get memoryPriceMaxLabel => 'Max (₹)';
+  @override
+  String get memorySaved => 'Memory saved';
+  @override
+  String get memoryNewCustomerPlaceholder => 'New customer — first time';
+
   // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------

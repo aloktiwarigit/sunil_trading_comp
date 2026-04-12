@@ -613,6 +613,29 @@ class AppStringsHi extends AppStrings {
   @override
   String get udhaarOverpaymentError => 'रकम बाकी से ज़्यादा है';
 
+  // ---- §23 S4.9 Customer memory editing ----
+
+  @override
+  String get memoryEditButton => 'याद रखें';
+  @override
+  String get memorySheetTitle => 'ग्राहक की याद';
+  @override
+  String get memoryNotesLabel => 'नोट';
+  @override
+  String get memoryRelationshipLabel => 'रिश्तेदारी';
+  @override
+  String get memoryOccasionsLabel => 'कब खरीदते ��ैं';
+  @override
+  String get memoryPriceRangeLabel => 'बजट';
+  @override
+  String get memoryPriceMinLabel => 'कम से कम (₹)';
+  @override
+  String get memoryPriceMaxLabel => 'ज़्यादा से ज़्यादा (₹)';
+  @override
+  String get memorySaved => 'याद रखा गया';
+  @override
+  String get memoryNewCustomerPlaceholder => 'नया ग्राहक — पहली बार';
+
   // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------

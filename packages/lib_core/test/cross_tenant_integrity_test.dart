@@ -25,6 +25,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lib_core/src/models/chat_thread.dart';
 import 'package:lib_core/src/models/chat_thread_patch.dart';
 import 'package:lib_core/src/models/customer.dart';
+import 'package:lib_core/src/models/customer_memory.dart';
 import 'package:lib_core/src/models/line_item.dart';
 import 'package:lib_core/src/models/project.dart';
 import 'package:lib_core/src/models/project_patch.dart';
@@ -87,6 +88,16 @@ void main() {
           createdAt: DateTime.now(),
         );
         expect(thread.shopId, isNotEmpty);
+      });
+
+      // S4.9 AC #4: CustomerMemory has shopId + customer cannot read it
+      test('CustomerMemory has shopId', () {
+        final mem = CustomerMemory(
+          customerUid: 'cust_001',
+          shopId: 'sunil-trading-company',
+          notes: 'test',
+        );
+        expect(mem.shopId, isNotEmpty);
       });
 
       test('UdhaarLedger has shopId', () {

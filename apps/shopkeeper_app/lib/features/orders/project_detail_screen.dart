@@ -13,6 +13,8 @@
 //   #2: 50+ messages → pagination on expand (handled by ChatScreen)
 // =============================================================================
 
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,6 +43,32 @@ Map<String, dynamic> _normalizeProjectTimestamps(Map<String, dynamic> raw) {
     'updatedAt': _normalizeTimestamp(raw['updatedAt']),
   };
 }
+
+/// S4.9 — Provider for customer memory, streamed by customerUid.
+final customerMemoryProvider =
+    StreamProvider.autoDispose.family<CustomerMemory?, String>((ref, customerUid) {
+  final firestore = FirebaseFirestore.instance;
+  final shopId = ref.read(shopIdProviderProvider).shopId;
+
+  return firestore
+      .collection('shops')
+      .doc(shopId)
+      .collection('customer_memory')
+      .doc(customerUid)
+      .snapshots()
+      .map((snap) {
+    if (!snap.exists) return null;
+    final raw = snap.data()!;
+    // CR #1: normalize Firestore Timestamps before Freezed JSON parsing.
+    return CustomerMemory.fromJson(<String, dynamic>{
+      ...raw,
+      'customerUid': snap.id,
+      'shopId': shopId,
+      'firstSeenAt': _normalizeTimestamp(raw['firstSeenAt']),
+      'lastSeenAt': _normalizeTimestamp(raw['lastSeenAt']),
+    });
+  });
+});
 
 /// Provider for a single project, streamed by ID.
 /// CR #2: reads shopId from provider instead of hardcoding.
@@ -167,10 +195,10 @@ class ProjectDetailScreen extends ConsumerWidget {
           _buildLineItems(project),
           const SizedBox(height: YugmaSpacing.s4),
 
-          // ---- Customer info ----
+          // ---- Customer info + memory (S4.9) ----
           _buildSectionHeader(strings.customerInfoHeader),
           const SizedBox(height: YugmaSpacing.s2),
-          _buildCustomerCard(project, strings),
+          _buildCustomerCard(context, ref, project, strings),
           const SizedBox(height: YugmaSpacing.s4),
 
           // ---- Chat preview ----
@@ -301,10 +329,20 @@ class ProjectDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCustomerCard(Project project, AppStrings strings) {
+  Widget _buildCustomerCard(
+    BuildContext context,
+    WidgetRef ref,
+    Project project,
+    AppStrings strings,
+  ) {
     final name = project.customerDisplayName ??
         project.customerPhone ??
         strings.newCustomerPlaceholder;
+
+    // S4.9: stream customer memory for this customer.
+    final memoryAsync = ref.watch(
+      customerMemoryProvider(project.customerUid),
+    );
 
     return Container(
       padding: const EdgeInsets.all(YugmaSpacing.s4),
@@ -331,6 +369,22 @@ class ProjectDetailScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              // S4.9 AC #1: "Edit memory" button
+              IconButton(
+                icon: Icon(
+                  Icons.edit_note,
+                  color: YugmaColors.primary,
+                  size: 22,
+                ),
+                tooltip: strings.memoryEditButton,
+                onPressed: () => _showMemoryEditSheet(
+                  context,
+                  ref,
+                  project.customerUid,
+                  memoryAsync.valueOrNull,
+                  strings,
+                ),
+              ),
             ],
           ),
           if (project.customerPhone != null) ...[
@@ -355,6 +409,28 @@ class ProjectDetailScreen extends ConsumerWidget {
               ),
             ),
           ],
+          // S4.9: Display memory summary if exists
+          memoryAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (memory) {
+              if (memory == null || !memory.hasContent) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: YugmaSpacing.s2),
+                  child: Text(
+                    strings.memoryNewCustomerPlaceholder,
+                    style: TextStyle(
+                      fontFamily: YugmaFonts.devaBody,
+                      fontSize: YugmaTypeScale.caption,
+                      fontStyle: FontStyle.italic,
+                      color: YugmaColors.textMuted,
+                    ),
+                  ),
+                );
+              }
+              return _MemorySummary(memory: memory, strings: strings);
+            },
+          ),
         ],
       ),
     );
@@ -742,6 +818,32 @@ class ProjectDetailScreen extends ConsumerWidget {
     );
   }
 
+  /// S4.9 AC #1: Open bottom sheet for editing customer memory.
+  void _showMemoryEditSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String customerUid,
+    CustomerMemory? existing,
+    AppStrings strings,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: YugmaColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(YugmaRadius.lg),
+        ),
+      ),
+      builder: (ctx) => _MemoryEditSheet(
+        customerUid: customerUid,
+        existing: existing,
+        strings: strings,
+        shopId: ref.read(shopIdProviderProvider).shopId,
+      ),
+    );
+  }
+
   static String _formatInr(int amount) {
     final s = amount.toString();
     if (s.length <= 3) return s;
@@ -897,3 +999,363 @@ class _ChatPreviewRow extends StatelessWidget {
     );
   }
 }
+
+// =============================================================================
+// S4.9 — Customer memory inline display + edit sheet.
+// =============================================================================
+
+/// Compact memory summary displayed on the customer info card.
+class _MemorySummary extends StatelessWidget {
+  const _MemorySummary({required this.memory, required this.strings});
+
+  final CustomerMemory memory;
+  final AppStrings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: YugmaSpacing.s2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Divider(color: YugmaColors.divider, height: 1),
+          const SizedBox(height: YugmaSpacing.s2),
+          if (memory.notes.isNotEmpty)
+            _memoryLine(Icons.sticky_note_2_outlined, memory.notes),
+          if (memory.relationshipNotes.isNotEmpty)
+            _memoryLine(Icons.people_outline, memory.relationshipNotes),
+          if (memory.preferredOccasions.isNotEmpty)
+            _memoryLine(
+              Icons.event_outlined,
+              memory.preferredOccasions
+                  .map(_occasionLabel)
+                  .join(', '),
+            ),
+          if (memory.preferredPriceMin != null ||
+              memory.preferredPriceMax != null)
+            _memoryLine(
+              Icons.currency_rupee,
+              '${memory.preferredPriceMin ?? '–'} – ${memory.preferredPriceMax ?? '–'}',
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _memoryLine(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: YugmaSpacing.s1),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: YugmaColors.textMuted),
+          const SizedBox(width: YugmaSpacing.s1),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaBody,
+                fontSize: YugmaTypeScale.caption,
+                color: YugmaColors.textSecondary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _occasionLabel(PreferredOccasion o) => switch (o) {
+        PreferredOccasion.shaadi => 'शादी',
+        PreferredOccasion.nayaGhar => 'नया घर',
+        PreferredOccasion.dahej => 'दहेज',
+        PreferredOccasion.puranaBadalne => 'पुराना बदलने',
+        PreferredOccasion.budget => 'बजट',
+        PreferredOccasion.ladies => 'लेडीज',
+        PreferredOccasion.other => 'और',
+      };
+}
+
+/// S4.9 AC #1–3: Bottom sheet for editing customer memory.
+/// Auto-save on changes (debounced).
+class _MemoryEditSheet extends StatefulWidget {
+  const _MemoryEditSheet({
+    required this.customerUid,
+    required this.existing,
+    required this.strings,
+    required this.shopId,
+  });
+
+  final String customerUid;
+  final CustomerMemory? existing;
+  final AppStrings strings;
+  final String shopId;
+
+  @override
+  State<_MemoryEditSheet> createState() => _MemoryEditSheetState();
+}
+
+class _MemoryEditSheetState extends State<_MemoryEditSheet> {
+  late final TextEditingController _notesController;
+  late final TextEditingController _relationshipController;
+  late final TextEditingController _priceMinController;
+  late final TextEditingController _priceMaxController;
+  late Set<PreferredOccasion> _selectedOccasions;
+
+  /// Debounce timer for auto-save.
+  Timer? _debounce;
+
+  /// CR #3: guard against save-after-dispose race.
+  bool _disposed = false;
+
+  late final CustomerMemoryRepo _repo;
+
+  @override
+  void initState() {
+    super.initState();
+    final m = widget.existing;
+    _notesController = TextEditingController(text: m?.notes ?? '');
+    _relationshipController =
+        TextEditingController(text: m?.relationshipNotes ?? '');
+    _priceMinController =
+        TextEditingController(text: m?.preferredPriceMin?.toString() ?? '');
+    _priceMaxController =
+        TextEditingController(text: m?.preferredPriceMax?.toString() ?? '');
+    _selectedOccasions = Set<PreferredOccasion>.from(
+      m?.preferredOccasions ?? <PreferredOccasion>[],
+    );
+
+    _repo = CustomerMemoryRepo(
+      firestore: FirebaseFirestore.instance,
+      shopIdProvider: ShopIdProvider(widget.shopId),
+    );
+
+    _notesController.addListener(_onChanged);
+    _relationshipController.addListener(_onChanged);
+    _priceMinController.addListener(_onChanged);
+    _priceMaxController.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _debounce?.cancel();
+    _notesController.dispose();
+    _relationshipController.dispose();
+    _priceMinController.dispose();
+    _priceMaxController.dispose();
+    super.dispose();
+  }
+
+  void _onChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 800), _save);
+  }
+
+  void _onOccasionToggled(PreferredOccasion occasion) {
+    setState(() {
+      if (_selectedOccasions.contains(occasion)) {
+        _selectedOccasions.remove(occasion);
+      } else {
+        _selectedOccasions.add(occasion);
+      }
+    });
+    _onChanged();
+  }
+
+  Future<void> _save() async {
+    // CR #3: don't save if the sheet was already dismissed.
+    if (_disposed) return;
+    final notes = _notesController.text.trim();
+    // B1.11 AC #4: 500 char limit.
+    final clampedNotes = notes.length > 500 ? notes.substring(0, 500) : notes;
+
+    final relNotes = _relationshipController.text.trim();
+    // CR #4: clamp relationship notes to 500 chars, parity with notes.
+    final clampedRelNotes =
+        relNotes.length > 500 ? relNotes.substring(0, 500) : relNotes;
+
+    await _repo.upsertMemory(
+      customerUid: widget.customerUid,
+      notes: clampedNotes,
+      relationshipNotes: clampedRelNotes,
+      preferredOccasions: _selectedOccasions.toList(),
+      preferredPriceMin: int.tryParse(_priceMinController.text.trim()),
+      preferredPriceMax: int.tryParse(_priceMaxController.text.trim()),
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(widget.strings.memorySaved),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = widget.strings;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: YugmaSpacing.s4,
+        right: YugmaSpacing.s4,
+        top: YugmaSpacing.s4,
+        bottom: bottomInset + YugmaSpacing.s4,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: YugmaColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: YugmaSpacing.s3),
+            // Title
+            Text(
+              strings.memorySheetTitle,
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaDisplay,
+                fontSize: YugmaTypeScale.h3,
+                fontWeight: FontWeight.w700,
+                color: YugmaColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: YugmaSpacing.s4),
+
+            // Notes field
+            TextField(
+              controller: _notesController,
+              maxLines: 3,
+              maxLength: 500,
+              decoration: InputDecoration(
+                labelText: strings.memoryNotesLabel,
+                labelStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
+                border: const OutlineInputBorder(),
+              ),
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaBody,
+                fontSize: YugmaTypeScale.body,
+              ),
+            ),
+            const SizedBox(height: YugmaSpacing.s3),
+
+            // Relationship notes
+            // CR #4: enforce 500 char limit, parity with notes field.
+            TextField(
+              controller: _relationshipController,
+              maxLines: 2,
+              maxLength: 500,
+              decoration: InputDecoration(
+                labelText: strings.memoryRelationshipLabel,
+                labelStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
+                border: const OutlineInputBorder(),
+              ),
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaBody,
+                fontSize: YugmaTypeScale.body,
+              ),
+            ),
+            const SizedBox(height: YugmaSpacing.s3),
+
+            // Preferred occasions — multi-select chips
+            Text(
+              strings.memoryOccasionsLabel,
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaBody,
+                fontSize: YugmaTypeScale.caption,
+                color: YugmaColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: YugmaSpacing.s1),
+            Wrap(
+              spacing: YugmaSpacing.s1,
+              runSpacing: YugmaSpacing.s1,
+              children: PreferredOccasion.values.map((o) {
+                final selected = _selectedOccasions.contains(o);
+                return FilterChip(
+                  selected: selected,
+                  label: Text(
+                    _MemorySummary._occasionLabel(o),
+                    style: TextStyle(
+                      fontFamily: YugmaFonts.devaBody,
+                      fontSize: YugmaTypeScale.caption,
+                    ),
+                  ),
+                  selectedColor: YugmaColors.primary.withValues(alpha: 0.15),
+                  checkmarkColor: YugmaColors.primary,
+                  onSelected: (_) => _onOccasionToggled(o),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: YugmaSpacing.s3),
+
+            // Price range
+            Text(
+              strings.memoryPriceRangeLabel,
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaBody,
+                fontSize: YugmaTypeScale.caption,
+                color: YugmaColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: YugmaSpacing.s1),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _priceMinController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: strings.memoryPriceMinLabel,
+                      labelStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
+                      prefixText: '₹ ',
+                      border: const OutlineInputBorder(),
+                    ),
+                    style: TextStyle(
+                      fontFamily: YugmaFonts.mono,
+                      fontSize: YugmaTypeScale.body,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: YugmaSpacing.s2),
+                Expanded(
+                  child: TextField(
+                    controller: _priceMaxController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: strings.memoryPriceMaxLabel,
+                      labelStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
+                      prefixText: '₹ ',
+                      border: const OutlineInputBorder(),
+                    ),
+                    style: TextStyle(
+                      fontFamily: YugmaFonts.mono,
+                      fontSize: YugmaTypeScale.body,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: YugmaSpacing.s4),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
