@@ -5,6 +5,14 @@
     "staging": "yugma-dukaan-staging",
     "prod": "yugma-dukaan-prod"
   },
-  "targets": {},
+  "targets": {
+    "yugma-dukaan-dev": {
+      "hosting": {
+        "marketing": [
+          "yugma-dukaan-dev"
+        ]
+      }
+    }
+  },
   "etags": {}
 }
