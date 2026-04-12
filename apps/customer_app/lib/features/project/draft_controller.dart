@@ -151,8 +151,15 @@ class DraftController extends AsyncNotifier<DraftState> {
 
     if (updatedItems.isEmpty) {
       // AC #5 — last item removed: delete entire Project document.
-      state = const AsyncData(DraftState(project: null, lineItems: []));
-      await _deleteProject(current.project!.projectId);
+      // CR #4: delete first, then reset state. If delete fails, state
+      // stays intact so the user doesn't end up with an orphaned project.
+      try {
+        await _deleteProject(current.project!.projectId);
+        state = const AsyncData(DraftState(project: null, lineItems: []));
+      } catch (_) {
+        // Delete failed — restore the original state so the user can retry.
+        state = AsyncData(current);
+      }
       return;
     }
 
@@ -177,6 +184,7 @@ class DraftController extends AsyncNotifier<DraftState> {
           quantity: newQuantity,
           unitPriceInr: item.unitPriceInr,
           notes: item.notes,
+          finalPrice: item.finalPrice, // CR #5: preserve negotiated price
         );
       }
       return item;

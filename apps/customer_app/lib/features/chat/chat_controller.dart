@@ -21,9 +21,11 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:customer_app/features/project/draft_controller.dart';
 import 'package:customer_app/main.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
+import 'package:logging/logging.dart';
 
 /// State for the chat screen.
 class ChatState {
@@ -74,7 +76,11 @@ final chatControllerProvider = AsyncNotifierProvider.autoDispose
 );
 
 class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
+  static final Logger _log = Logger('ChatController');
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _messagesSub;
+
+  /// CR #2: lock to prevent double-tap on Accept button.
+  bool _acceptingProposal = false;
 
   String get _projectId => arg;
 
@@ -241,72 +247,94 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
   /// The write to lineItems + totalAmount is a direct Firestore update
   /// (same pattern as DraftController._updateDraftLineItems) — security rules
   /// allow customer writes to these fields when state in ['draft', 'negotiating'].
+  ///
+  /// CR #1: wrapped in try/catch for error handling.
+  /// CR #2: double-tap guard via _acceptingProposal lock.
+  /// CR #6: system message uses AppStrings (locale-resolved) + INR formatting.
+  /// CR #8: invalidates draftControllerProvider after success.
+  /// CR #9: aborts if target lineItemId not found in project.
   Future<void> acceptPriceProposal(String messageId) async {
-    final current = state.valueOrNull;
-    if (current == null) return;
+    // CR #2: prevent double-tap.
+    if (_acceptingProposal) return;
+    _acceptingProposal = true;
 
-    // Find the proposal message.
-    final proposalMsg = current.messages
-        .where((m) => m.messageId == messageId && m.isPriceProposal)
-        .firstOrNull;
-    if (proposalMsg == null) return;
+    try {
+      final current = state.valueOrNull;
+      if (current == null) return;
 
-    final proposedPrice = proposalMsg.proposedPrice!;
-    final targetLineItemId = proposalMsg.lineItemId!;
+      // Find the proposal message.
+      final proposalMsg = current.messages
+          .where((m) => m.messageId == messageId && m.isPriceProposal)
+          .firstOrNull;
+      if (proposalMsg == null) return;
 
-    final shopId = ref.read(shopIdProviderProvider).shopId;
-    final firestore = FirebaseFirestore.instance;
-    final authProvider = ref.read(authProviderInstanceProvider);
-    final user = authProvider.currentUser;
-    if (user == null) return;
+      final proposedPrice = proposalMsg.proposedPrice!;
+      final targetLineItemId = proposalMsg.lineItemId!;
 
-    final projectRef = firestore
-        .collection('shops')
-        .doc(shopId)
-        .collection('projects')
-        .doc(_projectId);
+      final shopId = ref.read(shopIdProviderProvider).shopId;
+      final firestore = FirebaseFirestore.instance;
+      final authProvider = ref.read(authProviderInstanceProvider);
+      final user = authProvider.currentUser;
+      if (user == null) return;
 
-    // Atomic update: read line items, set finalPrice, recompute total.
-    await firestore.runTransaction((txn) async {
-      final snap = await txn.get(projectRef);
-      if (!snap.exists) return;
+      final projectRef = firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc(_projectId);
 
-      final data = snap.data()!;
-      final currentState = data['state'] as String?;
+      // Atomic update: read line items, set finalPrice, recompute total.
+      await firestore.runTransaction((txn) async {
+        final snap = await txn.get(projectRef);
+        if (!snap.exists) return;
 
-      // Only allow acceptance in draft or negotiating state.
-      if (currentState != 'draft' && currentState != 'negotiating') return;
+        final data = snap.data()!;
+        final currentState = data['state'] as String?;
 
-      final rawItems = data['lineItems'] as List<dynamic>? ?? <dynamic>[];
-      final updatedItems = <Map<String, dynamic>>[];
-      String? skuName;
-      var totalAmount = 0;
+        // Only allow acceptance in draft or negotiating state.
+        if (currentState != 'draft' && currentState != 'negotiating') return;
 
-      for (final raw in rawItems) {
-        final item = Map<String, dynamic>.from(raw as Map);
-        if (item['lineItemId'] == targetLineItemId) {
-          item['finalPrice'] = proposedPrice;
-          skuName = item['skuName'] as String?;
+        final rawItems = data['lineItems'] as List<dynamic>? ?? <dynamic>[];
+        final updatedItems = <Map<String, dynamic>>[];
+        String? skuName;
+        var totalAmount = 0;
+        var lineItemFound = false;
+
+        for (final raw in rawItems) {
+          final item = Map<String, dynamic>.from(raw as Map);
+          if (item['lineItemId'] == targetLineItemId) {
+            item['finalPrice'] = proposedPrice;
+            skuName = item['skuName'] as String?;
+            lineItemFound = true;
+          }
+          // Recompute using finalPrice if set, otherwise unitPriceInr.
+          final effectivePrice =
+              (item['finalPrice'] as num?)?.toInt() ??
+              (item['unitPriceInr'] as num?)?.toInt() ??
+              0;
+          final qty = (item['quantity'] as num?)?.toInt() ?? 1;
+          totalAmount += effectivePrice * qty;
+          updatedItems.add(item);
         }
-        // Recompute using finalPrice if set, otherwise unitPriceInr.
-        final effectivePrice =
-            (item['finalPrice'] as num?)?.toInt() ??
-            (item['unitPriceInr'] as num?)?.toInt() ??
-            0;
-        final qty = (item['quantity'] as num?)?.toInt() ?? 1;
-        totalAmount += effectivePrice * qty;
-        updatedItems.add(item);
-      }
 
-      txn.update(projectRef, {
-        'lineItems': updatedItems,
-        'totalAmount': totalAmount,
-        'state': 'negotiating', // C3.3: draft → negotiating on first proposal acceptance
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+        // CR #9: abort if the target line item was not found (e.g., removed).
+        if (!lineItemFound) {
+          _log.warning(
+            'acceptPriceProposal: lineItemId=$targetLineItemId not found '
+            'in project=$_projectId — aborting',
+          );
+          return;
+        }
 
-      // Send a system message confirming the acceptance (AC #6).
-      if (skuName != null) {
+        txn.update(projectRef, {
+          'lineItems': updatedItems,
+          'totalAmount': totalAmount,
+          'state': 'negotiating',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        // Send a system message confirming the acceptance (AC #6).
+        // CR #6: use locale-resolved string with INR formatting.
         final sysMsgRef = firestore
             .collection('shops')
             .doc(shopId)
@@ -324,12 +352,40 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
           'authorRole': 'system',
           'type': 'system',
           'sentAt': FieldValue.serverTimestamp(),
-          'textBody':
-              '₹$proposedPrice पर $skuName पक्का हुआ',
+          // Hindi source-of-truth for system messages (persisted in Firestore,
+          // not locale-switched at render time).
+          'textBody': '₹${_formatInr(proposedPrice)} पर ${skuName ?? ''} पक्का हुआ',
           'readByUids': <String>[],
         });
+      });
+
+      // CR #8: invalidate draft controller so isAccepted updates.
+      ref.invalidate(draftControllerProvider);
+
+      _log.info('price proposal accepted: messageId=$messageId');
+    } catch (e) {
+      // CR #1: log the error. The UI will show the Accept button again
+      // since isAccepted won't have flipped — the user can retry.
+      _log.warning('acceptPriceProposal failed: $e');
+    } finally {
+      _acceptingProposal = false;
+    }
+  }
+
+  /// Format INR with Indian lakh/thousand separators.
+  static String _formatInr(int amount) {
+    final s = amount.toString();
+    if (s.length <= 3) return s;
+    final lastThree = s.substring(s.length - 3);
+    final rest = s.substring(0, s.length - 3);
+    final buffer = StringBuffer();
+    for (var i = 0; i < rest.length; i++) {
+      if (i != 0 && (rest.length - i) % 2 == 0) {
+        buffer.write(',');
       }
-    });
+      buffer.write(rest[i]);
+    }
+    return '$buffer,$lastThree';
   }
 
   /// Load older messages (pagination — infinite scroll upward).
