@@ -93,6 +93,7 @@ export 'src/components/browse/browse_barrel.dart';
 export 'src/components/chat/chat_barrel.dart';
 export 'src/components/yugma_skeleton_card.dart';
 export 'src/components/yugma_error_banner.dart';
+export 'src/components/yugma_connectivity_banner.dart';
 
 // ---------- Invoice (B1.13 Devanagari receipt — client-side PDF) ----------
 export 'src/invoice/invoice_template.dart';
