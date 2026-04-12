@@ -35,6 +35,9 @@ enum ProjectState {
   @JsonValue('closed')
   closed,
 
+  @JsonValue('awaiting_verification')
+  awaitingVerification,
+
   @JsonValue('cancelled')
   cancelled,
 }
@@ -104,6 +107,10 @@ class Project with _$Project {
 
     /// Operator-owned. Links to the Pariwar pillar (feature-flagged).
     String? decisionCircleId,
+
+    /// Operator-owned. Payment method chosen by customer at checkout.
+    /// One of: "upi", "cod", "bank_transfer", "udhaar". Null for draft.
+    String? paymentMethod,
 
     /// Operator-owned. Links to the ADR-010 accounting mirror.
     String? udhaarLedgerId,

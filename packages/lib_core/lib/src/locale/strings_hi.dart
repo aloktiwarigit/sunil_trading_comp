@@ -208,6 +208,64 @@ class AppStringsHi extends AppStrings {
   @override
   String get paymentSuccessPakka => 'ऑर्डर पक्का हुआ! धन्यवाद।';
 
+  // ---- §5b C3.6 COD + C3.7 Bank transfer ----
+
+  @override
+  String get codOption => 'डिलीवरी पर नकद';
+
+  @override
+  String get codConfirmNote =>
+      'सुनील भैया डिलीवरी के समय पैसे लेंगे';
+
+  @override
+  String get codConfirmButton => 'COD पक्का कीजिए';
+
+  @override
+  String get bankTransferOption => 'बैंक से सीधे भेजिए';
+
+  @override
+  String get bankTransferMarkPaid => 'भेज दिया — पुष्टि कीजिए';
+
+  @override
+  String get bankAccountNumberLabel => 'खाता नंबर';
+
+  @override
+  String get bankIfscLabel => 'IFSC कोड';
+
+  @override
+  String get bankAccountHolderLabel => 'खाताधारक का नाम';
+
+  @override
+  String get bankBranchLabel => 'शाखा';
+
+  @override
+  String get awaitingVerificationMessage =>
+      'सुनील भैया बैंक चेक करेंगे — थोड़ा इंतज़ार कीजिए';
+
+  // ---- §5c S4.6 Active projects list ----
+
+  @override
+  String get ordersTitle => 'ऑर्डर';
+
+  @override
+  String get filterAll => 'सब';
+
+  @override
+  String get filterCommitted => 'पुष्टि की';
+
+  @override
+  String get filterPendingPayment => 'भुगतान बाकी';
+
+  @override
+  String get filterDelivering => 'डिलीवरी में';
+
+  @override
+  String get filterClosed => 'बंद';
+
+  @override
+  String get emptyOrdersList =>
+      'जल्द ही पहला ऑर्डर आएगा।';
+
   // ---- §6 Udhaar khaata ----
 
   @override

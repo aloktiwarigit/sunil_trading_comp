@@ -61,6 +61,10 @@ class YugmaThemeExtension extends ThemeExtension<YugmaThemeExtension> {
     required this.whatsappNumberE164,
     required this.upiVpa,
     required this.gstNumber,
+    this.bankAccountNumber,
+    this.bankIfsc,
+    this.bankAccountHolderName,
+    this.bankBranch,
     required this.isElderTier,
   });
 
@@ -103,6 +107,10 @@ class YugmaThemeExtension extends ThemeExtension<YugmaThemeExtension> {
       whatsappNumberE164: tokens.whatsappNumberE164,
       upiVpa: tokens.upiVpa,
       gstNumber: tokens.gstNumber,
+      bankAccountNumber: tokens.bankAccountNumber,
+      bankIfsc: tokens.bankIfsc,
+      bankAccountHolderName: tokens.bankAccountHolderName,
+      bankBranch: tokens.bankBranch,
       isElderTier: isElderTier,
     );
   }
@@ -216,6 +224,18 @@ class YugmaThemeExtension extends ThemeExtension<YugmaThemeExtension> {
 
   /// GST number (nullable).
   final String? gstNumber;
+
+  /// Bank account number (C3.7). Null = bank transfer option hidden.
+  final String? bankAccountNumber;
+  /// IFSC code.
+  final String? bankIfsc;
+  /// Account holder name.
+  final String? bankAccountHolderName;
+  /// Bank branch name.
+  final String? bankBranch;
+
+  /// True if bank details are configured and bank transfer should be shown.
+  bool get hasBankDetails => bankAccountNumber != null && bankAccountNumber!.isNotEmpty;
 
   // ─── Mode flags ───
 
@@ -363,6 +383,10 @@ class YugmaThemeExtension extends ThemeExtension<YugmaThemeExtension> {
       whatsappNumberE164: whatsappNumberE164,
       upiVpa: upiVpa,
       gstNumber: gstNumber,
+      bankAccountNumber: bankAccountNumber,
+      bankIfsc: bankIfsc,
+      bankAccountHolderName: bankAccountHolderName,
+      bankBranch: bankBranch,
       isElderTier: isElderTier ?? this.isElderTier,
     );
   }
@@ -422,6 +446,11 @@ class YugmaThemeExtension extends ThemeExtension<YugmaThemeExtension> {
           t < 0.5 ? whatsappNumberE164 : other.whatsappNumberE164,
       upiVpa: t < 0.5 ? upiVpa : other.upiVpa,
       gstNumber: t < 0.5 ? gstNumber : other.gstNumber,
+      bankAccountNumber: t < 0.5 ? bankAccountNumber : other.bankAccountNumber,
+      bankIfsc: t < 0.5 ? bankIfsc : other.bankIfsc,
+      bankAccountHolderName:
+          t < 0.5 ? bankAccountHolderName : other.bankAccountHolderName,
+      bankBranch: t < 0.5 ? bankBranch : other.bankBranch,
       isElderTier: t < 0.5 ? isElderTier : other.isElderTier,
     );
   }

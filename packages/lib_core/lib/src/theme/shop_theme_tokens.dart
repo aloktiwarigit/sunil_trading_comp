@@ -148,6 +148,16 @@ class ShopThemeTokens with _$ShopThemeTokens {
     /// GST registration number (nullable — not every shop has one).
     required String? gstNumber,
 
+    // ─── Bank details (C3.7 — nullable, hidden if absent) ──────────────
+    /// Bank account number for direct transfer. Null = option hidden.
+    String? bankAccountNumber,
+    /// IFSC code.
+    String? bankIfsc,
+    /// Account holder name (may differ from brandName).
+    String? bankAccountHolderName,
+    /// Bank branch name.
+    String? bankBranch,
+
     // ─── Versioning (for cache invalidation) ──────────────────────────
 
     /// Bumped on every Settings save by the shopkeeper.
@@ -217,6 +227,10 @@ class ShopThemeTokens with _$ShopThemeTokens {
         whatsappNumberE164: '+91XXXXXXXXXX', // TBD pending onboarding
         upiVpa: 'sunil@oksbi', // TBD pending onboarding
         gstNumber: null, // TBD pending onboarding
+        bankAccountNumber: null, // TBD pending onboarding
+        bankIfsc: null,
+        bankAccountHolderName: null,
+        bankBranch: null,
         version: 1,
         updatedAt: DateTime(2026, 4, 11),
       );
@@ -260,6 +274,10 @@ class ShopThemeTokens with _$ShopThemeTokens {
         whatsappNumberE164: '+10000000000',
         upiVpa: 'test@test',
         gstNumber: null,
+        bankAccountNumber: '0000000000',
+        bankIfsc: 'TEST0000000',
+        bankAccountHolderName: 'TEST SHOP OWNER',
+        bankBranch: 'TEST BRANCH',
         version: 1,
         updatedAt: DateTime(2026, 4, 11),
       );

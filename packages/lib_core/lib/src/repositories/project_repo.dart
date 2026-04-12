@@ -147,6 +147,58 @@ class ProjectRepo {
         .set(map, SetOptions(merge: true));
   }
 
+  /// Typed customer cross-partition COD — committed → delivering per C3.6.
+  /// Skips `paid` state; the shopkeeper marks paid after collecting cash.
+  Future<void> applyCustomerCodPatch(
+    String projectId,
+    ProjectCustomerCodPatch patch,
+  ) async {
+    final ref = _projectsCollection().doc(projectId);
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (!snap.exists) {
+        throw const ProjectRepoException('not-found', 'Project does not exist');
+      }
+      final currentState = snap.data()!['state'] as String?;
+      if (currentState != 'committed') {
+        throw ProjectRepoException(
+          'invalid-state-transition',
+          'Cannot select COD in state $currentState — only committed allowed',
+        );
+      }
+      final map = patch.toFirestoreMap();
+      map['updatedAt'] = FieldValue.serverTimestamp();
+      txn.set(ref, map, SetOptions(merge: true));
+    });
+    _log.info('customer COD patch applied: projectId=$projectId');
+  }
+
+  /// Typed customer cross-partition bank transfer — committed → awaiting_verification
+  /// per C3.7. The shopkeeper must manually verify and move to `paid`.
+  Future<void> applyCustomerBankTransferPatch(
+    String projectId,
+    ProjectCustomerBankTransferPatch patch,
+  ) async {
+    final ref = _projectsCollection().doc(projectId);
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (!snap.exists) {
+        throw const ProjectRepoException('not-found', 'Project does not exist');
+      }
+      final currentState = snap.data()!['state'] as String?;
+      if (currentState != 'committed') {
+        throw ProjectRepoException(
+          'invalid-state-transition',
+          'Cannot select bank transfer in state $currentState — only committed',
+        );
+      }
+      final map = patch.toFirestoreMap();
+      map['updatedAt'] = FieldValue.serverTimestamp();
+      txn.set(ref, map, SetOptions(merge: true));
+    });
+    _log.info('customer bank transfer patch applied: projectId=$projectId');
+  }
+
   /// Typed customer cross-partition payment — the committed → paid transition
   /// per PRD C3.5. Re-verifies the Triple Zero invariant at transition time:
   /// `amountReceivedByShop == totalAmount` must hold (set at commit by C3.4).

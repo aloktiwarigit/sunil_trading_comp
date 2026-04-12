@@ -242,6 +242,61 @@ abstract class AppStrings {
   /// Payment success toast.
   String get paymentSuccessPakka;
 
+  // ---- §5b C3.6 COD + C3.7 Bank transfer ----
+
+  /// COD option label (C3.6 AC #1).
+  String get codOption;
+
+  /// COD confirmation note (C3.6 AC #2).
+  String get codConfirmNote;
+
+  /// COD confirm button.
+  String get codConfirmButton;
+
+  /// Bank transfer option label (C3.7 AC #1).
+  String get bankTransferOption;
+
+  /// "Mark as paid" self-report button (C3.7 AC #3).
+  String get bankTransferMarkPaid;
+
+  /// Bank account number label.
+  String get bankAccountNumberLabel;
+
+  /// IFSC label.
+  String get bankIfscLabel;
+
+  /// Account holder name label.
+  String get bankAccountHolderLabel;
+
+  /// Bank branch label.
+  String get bankBranchLabel;
+
+  /// Awaiting verification status message.
+  String get awaitingVerificationMessage;
+
+  // ---- §5c S4.6 Active projects list ----
+
+  /// Orders tab title (S4.6).
+  String get ordersTitle;
+
+  /// Filter: All.
+  String get filterAll;
+
+  /// Filter: Committed.
+  String get filterCommitted;
+
+  /// Filter: Pending payment.
+  String get filterPendingPayment;
+
+  /// Filter: Delivering.
+  String get filterDelivering;
+
+  /// Filter: Closed.
+  String get filterClosed;
+
+  /// Empty orders placeholder (S4.6 edge case #3).
+  String get emptyOrdersList;
+
   // =========================================================================
   // §6 — Udhaar khaata (UX Spec §5.5 #15–17, 29)
   // =========================================================================

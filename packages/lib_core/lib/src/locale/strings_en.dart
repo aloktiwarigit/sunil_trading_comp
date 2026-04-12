@@ -202,6 +202,64 @@ class AppStringsEn extends AppStrings {
   @override
   String get paymentSuccessPakka => 'Order confirmed. Thank you.';
 
+  // ---- §5b C3.6 COD + C3.7 Bank transfer ----
+
+  @override
+  String get codOption => 'Cash on delivery';
+
+  @override
+  String get codConfirmNote =>
+      'Sunil-bhaiya will collect payment when he delivers';
+
+  @override
+  String get codConfirmButton => 'Confirm COD';
+
+  @override
+  String get bankTransferOption => 'Send directly from bank';
+
+  @override
+  String get bankTransferMarkPaid => 'I have sent it — confirm';
+
+  @override
+  String get bankAccountNumberLabel => 'Account number';
+
+  @override
+  String get bankIfscLabel => 'IFSC code';
+
+  @override
+  String get bankAccountHolderLabel => 'Account holder name';
+
+  @override
+  String get bankBranchLabel => 'Branch';
+
+  @override
+  String get awaitingVerificationMessage =>
+      'Sunil-bhaiya will check the bank — please wait';
+
+  // ---- §5c S4.6 Active projects list ----
+
+  @override
+  String get ordersTitle => 'Orders';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get filterCommitted => 'Committed';
+
+  @override
+  String get filterPendingPayment => 'Pending payment';
+
+  @override
+  String get filterDelivering => 'Delivering';
+
+  @override
+  String get filterClosed => 'Closed';
+
+  @override
+  String get emptyOrdersList =>
+      'First order coming soon.';
+
   // ---- §6 Udhaar khaata ----
 
   @override

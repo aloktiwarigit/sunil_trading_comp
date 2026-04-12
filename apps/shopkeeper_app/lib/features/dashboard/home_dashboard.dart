@@ -107,10 +107,8 @@ class HomeDashboard extends ConsumerWidget {
 
             // ── S4.3: Inventory section (live) ──
             _InventorySection(),
-            _PlaceholderSection(
-              title: 'Orders',
-              icon: Icons.receipt_long_outlined,
-            ),
+            // ── S4.6: Orders section (live) ──
+            _OrdersSection(),
             _PlaceholderSection(
               title: 'Chat',
               icon: Icons.chat_outlined,
@@ -161,6 +159,59 @@ class _InventorySection extends StatelessWidget {
             const SizedBox(width: YugmaSpacing.s3),
             Text(
               strings.inventoryTitle,
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaBody,
+                fontSize: YugmaTypeScale.body,
+                color: YugmaColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.chevron_right,
+              color: YugmaColors.textMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Orders section — tappable card that navigates to /orders (S4.6).
+class _OrdersSection extends StatelessWidget {
+  const _OrdersSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = const AppStringsHi();
+
+    return GestureDetector(
+      onTap: () => context.push('/orders'),
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: YugmaSpacing.s4,
+          vertical: YugmaSpacing.s2,
+        ),
+        padding: const EdgeInsets.all(YugmaSpacing.s5),
+        decoration: BoxDecoration(
+          color: YugmaColors.surface,
+          borderRadius: BorderRadius.circular(YugmaRadius.lg),
+          border: Border.all(
+            color: YugmaColors.primary.withValues(alpha: 0.2),
+          ),
+          boxShadow: YugmaShadows.card,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.receipt_long_outlined,
+              color: YugmaColors.primary,
+              size: 24,
+            ),
+            const SizedBox(width: YugmaSpacing.s3),
+            Text(
+              strings.ordersTitle,
               style: TextStyle(
                 fontFamily: YugmaFonts.devaBody,
                 fontSize: YugmaTypeScale.body,

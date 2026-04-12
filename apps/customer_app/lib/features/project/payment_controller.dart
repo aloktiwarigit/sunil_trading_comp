@@ -146,7 +146,89 @@ class PaymentController extends FamilyAsyncNotifier<PaymentFlowState, String> {
     }
   }
 
-  /// Customer confirms payment was successful. Record in Firestore.
+  /// Customer selects COD. Transition committed → delivering (C3.6).
+  Future<void> selectCod() async {
+    state = AsyncData(PaymentFlowState(
+      stage: PaymentFlowStage.recording,
+      project: state.valueOrNull?.project,
+    ));
+
+    final shopId = ref.read(shopIdProviderProvider).shopId;
+    final projectRepo = ProjectRepo(
+      firestore: FirebaseFirestore.instance,
+      shopIdProvider: ShopIdProvider(shopId),
+    );
+
+    try {
+      await projectRepo.applyCustomerCodPatch(
+        _projectId,
+        const ProjectCustomerCodPatch(),
+      );
+      final updated = await projectRepo.getById(_projectId);
+      _log.info('COD selected: $_projectId');
+      state = AsyncData(PaymentFlowState(
+        stage: PaymentFlowStage.paid,
+        project: updated,
+      ));
+    } on ProjectRepoException catch (e) {
+      _log.warning('COD selection failed: $e');
+      state = AsyncData(PaymentFlowState(
+        stage: PaymentFlowStage.error,
+        project: state.valueOrNull?.project,
+        errorMessage: e.message,
+      ));
+    } on Exception catch (e) {
+      _log.warning('COD failed (network/unknown): $e');
+      state = AsyncData(PaymentFlowState(
+        stage: PaymentFlowStage.error,
+        project: state.valueOrNull?.project,
+        errorMessage: 'unknown',
+      ));
+    }
+  }
+
+  /// Customer self-reports bank transfer. Transition committed → awaiting_verification (C3.7).
+  Future<void> selectBankTransfer() async {
+    state = AsyncData(PaymentFlowState(
+      stage: PaymentFlowStage.recording,
+      project: state.valueOrNull?.project,
+    ));
+
+    final shopId = ref.read(shopIdProviderProvider).shopId;
+    final projectRepo = ProjectRepo(
+      firestore: FirebaseFirestore.instance,
+      shopIdProvider: ShopIdProvider(shopId),
+    );
+
+    try {
+      await projectRepo.applyCustomerBankTransferPatch(
+        _projectId,
+        const ProjectCustomerBankTransferPatch(),
+      );
+      final updated = await projectRepo.getById(_projectId);
+      _log.info('bank transfer reported: $_projectId');
+      state = AsyncData(PaymentFlowState(
+        stage: PaymentFlowStage.paid,
+        project: updated,
+      ));
+    } on ProjectRepoException catch (e) {
+      _log.warning('bank transfer failed: $e');
+      state = AsyncData(PaymentFlowState(
+        stage: PaymentFlowStage.error,
+        project: state.valueOrNull?.project,
+        errorMessage: e.message,
+      ));
+    } on Exception catch (e) {
+      _log.warning('bank transfer failed (network/unknown): $e');
+      state = AsyncData(PaymentFlowState(
+        stage: PaymentFlowStage.error,
+        project: state.valueOrNull?.project,
+        errorMessage: 'unknown',
+      ));
+    }
+  }
+
+  /// Customer confirms UPI payment was successful. Record in Firestore.
   Future<void> confirmPayment({String? customerVpa}) async {
     state = AsyncData(PaymentFlowState(
       stage: PaymentFlowStage.recording,

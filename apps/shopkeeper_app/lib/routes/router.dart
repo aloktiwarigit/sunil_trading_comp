@@ -24,6 +24,7 @@ import '../features/auth/sign_in_screen.dart';
 import '../features/dashboard/home_dashboard.dart';
 import '../features/inventory/create_sku_screen.dart';
 import '../features/inventory/inventory_list_screen.dart';
+import '../features/orders/active_projects_screen.dart';
 
 final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -51,7 +52,9 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
 
         case OpsAuthStatus.authorized:
           // Allow navigation to sub-routes when authorized.
-          if (isOnHome || state.matchedLocation.startsWith('/inventory')) {
+          if (isOnHome ||
+              state.matchedLocation.startsWith('/inventory') ||
+              state.matchedLocation.startsWith('/orders')) {
             return null;
           }
           return '/home';
@@ -69,6 +72,11 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeDashboard(),
+      ),
+      // S4.6 — Active projects / orders list
+      GoRoute(
+        path: '/orders',
+        builder: (context, state) => const ActiveProjectsScreen(),
       ),
       GoRoute(
         path: '/inventory',

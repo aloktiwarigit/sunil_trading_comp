@@ -151,6 +151,47 @@ class ProjectCustomerPaymentPatch with _$ProjectCustomerPaymentPatch {
   }
 }
 
+/// The fourth cross-partition customer mutation: selecting COD payment.
+///
+/// PRD C3.6 — committed → delivering transition. Skips `paid` state entirely;
+/// the shopkeeper marks `paid` after collecting cash on delivery.
+/// Security rule gate: `state == 'committed' &&
+/// request.auth.uid == resource.data.customerUid`.
+@freezed
+class ProjectCustomerCodPatch with _$ProjectCustomerCodPatch {
+  const factory ProjectCustomerCodPatch() = _ProjectCustomerCodPatch;
+
+  const ProjectCustomerCodPatch._();
+
+  Map<String, Object?> toFirestoreMap() {
+    return <String, Object?>{
+      'state': 'delivering',
+      'paymentMethod': 'cod',
+    };
+  }
+}
+
+/// The fifth cross-partition customer mutation: self-reporting bank transfer.
+///
+/// PRD C3.7 — committed → awaiting_verification transition. The shopkeeper
+/// must manually verify the transfer and move to `paid`.
+/// Security rule gate: `state == 'committed' &&
+/// request.auth.uid == resource.data.customerUid`.
+@freezed
+class ProjectCustomerBankTransferPatch with _$ProjectCustomerBankTransferPatch {
+  const factory ProjectCustomerBankTransferPatch() =
+      _ProjectCustomerBankTransferPatch;
+
+  const ProjectCustomerBankTransferPatch._();
+
+  Map<String, Object?> toFirestoreMap() {
+    return <String, Object?>{
+      'state': 'awaiting_verification',
+      'paymentMethod': 'bank_transfer',
+    };
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Operator-owned patches
 // -----------------------------------------------------------------------------
@@ -178,6 +219,7 @@ class ProjectOperatorPatch with _$ProjectOperatorPatch {
     String? customerPhone,
     String? customerVpa,
     String? decisionCircleId,
+    String? paymentMethod,
     String? udhaarLedgerId,
     int? unreadCountForShopkeeper,
   }) = _ProjectOperatorPatch;
@@ -204,6 +246,7 @@ class ProjectOperatorPatch with _$ProjectOperatorPatch {
     if (customerPhone != null) out['customerPhone'] = customerPhone;
     if (customerVpa != null) out['customerVpa'] = customerVpa;
     if (decisionCircleId != null) out['decisionCircleId'] = decisionCircleId;
+    if (paymentMethod != null) out['paymentMethod'] = paymentMethod;
     if (udhaarLedgerId != null) out['udhaarLedgerId'] = udhaarLedgerId;
     if (unreadCountForShopkeeper != null) {
       out['unreadCountForShopkeeper'] = unreadCountForShopkeeper;
