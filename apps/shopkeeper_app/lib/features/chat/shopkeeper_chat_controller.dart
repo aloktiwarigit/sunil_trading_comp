@@ -1,0 +1,287 @@
+// =============================================================================
+// ShopkeeperChatController — Riverpod controller for shopkeeper-side chat.
+//
+// Per S4.8:
+//   AC #1: Chat screen with text input + voice note button (voice deferred)
+//   AC #2: Text messages sent as authorRole: "bhaiya" (or beta/munshi)
+//   AC #4: Price proposal sending for a specific line item
+//
+// Per Standing Rule 11:
+//   - ChatThread writes via ChatThreadOperatorPatch ONLY
+//   - Message documents written directly (immutable after create per SAD §6)
+// =============================================================================
+
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lib_core/lib_core.dart';
+import 'package:logging/logging.dart';
+
+import 'package:shopkeeper_app/main.dart';
+
+/// State for the shopkeeper chat screen.
+class ShopkeeperChatState {
+  const ShopkeeperChatState({
+    required this.messages,
+    required this.pendingMessageIds,
+    this.isLoadingOlder = false,
+    this.hasOlderMessages = true,
+  });
+
+  final List<Message> messages;
+  final Set<String> pendingMessageIds;
+  final bool isLoadingOlder;
+  final bool hasOlderMessages;
+
+  ShopkeeperChatState copyWith({
+    List<Message>? messages,
+    Set<String>? pendingMessageIds,
+    bool? isLoadingOlder,
+    bool? hasOlderMessages,
+  }) {
+    return ShopkeeperChatState(
+      messages: messages ?? this.messages,
+      pendingMessageIds: pendingMessageIds ?? this.pendingMessageIds,
+      isLoadingOlder: isLoadingOlder ?? this.isLoadingOlder,
+      hasOlderMessages: hasOlderMessages ?? this.hasOlderMessages,
+    );
+  }
+}
+
+/// Family provider — one controller per projectId.
+final shopkeeperChatControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<ShopkeeperChatController, ShopkeeperChatState, String>(
+  ShopkeeperChatController.new,
+);
+
+class ShopkeeperChatController
+    extends AutoDisposeFamilyAsyncNotifier<ShopkeeperChatState, String> {
+  static final Logger _log = Logger('ShopkeeperChatController');
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _messagesSub;
+
+  String get _projectId => arg;
+
+  @override
+  Future<ShopkeeperChatState> build(String arg) async {
+    ref.onDispose(() {
+      _messagesSub?.cancel();
+    });
+
+    final shopId = ref.read(shopIdProviderProvider).shopId;
+    final firestore = FirebaseFirestore.instance;
+
+    // Start real-time listener.
+    _startMessageListener(firestore, shopId);
+
+    // Fetch initial messages.
+    final messages = await _fetchMessages(firestore, shopId);
+
+    return ShopkeeperChatState(
+      messages: messages,
+      pendingMessageIds: const {},
+      hasOlderMessages: messages.length >= 20,
+    );
+  }
+
+  /// Send a text message as shopkeeper (bhaiya role).
+  Future<void> sendText(String text) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    final shopId = ref.read(shopIdProviderProvider).shopId;
+    final firestore = FirebaseFirestore.instance;
+    final authProvider = ref.read(shopkeeperAuthProviderInstance);
+    final user = authProvider.currentUser;
+    if (user == null) return;
+
+    final messageId = firestore.collection('_').doc().id;
+    final now = DateTime.now();
+
+    // Optimistic message.
+    final optimistic = Message(
+      messageId: messageId,
+      shopId: shopId,
+      threadId: _projectId,
+      projectId: _projectId,
+      authorUid: user.uid,
+      authorRole: MessageAuthorRole.bhaiya,
+      type: MessageType.text,
+      sentAt: now,
+      textBody: text,
+    );
+
+    state = AsyncData(current.copyWith(
+      messages: [...current.messages, optimistic],
+      pendingMessageIds: {...current.pendingMessageIds, messageId},
+    ));
+
+    try {
+      await firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('chatThreads')
+          .doc(_projectId)
+          .collection('messages')
+          .doc(messageId)
+          .set({
+        'messageId': messageId,
+        'shopId': shopId,
+        'threadId': _projectId,
+        'projectId': _projectId,
+        'authorUid': user.uid,
+        'authorRole': 'bhaiya',
+        'type': 'text',
+        'sentAt': FieldValue.serverTimestamp(),
+        'textBody': text,
+        'readByUids': <String>[],
+      });
+
+      final updated = state.valueOrNull;
+      if (updated != null) {
+        final newPending = Set<String>.from(updated.pendingMessageIds)
+          ..remove(messageId);
+        state = AsyncData(updated.copyWith(pendingMessageIds: newPending));
+      }
+    } catch (e) {
+      _log.warning('sendText failed: $e');
+    }
+  }
+
+  /// Send a price proposal for a specific line item (C3.3 AC #2 + S4.8 AC #4).
+  Future<void> sendPriceProposal({
+    required String lineItemId,
+    required int proposedPrice,
+    required String skuName,
+  }) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    final shopId = ref.read(shopIdProviderProvider).shopId;
+    final firestore = FirebaseFirestore.instance;
+    final authProvider = ref.read(shopkeeperAuthProviderInstance);
+    final user = authProvider.currentUser;
+    if (user == null) return;
+
+    final messageId = firestore.collection('_').doc().id;
+    final now = DateTime.now();
+
+    final optimistic = Message(
+      messageId: messageId,
+      shopId: shopId,
+      threadId: _projectId,
+      projectId: _projectId,
+      authorUid: user.uid,
+      authorRole: MessageAuthorRole.bhaiya,
+      type: MessageType.priceProposal,
+      sentAt: now,
+      proposedPrice: proposedPrice,
+      lineItemId: lineItemId,
+    );
+
+    state = AsyncData(current.copyWith(
+      messages: [...current.messages, optimistic],
+      pendingMessageIds: {...current.pendingMessageIds, messageId},
+    ));
+
+    try {
+      await firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('chatThreads')
+          .doc(_projectId)
+          .collection('messages')
+          .doc(messageId)
+          .set({
+        'messageId': messageId,
+        'shopId': shopId,
+        'threadId': _projectId,
+        'projectId': _projectId,
+        'authorUid': user.uid,
+        'authorRole': 'bhaiya',
+        'type': 'price_proposal',
+        'sentAt': FieldValue.serverTimestamp(),
+        'proposedPrice': proposedPrice,
+        'lineItemId': lineItemId,
+        'readByUids': <String>[],
+      });
+
+      final updated = state.valueOrNull;
+      if (updated != null) {
+        final newPending = Set<String>.from(updated.pendingMessageIds)
+          ..remove(messageId);
+        state = AsyncData(updated.copyWith(pendingMessageIds: newPending));
+      }
+      _log.info('price proposal sent: lineItem=$lineItemId price=$proposedPrice');
+    } catch (e) {
+      _log.warning('sendPriceProposal failed: $e');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  Future<List<Message>> _fetchMessages(
+    FirebaseFirestore firestore,
+    String shopId,
+  ) async {
+    final snap = await firestore
+        .collection('shops')
+        .doc(shopId)
+        .collection('chatThreads')
+        .doc(_projectId)
+        .collection('messages')
+        .orderBy('sentAt', descending: true)
+        .limit(20)
+        .get();
+
+    return snap.docs.map((doc) {
+      return Message.fromJson(<String, dynamic>{
+        ...doc.data(),
+        'messageId': doc.id,
+      });
+    }).toList()
+      ..sort((a, b) => a.sentAt.compareTo(b.sentAt));
+  }
+
+  void _startMessageListener(
+    FirebaseFirestore firestore,
+    String shopId,
+  ) {
+    _messagesSub?.cancel();
+    _messagesSub = firestore
+        .collection('shops')
+        .doc(shopId)
+        .collection('chatThreads')
+        .doc(_projectId)
+        .collection('messages')
+        .orderBy('sentAt')
+        .limitToLast(20)
+        .snapshots()
+        .listen((snap) {
+      final messages = snap.docs.map((doc) {
+        return Message.fromJson(<String, dynamic>{
+          ...doc.data(),
+          'messageId': doc.id,
+        });
+      }).toList();
+
+      final current = state.valueOrNull;
+      if (current == null) return;
+
+      final confirmedIds = messages.map((m) => m.messageId).toSet();
+      final newPending = current.pendingMessageIds
+          .where((id) => !confirmedIds.contains(id))
+          .toSet();
+      final pendingMessages = current.messages
+          .where((m) => newPending.contains(m.messageId))
+          .toList();
+
+      state = AsyncData(current.copyWith(
+        messages: [...messages, ...pendingMessages],
+        pendingMessageIds: newPending,
+      ));
+    });
+  }
+}

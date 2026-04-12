@@ -190,6 +190,30 @@ Map<String, String> _renderAllStrings(AppStrings s) {
     'validationFloorExceedsBase': s.validationFloorExceedsBase,
     'validationDimensionPositive': s.validationDimensionPositive,
     'inventoryEmpty': s.inventoryEmpty,
+
+    // ---- §19 S4.7 Project detail ----
+    'projectDetailTitle': s.projectDetailTitle,
+    'lineItemsHeader': s.lineItemsHeader,
+    'customerInfoHeader': s.customerInfoHeader,
+    'newCustomerPlaceholder': s.newCustomerPlaceholder,
+    'chatPreviewHeader(5)': s.chatPreviewHeader(5),
+    'sendMessageButton': s.sendMessageButton,
+    'markDeliveredButton': s.markDeliveredButton,
+    'cancelOrderButton': s.cancelOrderButton,
+    'filterNegotiating': s.filterNegotiating,
+
+    // ---- §20 S4.8 Shopkeeper chat reply ----
+    'proposePriceButton': s.proposePriceButton,
+    'proposalSelectItemPrompt': s.proposalSelectItemPrompt,
+    'proposalPriceInputLabel': s.proposalPriceInputLabel,
+    'proposalSendButton': s.proposalSendButton,
+    'proposalSentConfirmation': s.proposalSentConfirmation,
+
+    // ---- §21 S4.4 Inventory edit ----
+    'editSkuTitle': s.editSkuTitle,
+    'skuSaveChangesButton': s.skuSaveChangesButton,
+    'skuChangesSaved': s.skuChangesSaved,
+    'skuStockAdjustLabel': s.skuStockAdjustLabel,
   };
 }
 

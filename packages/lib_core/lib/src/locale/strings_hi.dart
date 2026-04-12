@@ -537,6 +537,51 @@ class AppStringsHi extends AppStrings {
   String get inventoryEmpty =>
       'अभी कोई सामान नहीं है। + बटन से नया सामान जोड़िए।';
 
+  // ---- §19 S4.7 Project detail ----
+
+  @override
+  String get projectDetailTitle => 'ऑर्डर का ब्यौरा';
+  @override
+  String get lineItemsHeader => 'सामान की सूची';
+  @override
+  String get customerInfoHeader => 'ग्राहक की जानकारी';
+  @override
+  String get newCustomerPlaceholder => 'नया ग्राहक';
+  @override
+  String chatPreviewHeader(int count) => 'बातचीत ($count)';
+  @override
+  String get sendMessageButton => 'संदेश भेजिए';
+  @override
+  String get markDeliveredButton => 'डिलीवर किया';
+  @override
+  String get cancelOrderButton => 'रद्द कीजिए';
+  @override
+  String get filterNegotiating => 'मोल भाव';
+
+  // ---- §20 S4.8 Shopkeeper chat reply ----
+
+  @override
+  String get proposePriceButton => 'दाम बताइए';
+  @override
+  String get proposalSelectItemPrompt => 'कौन सा सामान?';
+  @override
+  String get proposalPriceInputLabel => 'आपका दाम (₹)';
+  @override
+  String get proposalSendButton => 'भेजिए';
+  @override
+  String get proposalSentConfirmation => 'दाम भेज दिया गया';
+
+  // ---- §21 S4.4 Inventory edit ----
+
+  @override
+  String get editSkuTitle => 'सामान बदलिए';
+  @override
+  String get skuSaveChangesButton => 'बदलाव सहेजिए';
+  @override
+  String get skuChangesSaved => 'बदलाव हो गया!';
+  @override
+  String get skuStockAdjustLabel => 'स्टॉक';
+
   // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------

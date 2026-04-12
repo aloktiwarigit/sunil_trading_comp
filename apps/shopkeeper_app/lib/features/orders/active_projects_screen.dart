@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
 import 'active_projects_controller.dart';
@@ -103,7 +104,10 @@ class ActiveProjectsScreen extends ConsumerWidget {
                       project: projects[index],
                       strings: strings,
                       onTap: () {
-                        // S4.7 — project detail (future sprint).
+                        // S4.7 — open project detail.
+                        context.push(
+                          '/orders/${projects[index].projectId}',
+                        );
                       },
                     );
                   },

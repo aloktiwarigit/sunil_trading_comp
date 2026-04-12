@@ -23,8 +23,11 @@ import '../features/auth/auth_controller.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/dashboard/home_dashboard.dart';
 import '../features/inventory/create_sku_screen.dart';
+import '../features/inventory/edit_sku_screen.dart';
 import '../features/inventory/inventory_list_screen.dart';
+import '../features/chat/shopkeeper_chat_screen.dart';
 import '../features/orders/active_projects_screen.dart';
+import '../features/orders/project_detail_screen.dart';
 
 final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -77,6 +80,24 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/orders',
         builder: (context, state) => const ActiveProjectsScreen(),
+        routes: <RouteBase>[
+          // S4.7 — Project detail
+          GoRoute(
+            path: ':projectId',
+            builder: (context, state) => ProjectDetailScreen(
+              projectId: state.pathParameters['projectId']!,
+            ),
+            routes: <RouteBase>[
+              // S4.8 — Shopkeeper chat
+              GoRoute(
+                path: 'chat',
+                builder: (context, state) => ShopkeeperChatScreen(
+                  projectId: state.pathParameters['projectId']!,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: '/inventory',
@@ -85,6 +106,13 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'create',
             builder: (context, state) => const CreateSkuScreen(),
+          ),
+          // S4.4 — Edit existing SKU
+          GoRoute(
+            path: ':skuId',
+            builder: (context, state) => EditSkuScreen(
+              skuId: state.pathParameters['skuId']!,
+            ),
           ),
         ],
       ),

@@ -529,6 +529,51 @@ class AppStringsEn extends AppStrings {
   @override
   String get inventoryEmpty => 'No items yet. Tap + to add your first item.';
 
+  // ---- §19 S4.7 Project detail ----
+
+  @override
+  String get projectDetailTitle => 'Order details';
+  @override
+  String get lineItemsHeader => 'Items';
+  @override
+  String get customerInfoHeader => 'Customer info';
+  @override
+  String get newCustomerPlaceholder => 'New customer';
+  @override
+  String chatPreviewHeader(int count) => 'Chat ($count)';
+  @override
+  String get sendMessageButton => 'Send message';
+  @override
+  String get markDeliveredButton => 'Mark delivered';
+  @override
+  String get cancelOrderButton => 'Cancel order';
+  @override
+  String get filterNegotiating => 'Negotiating';
+
+  // ---- §20 S4.8 Shopkeeper chat reply ----
+
+  @override
+  String get proposePriceButton => 'Propose price';
+  @override
+  String get proposalSelectItemPrompt => 'Which item?';
+  @override
+  String get proposalPriceInputLabel => 'Your price (₹)';
+  @override
+  String get proposalSendButton => 'Send';
+  @override
+  String get proposalSentConfirmation => 'Price proposal sent';
+
+  // ---- §21 S4.4 Inventory edit ----
+
+  @override
+  String get editSkuTitle => 'Edit item';
+  @override
+  String get skuSaveChangesButton => 'Save changes';
+  @override
+  String get skuChangesSaved => 'Changes saved!';
+  @override
+  String get skuStockAdjustLabel => 'Stock';
+
   // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------

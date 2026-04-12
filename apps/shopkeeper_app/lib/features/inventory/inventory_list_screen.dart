@@ -144,7 +144,10 @@ class InventoryListScreen extends ConsumerWidget {
             ),
             itemBuilder: (context, index) {
               final sku = skus[index];
-              return _SkuListTile(sku: sku);
+              return GestureDetector(
+                onTap: () => context.push('/inventory/${sku.skuId}'),
+                child: _SkuListTile(sku: sku),
+              );
             },
           );
         },

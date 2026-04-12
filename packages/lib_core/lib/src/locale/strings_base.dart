@@ -560,4 +560,70 @@ abstract class AppStrings {
   String get validationFloorExceedsBase;
   String get validationDimensionPositive;
   String get inventoryEmpty;
+
+  // =========================================================================
+  // §19 — S4.7 Project detail (Sprint 8)
+  // =========================================================================
+
+  /// Project detail screen title.
+  String get projectDetailTitle;
+
+  /// "Line items" section header.
+  String get lineItemsHeader;
+
+  /// "Customer info" section header.
+  String get customerInfoHeader;
+
+  /// "New customer" placeholder when no memory exists (Edge #1).
+  String get newCustomerPlaceholder;
+
+  /// "Chat" section header with message count.
+  String chatPreviewHeader(int count);
+
+  /// "Send message" action button.
+  String get sendMessageButton;
+
+  /// "Mark delivered" action button.
+  String get markDeliveredButton;
+
+  /// "Cancel order" action button.
+  String get cancelOrderButton;
+
+  /// "Negotiating" state badge label.
+  String get filterNegotiating;
+
+  // =========================================================================
+  // §20 — S4.8 Shopkeeper chat reply (Sprint 8)
+  // =========================================================================
+
+  /// "Propose price" button label in shopkeeper chat.
+  String get proposePriceButton;
+
+  /// "For which item?" prompt in price proposal flow.
+  String get proposalSelectItemPrompt;
+
+  /// "Your price" input label in price proposal flow.
+  String get proposalPriceInputLabel;
+
+  /// "Send proposal" button.
+  String get proposalSendButton;
+
+  /// Proposal sent confirmation.
+  String get proposalSentConfirmation;
+
+  // =========================================================================
+  // §21 — S4.4 Inventory edit (Sprint 8)
+  // =========================================================================
+
+  /// "Edit item" screen title.
+  String get editSkuTitle;
+
+  /// "Save changes" button.
+  String get skuSaveChangesButton;
+
+  /// "Changes saved" success toast.
+  String get skuChangesSaved;
+
+  /// "Stock" quick-adjust label.
+  String get skuStockAdjustLabel;
 }
