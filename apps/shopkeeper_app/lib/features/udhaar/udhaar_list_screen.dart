@@ -82,9 +82,7 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
         ],
       ),
       body: ledgersAsync.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(color: YugmaColors.primary),
-        ),
+        loading: () => const YugmaListSkeleton(),
         error: (err, _) => Center(
           child: Text(err.toString(),
               style: TextStyle(fontFamily: YugmaFonts.devaBody)),

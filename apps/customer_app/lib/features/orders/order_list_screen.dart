@@ -81,9 +81,7 @@ class OrderListScreen extends ConsumerWidget {
         ),
       ),
       body: projectsAsync.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(color: theme.shopPrimary),
-        ),
+        loading: () => const YugmaListSkeleton(),
         error: (err, _) => YugmaErrorBanner(error: err),
         data: (projects) {
           if (projects.isEmpty) {

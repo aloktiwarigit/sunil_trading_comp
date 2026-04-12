@@ -196,7 +196,7 @@ class OrderDetailScreen extends ConsumerWidget {
               height: 48,
               child: OutlinedButton.icon(
                 onPressed: () => _generateAndShareInvoice(context, project),
-                icon: const Icon(Icons.receipt_long),
+                icon: const Icon(Icons.receipt_long, semanticLabel: 'Download receipt'),
                 label: Text(strings.orderDownloadReceipt),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.shopPrimary,

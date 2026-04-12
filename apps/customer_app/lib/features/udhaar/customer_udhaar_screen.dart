@@ -271,6 +271,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
                       Icons.payments_outlined,
                       size: 16,
                       color: theme.shopTextMuted,
+                      semanticLabel: '',
                     ),
                     const SizedBox(width: YugmaSpacing.s1),
                     Text(
@@ -291,6 +292,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
                       Icons.notifications_outlined,
                       size: 16,
                       color: theme.shopTextMuted,
+                      semanticLabel: '',
                     ),
                     const SizedBox(width: YugmaSpacing.s1),
                     Text(

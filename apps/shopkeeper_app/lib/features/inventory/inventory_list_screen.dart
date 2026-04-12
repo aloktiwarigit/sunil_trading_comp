@@ -83,9 +83,7 @@ class InventoryListScreen extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
       body: inventoryAsync.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(color: YugmaColors.primary),
-        ),
+        loading: () => const YugmaListSkeleton(),
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(YugmaSpacing.s4),

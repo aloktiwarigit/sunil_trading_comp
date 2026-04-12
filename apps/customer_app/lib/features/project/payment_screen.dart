@@ -206,6 +206,7 @@ class PaymentScreen extends ConsumerWidget {
             Icons.check_circle_outline,
             size: 64,
             color: theme.shopAccent,
+            semanticLabel: 'Payment processing',
           ),
           const SizedBox(height: YugmaSpacing.s4),
           Text(
@@ -290,6 +291,9 @@ class PaymentScreen extends ConsumerWidget {
     YugmaThemeExtension theme,
     PaymentFlowState flowState,
   ) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      HapticFeedback.heavyImpact();
+    });
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(YugmaSpacing.s6),
@@ -300,6 +304,7 @@ class PaymentScreen extends ConsumerWidget {
               Icons.check_circle,
               size: 80,
               color: theme.shopCommit,
+              semanticLabel: 'Payment successful',
             ),
             const SizedBox(height: YugmaSpacing.s4),
             Text(
@@ -347,6 +352,7 @@ class PaymentScreen extends ConsumerWidget {
             Icons.error_outline,
             size: 64,
             color: theme.shopCommit,
+            semanticLabel: 'Payment error',
           ),
           const SizedBox(height: YugmaSpacing.s4),
           Text(
@@ -623,7 +629,7 @@ class _OtherMethodTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, color: theme.shopPrimary, size: 24),
+              Icon(icon, color: theme.shopPrimary, size: 24, semanticLabel: ''),
               const SizedBox(width: YugmaSpacing.s3),
               Expanded(
                 child: Text(label, style: theme.bodyDeva),
@@ -632,6 +638,7 @@ class _OtherMethodTile extends StatelessWidget {
                 Icons.chevron_right,
                 color: theme.shopTextMuted,
                 size: 20,
+                semanticLabel: '',
               ),
             ],
           ),
@@ -659,8 +666,15 @@ class _BankDetailRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: YugmaSpacing.s2),
       child: GestureDetector(
         onLongPress: () {
-          // Copy to clipboard on long-press (C3.7 edge case #2).
-          // Full clipboard wiring is a depth polish item.
+          Clipboard.setData(ClipboardData(text: value));
+          HapticFeedback.mediumImpact();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Copied', style: theme.bodyDeva.copyWith(color: theme.shopTextOnPrimary)),
+              backgroundColor: theme.shopPrimary,
+              duration: const Duration(seconds: 2),
+            ),
+          );
         },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -9,6 +9,7 @@
 
 import 'package:customer_app/features/project/draft_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
 
@@ -93,6 +94,7 @@ class DraftListScreen extends ConsumerWidget {
               Icons.list_alt_outlined,
               size: 64,
               color: theme.shopTextMuted,
+              semanticLabel: '',
             ),
             const SizedBox(height: YugmaSpacing.s4),
             Text(
@@ -160,9 +162,11 @@ class DraftListScreen extends ConsumerWidget {
                   child: Icon(
                     Icons.delete_outline,
                     color: theme.shopCommit,
+                    semanticLabel: 'Remove item',
                   ),
                 ),
                 onDismissed: (_) {
+                  HapticFeedback.mediumImpact();
                   final removedItem = item;
                   ref
                       .read(draftControllerProvider.notifier)
@@ -394,6 +398,7 @@ class _DraftLineItemTile extends StatelessWidget {
               _QuantityButton(
                 icon: Icons.remove,
                 theme: theme,
+                semanticLabel: 'Decrease quantity',
                 onTap: item.quantity > 1
                     ? () => onQuantityChanged(item.quantity - 1)
                     : null,
@@ -411,6 +416,7 @@ class _DraftLineItemTile extends StatelessWidget {
               _QuantityButton(
                 icon: Icons.add,
                 theme: theme,
+                semanticLabel: 'Increase quantity',
                 onTap: () => onQuantityChanged(item.quantity + 1),
               ),
             ],
@@ -421,6 +427,7 @@ class _DraftLineItemTile extends StatelessWidget {
               Icons.close,
               color: theme.shopTextMuted,
               size: 20,
+              semanticLabel: 'Remove item',
             ),
             onPressed: onRemove,
             constraints: BoxConstraints(
@@ -441,11 +448,13 @@ class _QuantityButton extends StatelessWidget {
     required this.icon,
     required this.theme,
     this.onTap,
+    this.semanticLabel,
   });
 
   final IconData icon;
   final YugmaThemeExtension theme;
   final VoidCallback? onTap;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -455,7 +464,12 @@ class _QuantityButton extends StatelessWidget {
           : theme.shopDivider,
       borderRadius: BorderRadius.circular(YugmaRadius.sm),
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.selectionClick();
+                onTap!();
+              }
+            : null,
         borderRadius: BorderRadius.circular(YugmaRadius.sm),
         child: SizedBox(
           width: 32,
@@ -464,6 +478,7 @@ class _QuantityButton extends StatelessWidget {
             icon,
             size: 18,
             color: onTap != null ? theme.shopPrimary : theme.shopTextMuted,
+            semanticLabel: semanticLabel,
           ),
         ),
       ),

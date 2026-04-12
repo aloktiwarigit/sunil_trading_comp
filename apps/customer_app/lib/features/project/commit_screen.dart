@@ -40,6 +40,8 @@ class CommitScreen extends ConsumerStatefulWidget {
 class _CommitScreenState extends ConsumerState<CommitScreen> {
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
+  final _phoneFormKey = GlobalKey<FormState>();
+  final _otpFormKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -261,28 +263,43 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
           ),
           const SizedBox(height: YugmaSpacing.s8),
           // Phone number field
-          TextField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            style: theme.monoNumeral.copyWith(
-              fontSize: theme.isElderTier ? 22.0 : 18.0,
-            ),
-            decoration: InputDecoration(
-              labelText: widget.strings.phoneInputLabel,
-              labelStyle: theme.bodyDeva.copyWith(
-                color: theme.shopTextSecondary,
-              ),
-              prefixText: '+91 ',
-              prefixStyle: theme.monoNumeral.copyWith(
+          Form(
+            key: _phoneFormKey,
+            child: TextFormField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              style: theme.monoNumeral.copyWith(
                 fontSize: theme.isElderTier ? 22.0 : 18.0,
-                color: theme.shopTextSecondary,
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(YugmaRadius.md),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(YugmaRadius.md),
-                borderSide: BorderSide(color: theme.shopPrimary, width: 2),
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              validator: (value) {
+                final digits = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+                if (digits.isEmpty) return 'Phone number is required';
+                final normalized = digits.startsWith('91') && digits.length > 10
+                    ? digits.substring(2)
+                    : digits;
+                if (normalized.length != 10) {
+                  return 'Enter a valid 10-digit mobile number';
+                }
+                return null;
+              },
+              decoration: InputDecoration(
+                labelText: widget.strings.phoneInputLabel,
+                labelStyle: theme.bodyDeva.copyWith(
+                  color: theme.shopTextSecondary,
+                ),
+                prefixText: '+91 ',
+                prefixStyle: theme.monoNumeral.copyWith(
+                  fontSize: theme.isElderTier ? 22.0 : 18.0,
+                  color: theme.shopTextSecondary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  borderSide: BorderSide(color: theme.shopPrimary, width: 2),
+                ),
               ),
             ),
           ),
@@ -300,6 +317,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                 onPressed: isCoolingDown
                     ? null
                     : () {
+                        if (!(_phoneFormKey.currentState?.validate() ?? false)) return;
                         var raw = _phoneController.text.trim();
                         if (raw.isEmpty) return;
                         // Strip non-digits and normalize to E.164 (India).
@@ -364,23 +382,33 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
           ),
           const SizedBox(height: YugmaSpacing.s8),
           // OTP code field
-          TextField(
-            controller: _otpController,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            style: theme.monoNumeral.copyWith(
-              fontSize: theme.isElderTier ? 28.0 : 24.0,
-              letterSpacing: 8,
-            ),
-            maxLength: 6,
-            decoration: InputDecoration(
-              counterText: '',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(YugmaRadius.md),
+          Form(
+            key: _otpFormKey,
+            child: TextFormField(
+              controller: _otpController,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: theme.monoNumeral.copyWith(
+                fontSize: theme.isElderTier ? 28.0 : 24.0,
+                letterSpacing: 8,
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(YugmaRadius.md),
-                borderSide: BorderSide(color: theme.shopPrimary, width: 2),
+              maxLength: 6,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              validator: (value) {
+                final digits = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+                if (digits.isEmpty) return 'OTP is required';
+                if (digits.length != 6) return 'Enter the 6-digit OTP code';
+                return null;
+              },
+              decoration: InputDecoration(
+                counterText: '',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  borderSide: BorderSide(color: theme.shopPrimary, width: 2),
+                ),
               ),
             ),
           ),
@@ -390,6 +418,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
             height: theme.tapTargetMin,
             child: ElevatedButton(
               onPressed: () {
+                if (!(_otpFormKey.currentState?.validate() ?? false)) return;
                 final code = _otpController.text.trim();
                 if (code.length < 6) return;
                 ref
@@ -493,6 +522,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                   Icons.check_circle_outline,
                   size: 72,
                   color: theme.shopCommit,
+                  semanticLabel: 'Order confirmed',
                 ),
                 const SizedBox(height: YugmaSpacing.s4),
                 // Success title
@@ -607,6 +637,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
             Icons.error_outline,
             size: 64,
             color: theme.shopCommit,
+            semanticLabel: 'Error',
           ),
           const SizedBox(height: YugmaSpacing.s4),
           Text(
