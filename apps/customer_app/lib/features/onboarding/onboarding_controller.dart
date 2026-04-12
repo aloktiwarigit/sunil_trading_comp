@@ -85,10 +85,12 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
     Shop shop;
     try {
       _log.info('Reading shop doc...');
+      // CA005 fix: removed Source.server force — default reads from cache
+      // when offline, preventing a timeout on cold launch with no network.
       final shopDoc = await firestore
           .collection('shops')
           .doc(shopId)
-          .get(const GetOptions(source: Source.server));
+          .get();
       if (shopDoc.exists && shopDoc.data() != null) {
         final raw = shopDoc.data()!;
         shop = Shop.fromJson(<String, dynamic>{
@@ -117,7 +119,7 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
           .doc(shopId)
           .collection('theme')
           .doc('current')
-          .get(const GetOptions(source: Source.server));
+          .get();
       if (themeDoc.exists && themeDoc.data() != null) {
         themeTokens = ShopThemeTokens.fromJson(themeDoc.data()!);
       } else {

@@ -93,7 +93,7 @@ export const shopDeactivationSweep = onSchedule(
             .collection('shops')
             .doc(shopId)
             .collection('projects')
-            .where('status', 'in', CANCELLABLE_STATUSES)
+            .where('state', 'in', CANCELLABLE_STATUSES)
             .get();
 
           const projectChunks: admin.firestore.QueryDocumentSnapshot[][] = [];
@@ -105,7 +105,7 @@ export const shopDeactivationSweep = onSchedule(
             const batch = db.batch();
             for (const projDoc of chunk) {
               batch.update(projDoc.ref, {
-                status: 'cancelled',
+                state: 'cancelled',
                 systemCancelReason: 'shop_deactivation',
                 cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
                 updatedByUid: SYSTEM_UID,

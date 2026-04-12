@@ -555,6 +555,7 @@ abstract class AppStrings {
   String get skuDescriptionLabel;
   String get skuSaveButton;
   String get skuGoldenHourPhotoButton;
+  String get skuSaveBeforePhoto;
   String get skuStockCountLabel;
   String get skuDuplicateNameWarning;
   String get skuSavedSuccess;
@@ -967,6 +968,9 @@ abstract class AppStrings {
 
   /// "Remove" operator button.
   String get settingsRemoveOperator;
+
+  /// Confirmation message for removing an operator.
+  String get settingsRemoveOperatorConfirm;
 
   // =========================================================================
   // §33 — Customer Udhaar Screen

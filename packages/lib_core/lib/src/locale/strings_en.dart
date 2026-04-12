@@ -515,6 +515,8 @@ class AppStringsEn extends AppStrings {
   @override
   String get skuGoldenHourPhotoButton => 'Capture Golden Hour photo';
   @override
+  String get skuSaveBeforePhoto => 'Save the item first, then take photo';
+  @override
   String get skuStockCountLabel => 'How many';
   @override
   String get skuDuplicateNameWarning =>
@@ -888,6 +890,9 @@ class AppStringsEn extends AppStrings {
 
   @override
   String get settingsRemoveOperator => 'Remove';
+  @override
+  String get settingsRemoveOperatorConfirm =>
+      'Are you sure you want to remove this person? Their access will be revoked immediately.';
 
   // ---- §33 Customer Udhaar Screen ----
 

@@ -559,34 +559,7 @@ class ProjectDetailScreen extends ConsumerWidget {
           SizedBox(
             height: YugmaSpacing.s12,
             child: OutlinedButton.icon(
-              onPressed: () async {
-                try {
-                  final patchMap = const ProjectOperatorPatch(
-                    state: ProjectState.delivering,
-                  ).toFirestoreMap();
-                  patchMap['updatedAt'] = FieldValue.serverTimestamp();
-
-                  await FirebaseFirestore.instance
-                      .collection('shops')
-                      .doc(ref.read(shopIdProviderProvider).shopId)
-                      .collection('projects')
-                      .doc(project.projectId)
-                      .set(patchMap, SetOptions(merge: true));
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('डिलीवरी शुरू हो गई'),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.toString())),
-                    );
-                  }
-                }
-              },
+              onPressed: () => _confirmStartDelivery(context, ref, project, strings),
               icon: const Icon(Icons.local_shipping_outlined, size: 20),
               label: const Text('डिलीवरी शुरू'),
               style: OutlinedButton.styleFrom(
@@ -682,6 +655,76 @@ class ProjectDetailScreen extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+
+  /// Start Delivery — paid → delivering state transition.
+  /// Shows Hindi confirmation dialog before writing.
+  void _confirmStartDelivery(
+    BuildContext context,
+    WidgetRef ref,
+    Project project,
+    AppStrings strings,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'डिलीवरी शुरू',
+          style: TextStyle(
+            fontFamily: YugmaFonts.devaBody,
+            fontSize: YugmaTypeScale.bodyLarge,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'डिलीवरी शुरू करें — पक्का है?',
+          style: TextStyle(fontFamily: YugmaFonts.devaBody),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(strings.draftQtyHighCancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+
+              try {
+                final patchMap = const ProjectOperatorPatch(
+                  state: ProjectState.delivering,
+                ).toFirestoreMap();
+                patchMap['updatedAt'] = FieldValue.serverTimestamp();
+
+                await FirebaseFirestore.instance
+                    .collection('shops')
+                    .doc(ref.read(shopIdProviderProvider).shopId)
+                    .collection('projects')
+                    .doc(project.projectId)
+                    .set(patchMap, SetOptions(merge: true));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('डिलीवरी शुरू हो गई'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString())),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: YugmaColors.primary,
+              foregroundColor: YugmaColors.textOnPrimary,
+            ),
+            child: Text(strings.draftQtyHighConfirm),
+          ),
+        ],
+      ),
     );
   }
 

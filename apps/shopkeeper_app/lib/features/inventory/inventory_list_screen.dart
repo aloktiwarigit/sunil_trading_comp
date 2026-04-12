@@ -54,11 +54,28 @@ Object? _normalizeTimestamp(Object? value) {
 }
 
 /// The inventory list screen — shows all active SKUs with a + FAB.
-class InventoryListScreen extends ConsumerWidget {
+class InventoryListScreen extends ConsumerStatefulWidget {
   const InventoryListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InventoryListScreen> createState() =>
+      _InventoryListScreenState();
+}
+
+class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
+  String _searchQuery = '';
+
+  List<InventorySku> _filterSkus(List<InventorySku> skus) {
+    if (_searchQuery.isEmpty) return skus;
+    final q = _searchQuery.toLowerCase();
+    return skus.where((sku) {
+      return sku.nameDevanagari.toLowerCase().contains(q) ||
+          sku.name.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final strings = const AppStringsHi();
     final inventoryAsync = ref.watch(inventoryListProvider);
 
@@ -128,33 +145,88 @@ class InventoryListScreen extends ConsumerWidget {
             );
           }
 
-          return RefreshIndicator(
-            color: YugmaColors.accent,
-            backgroundColor: YugmaColors.surface,
-            onRefresh: () async {
-              ref.invalidate(inventoryListProvider);
-              await Future.delayed(const Duration(milliseconds: 500));
-            },
-            child: ListView.separated(
-              padding: const EdgeInsets.only(
-                top: YugmaSpacing.s4,
-                bottom: YugmaSpacing.s16, // space for FAB
+          final filtered = _filterSkus(skus);
+
+          return Column(
+            children: [
+              // Search field
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  YugmaSpacing.s4,
+                  YugmaSpacing.s3,
+                  YugmaSpacing.s4,
+                  YugmaSpacing.s1,
+                ),
+                child: TextField(
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  style: TextStyle(
+                    fontFamily: YugmaFonts.devaBody,
+                    fontSize: YugmaTypeScale.body,
+                    color: YugmaColors.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'खोजें...',
+                    hintStyle: TextStyle(
+                      fontFamily: YugmaFonts.devaBody,
+                      fontSize: YugmaTypeScale.body,
+                      color: YugmaColors.textMuted,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: YugmaColors.textMuted,
+                    ),
+                    filled: true,
+                    fillColor: YugmaColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: YugmaSpacing.s4,
+                      vertical: YugmaSpacing.s2,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(YugmaRadius.md),
+                      borderSide: BorderSide(color: YugmaColors.divider),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(YugmaRadius.md),
+                      borderSide: BorderSide(color: YugmaColors.divider),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(YugmaRadius.md),
+                      borderSide: BorderSide(color: YugmaColors.primary),
+                    ),
+                  ),
+                ),
               ),
-              itemCount: skus.length,
-              separatorBuilder: (_, __) => Divider(
-                height: 1,
-                color: YugmaColors.divider,
-                indent: YugmaSpacing.s4,
-                endIndent: YugmaSpacing.s4,
+              Expanded(
+                child: RefreshIndicator(
+                  color: YugmaColors.accent,
+                  backgroundColor: YugmaColors.surface,
+                  onRefresh: () async {
+                    ref.invalidate(inventoryListProvider);
+                    await Future.delayed(const Duration(milliseconds: 500));
+                  },
+                  child: ListView.separated(
+                    padding: const EdgeInsets.only(
+                      top: YugmaSpacing.s4,
+                      bottom: YugmaSpacing.s16, // space for FAB
+                    ),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => Divider(
+                      height: 1,
+                      color: YugmaColors.divider,
+                      indent: YugmaSpacing.s4,
+                      endIndent: YugmaSpacing.s4,
+                    ),
+                    itemBuilder: (context, index) {
+                      final sku = filtered[index];
+                      return GestureDetector(
+                        onTap: () => context.push('/inventory/${sku.skuId}'),
+                        child: _SkuListTile(sku: sku),
+                      );
+                    },
+                  ),
+                ),
               ),
-              itemBuilder: (context, index) {
-                final sku = skus[index];
-                return GestureDetector(
-                  onTap: () => context.push('/inventory/${sku.skuId}'),
-                  child: _SkuListTile(sku: sku),
-                );
-              },
-            ),
+            ],
           );
         },
       ),

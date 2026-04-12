@@ -83,48 +83,40 @@ final routerProvider = Provider<GoRouter>((ref) {
             return const SplashScreen();
           }
 
-          final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
+          // No Theme wrapper needed — app.dart already registers
+          // YugmaThemeExtension via MaterialApp.router(theme: _buildTheme()).
+          return Consumer(
+            builder: (ctx, innerRef, _) {
+              final previews = innerRef
+                  .watch(curatedShortlistsPreviewProvider)
+                  .valueOrNull ?? const [];
 
-          // BharosaLanding already embeds ShopkeeperPresenceDock + its own
-          // Scaffold. Just provide Theme wrapper.
-          return Theme(
-            data: ThemeData(
-              useMaterial3: true,
-              extensions: [theme],
-            ),
-            child: Consumer(
-              builder: (ctx, innerRef, _) {
-                final previews = innerRef
-                    .watch(curatedShortlistsPreviewProvider)
-                    .valueOrNull ?? const [];
-
-                return BharosaLanding(
-                  onShortlistTap: (occasionTag) {
-                    context.push('/shortlist/$occasionTag');
-                  },
-                  onGreetingPlay: () {},
-                  autoPlayGreeting: false,
-                  onPresenceVoiceNote: () {},
-                  previewShortlists: previews,
-                  strings: data.strings,
-                  hasGreetingVoiceNote:
-                      data.themeTokens.greetingVoiceNoteId.isNotEmpty,
-                  greetingDurationSeconds: 0,
-                  currentLocaleCode: data.localeCode,
-                  onLocaleToggle: () {
-                    ref.read(onboardingControllerProvider.notifier).toggleLocale();
-                  },
-                  onRefresh: () async {
-                    ref.invalidate(curatedShortlistsPreviewProvider);
-                    await ref
-                        .read(onboardingControllerProvider.notifier)
-                        .refreshTheme();
-                  },
-                  onMyListTap: () => context.push('/draft'),
-                  onOrdersTap: () => context.push('/orders'),
-                );
-              },
-            ),
+              return BharosaLanding(
+                onShortlistTap: (occasionTag) {
+                  context.push('/shortlist/$occasionTag');
+                },
+                onGreetingPlay: () {},
+                autoPlayGreeting: false,
+                onPresenceVoiceNote: () {},
+                previewShortlists: previews,
+                strings: data.strings,
+                hasGreetingVoiceNote:
+                    data.themeTokens.greetingVoiceNoteId.isNotEmpty,
+                greetingDurationSeconds: 0,
+                currentLocaleCode: data.localeCode,
+                onLocaleToggle: () {
+                  ref.read(onboardingControllerProvider.notifier).toggleLocale();
+                },
+                onRefresh: () async {
+                  ref.invalidate(curatedShortlistsPreviewProvider);
+                  await ref
+                      .read(onboardingControllerProvider.notifier)
+                      .refreshTheme();
+                },
+                onMyListTap: () => context.push('/draft'),
+                onOrdersTap: () => context.push('/orders'),
+              );
+            },
           );
         },
       ),

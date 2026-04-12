@@ -18,6 +18,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
+/// Resolves a customer display name from the project linked to a ledger.
+/// Falls back to the raw customerId if no project is found.
+final udhaarCustomerNameProvider =
+    FutureProvider.autoDispose.family<String, UdhaarLedger>((ref, ledger) async {
+  final firestore = FirebaseFirestore.instance;
+  final shopId = ref.read(shopIdProviderProvider).shopId;
+
+  // Look up the project that references this udhaar ledger.
+  final snap = await firestore
+      .collection('shops')
+      .doc(shopId)
+      .collection('projects')
+      .where('udhaarLedgerId', isEqualTo: ledger.ledgerId)
+      .limit(1)
+      .get();
+
+  if (snap.docs.isNotEmpty) {
+    final name = snap.docs.first.data()['customerDisplayName'] as String?;
+    if (name != null && name.isNotEmpty) return name;
+  }
+  return ledger.customerId;
+});
+
 /// Provider for all udhaar ledgers in the shop, sorted by runningBalance desc.
 final udhaarLedgersProvider =
     StreamProvider.autoDispose<List<UdhaarLedger>>((ref) {
@@ -164,14 +187,19 @@ class _UdhaarCard extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    ledger.customerId, // TODO: denormalize customer display name
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.devaBody,
-                      fontSize: YugmaTypeScale.body,
-                      fontWeight: FontWeight.w600,
-                      color: YugmaColors.textPrimary,
-                    ),
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final nameAsync = ref.watch(udhaarCustomerNameProvider(ledger));
+                      return Text(
+                        nameAsync.valueOrNull ?? ledger.customerId,
+                        style: TextStyle(
+                          fontFamily: YugmaFonts.devaBody,
+                          fontSize: YugmaTypeScale.body,
+                          fontWeight: FontWeight.w600,
+                          color: YugmaColors.textPrimary,
+                        ),
+                      );
+                    },
                   ),
                 ),
                 // AC #8: reminder count badge

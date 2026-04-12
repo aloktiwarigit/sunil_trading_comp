@@ -70,12 +70,7 @@ class CustomerUdhaarScreen extends ConsumerWidget {
         loading: () => Center(
           child: CircularProgressIndicator(color: theme.shopAccent),
         ),
-        error: (err, _) => Center(
-          child: Text(
-            err.toString(),
-            style: theme.bodyDeva,
-          ),
-        ),
+        error: (err, _) => YugmaErrorBanner(error: err),
         data: (ledgers) {
           if (ledgers.isEmpty) {
             return Center(

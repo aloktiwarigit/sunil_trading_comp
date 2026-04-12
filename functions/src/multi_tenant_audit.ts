@@ -21,9 +21,13 @@ const SYSTEM_UID = 'system_multi_tenant_audit';
 const AUDITABLE_SUBCOLLECTIONS = [
   'projects',
   'udhaarLedger',
-  'catalog',
+  'inventory',
   'customers',
   'chatThreads',
+  'operators',
+  'voiceNotes',
+  'curatedShortlists',
+  'feedback',
 ];
 
 /// Expected shape of the shop_0 synthetic sentinel document.

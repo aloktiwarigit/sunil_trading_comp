@@ -49,6 +49,16 @@ export const generateWaMeLink = onCall(
 
     const { shopId, projectId } = data;
 
+    // BE001 fix: validate caller's shopId token matches the provided shopId.
+    // Prevents cross-tenant phone number disclosure.
+    const callerShopId = request.auth.token?.shopId;
+    if (callerShopId !== shopId) {
+      throw new HttpsError(
+        'permission-denied',
+        'Shop mismatch: caller does not belong to this shop.',
+      );
+    }
+
     const db = admin.firestore();
 
     // Read shop's WhatsApp number from theme document.

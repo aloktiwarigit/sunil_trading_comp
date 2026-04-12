@@ -20,6 +20,7 @@ class PresenceBanner extends StatelessWidget {
     this.returnTime,
     this.hasAwayVoiceNote = false,
     this.onPlayVoiceNote,
+    this.strings,
   });
 
   final String presenceStatus;
@@ -30,6 +31,9 @@ class PresenceBanner extends StatelessWidget {
   final bool hasAwayVoiceNote;
   final VoidCallback? onPlayVoiceNote;
 
+  /// Optional locale strings. Falls back to AppStringsHi() if null.
+  final AppStrings? strings;
+
   @override
   Widget build(BuildContext context) {
     if (presenceStatus == 'available' || presenceStatus.isEmpty) {
@@ -37,9 +41,9 @@ class PresenceBanner extends StatelessWidget {
     }
 
     final theme = context.yugmaTheme;
-    const strings = AppStringsHi();
+    final resolvedStrings = strings ?? const AppStringsHi();
     final returnText = returnTime != null && returnTime!.isNotEmpty
-        ? strings.presenceReturnBy(returnTime!)
+        ? resolvedStrings.presenceReturnBy(returnTime!)
         : '';
 
     return Container(
@@ -83,7 +87,7 @@ class PresenceBanner extends StatelessWidget {
                 color: theme.shopPrimary,
                 size: 24,
               ),
-              tooltip: strings.presenceListenVoice,
+              tooltip: resolvedStrings.presenceListenVoice,
             ),
         ],
       ),

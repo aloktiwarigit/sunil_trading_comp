@@ -112,5 +112,6 @@ export 'src/services/session_bootstrap.dart';
 export 'src/services/upi_intent_builder.dart';
 
 // ---------- Utilities ----------
+export 'src/utils/firestore_helpers.dart';
 export 'src/utils/format_inr.dart';
 export 'src/utils/retry_with_backoff.dart';

@@ -420,8 +420,11 @@ class OrderDetailScreen extends ConsumerWidget {
       }
 
       // Load fonts for the PDF.
-      // NOTE: When font TTF assets are bundled, load them via rootBundle.
-      // For now, use the pdf package's built-in Helvetica as a fallback.
+      // TODO(F021): Bundle a Devanagari TTF (e.g. NotoSansDevanagari) in
+      // assets/fonts/ and load via rootBundle.load() so Hindi text renders
+      // correctly in the invoice PDF. Helvetica cannot render Devanagari
+      // glyphs — customers will see empty boxes for Hindi strings until
+      // this is resolved. Tracking: F021 in gap register.
       final devaDisplay = pw.Font.helvetica();
       final devaBody = pw.Font.helvetica();
       final devaBodyItalic = pw.Font.helveticaOblique();

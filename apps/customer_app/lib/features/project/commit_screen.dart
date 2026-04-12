@@ -73,9 +73,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
         loading: () => Center(
           child: CircularProgressIndicator(color: theme.shopAccent),
         ),
-        error: (err, _) => Center(
-          child: Text(err.toString(), style: theme.bodyDeva),
-        ),
+        error: (err, _) => YugmaErrorBanner(error: err),
         data: (flowState) {
           return switch (flowState.stage) {
             CommitFlowStage.idle => _buildOrderSummary(
@@ -109,9 +107,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
       loading: () => Center(
         child: CircularProgressIndicator(color: theme.shopAccent),
       ),
-      error: (err, _) => Center(
-        child: Text(err.toString(), style: theme.bodyDeva),
-      ),
+      error: (err, _) => YugmaErrorBanner(error: err),
       data: (draftState) {
         if (draftState.isEmpty) {
           return Center(
@@ -274,12 +270,12 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
               autovalidateMode: AutovalidateMode.onUserInteraction,
               validator: (value) {
                 final digits = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
-                if (digits.isEmpty) return 'Phone number is required';
+                if (digits.isEmpty) return widget.strings.validationRequired;
                 final normalized = digits.startsWith('91') && digits.length > 10
                     ? digits.substring(2)
                     : digits;
                 if (normalized.length != 10) {
-                  return 'Enter a valid 10-digit mobile number';
+                  return widget.strings.validationRequired;
                 }
                 return null;
               },
@@ -306,6 +302,8 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
           const SizedBox(height: YugmaSpacing.s6),
           // Send OTP button (with cooldown guard)
           Builder(builder: (context) {
+            // Watch provider state so countdown ticks trigger rebuilds.
+            ref.watch(commitControllerProvider(widget.projectId));
             final controller = ref.read(
                 commitControllerProvider(widget.projectId).notifier);
             final cooldown = controller.otpCooldownSeconds;
@@ -396,8 +394,8 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
               autovalidateMode: AutovalidateMode.onUserInteraction,
               validator: (value) {
                 final digits = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
-                if (digits.isEmpty) return 'OTP is required';
-                if (digits.length != 6) return 'Enter the 6-digit OTP code';
+                if (digits.isEmpty) return widget.strings.validationRequired;
+                if (digits.length != 6) return widget.strings.validationRequired;
                 return null;
               },
               decoration: InputDecoration(
@@ -443,12 +441,14 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
           const SizedBox(height: YugmaSpacing.s4),
           // Resend OTP with cooldown
           Builder(builder: (context) {
+            // Watch provider state so countdown ticks trigger rebuilds.
+            final watchedState = ref.watch(
+                commitControllerProvider(widget.projectId));
             final controller = ref.read(
                 commitControllerProvider(widget.projectId).notifier);
             final cooldown = controller.otpCooldownSeconds;
             final isCoolingDown = cooldown > 0;
-            final flowState = ref.read(
-                commitControllerProvider(widget.projectId)).valueOrNull;
+            final flowState = watchedState.valueOrNull;
 
             return TextButton(
               onPressed: isCoolingDown || flowState?.phoneE164 == null

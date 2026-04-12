@@ -60,12 +60,7 @@ class DraftListScreen extends ConsumerWidget {
         loading: () => Center(
           child: CircularProgressIndicator(color: theme.shopAccent),
         ),
-        error: (err, _) => Center(
-          child: Text(
-            err.toString(),
-            style: theme.bodyDeva,
-          ),
-        ),
+        error: (err, _) => YugmaErrorBanner(error: err),
         data: (draftState) {
           if (draftState.isEmpty) {
             return _buildEmptyState(context, theme);
@@ -472,8 +467,8 @@ class _QuantityButton extends StatelessWidget {
             : null,
         borderRadius: BorderRadius.circular(YugmaRadius.sm),
         child: SizedBox(
-          width: 32,
-          height: 32,
+          width: 48,
+          height: 48,
           child: Icon(
             icon,
             size: 18,

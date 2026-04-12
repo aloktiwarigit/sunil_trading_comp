@@ -7,11 +7,17 @@
 //   AC #6: Real-time updates via Firestore listener
 // =============================================================================
 
-import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
+
+/// SD005 fix: normalize Firestore Timestamp → ISO8601 for Freezed JSON.
+Object? _normalizeTimestamp(Object? value) {
+  if (value == null) return null;
+  if (value is Timestamp) return value.toDate().toIso8601String();
+  if (value is DateTime) return value.toIso8601String();
+  return value;
+}
 
 /// The active filter for the projects list.
 enum ProjectFilter {
@@ -66,9 +72,17 @@ final activeProjectsProvider = StreamProvider<List<Project>>((ref) {
 
   return query.snapshots().map((snapshot) {
     return snapshot.docs.map((doc) {
+      final raw = doc.data();
       return Project.fromJson(<String, dynamic>{
-        ...doc.data(),
+        ...raw,
         'projectId': doc.id,
+        // SD005 fix: normalize Timestamps to avoid Freezed fromJson crash.
+        'createdAt': _normalizeTimestamp(raw['createdAt']),
+        'updatedAt': _normalizeTimestamp(raw['updatedAt']),
+        'committedAt': _normalizeTimestamp(raw['committedAt']),
+        'paidAt': _normalizeTimestamp(raw['paidAt']),
+        'cancelledAt': _normalizeTimestamp(raw['cancelledAt']),
+        'deliveredAt': _normalizeTimestamp(raw['deliveredAt']),
       });
     }).toList();
   });

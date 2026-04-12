@@ -162,49 +162,112 @@ class _BharosaLandingState extends State<BharosaLanding>
           onMyListTap: widget.onMyListTap,
           onOrdersTap: widget.onOrdersTap,
         ),
-        body: RefreshIndicator(
-          onRefresh: widget.onRefresh ?? () async {},
-          color: theme.shopAccent,
-          backgroundColor: theme.shopSurface,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Hero: face + name + tagline
-                _BharosaHero(
-                  theme: theme,
-                  entranceAnimation: _entranceController,
-                  strings: widget.strings,
-                  onLocaleToggle: widget.onLocaleToggle,
-                  currentLocaleCode: widget.currentLocaleCode,
+        body: Column(
+          children: [
+            // Hero
+            Container(
+              height: 240,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [theme.shopSecondary, theme.shopPrimary, theme.shopPrimaryDeep],
                 ),
-
-                // Meta bar: years in business, GST, map
-                _MetaBar(theme: theme, strings: widget.strings),
-
-                // Greeting voice note card — suppressed if no voice note exists
-                if (widget.hasGreetingVoiceNote)
-                  _GreetingCard(
-                    theme: theme,
-                    strings: widget.strings,
-                    isMuted: _isMuted,
-                    onPlay: widget.onGreetingPlay,
-                    onMuteToggle: () => setState(() => _isMuted = !_isMuted),
-                    durationSeconds: widget.greetingDurationSeconds,
-                  ),
-
-                // Curated shortlist preview — fixed height, horizontal scroll
-                _ShortlistPreviewScroll(
-                  theme: theme,
-                  strings: widget.strings,
-                  shortlists: widget.previewShortlists,
-                  onTap: widget.onShortlistTap,
-                  tileSize: tileSize,
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const ShopkeeperFaceFrame(size: 80),
+                    const SizedBox(height: 8),
+                    Text(
+                      theme.ownerName,
+                      style: TextStyle(
+                        fontFamily: theme.fontFamilyDevanagariDisplay,
+                        fontSize: 24,
+                        color: theme.shopTextOnPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${theme.brandName} · ${theme.marketArea}',
+                      style: TextStyle(
+                        fontFamily: theme.fontFamilyDevanagariBody,
+                        fontSize: 12,
+                        color: theme.shopTextOnPrimary.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+            // Meta bar
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: theme.shopSurface,
+              child: Text(
+                widget.strings.metaBarYearsInBusiness(
+                  DateTime.now().year - theme.establishedYear,
+                  theme.establishedYear,
+                ),
+                style: TextStyle(
+                  fontFamily: theme.fontFamilyDevanagariBody,
+                  fontSize: 12,
+                  color: theme.shopTextMuted,
+                ),
+              ),
+            ),
+            // Shortlist tiles
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                widget.strings.shortlistPreviewHeadline(theme.ownerName),
+                style: TextStyle(
+                  fontFamily: theme.fontFamilyDevanagariDisplay,
+                  fontSize: 14,
+                  color: theme.shopPrimary,
+                ),
+              ),
+            ),
+            SizedBox(
+              height: tileSize,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: widget.previewShortlists.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, i) {
+                  final s = widget.previewShortlists[i];
+                  return GestureDetector(
+                    onTap: () => widget.onShortlistTap(s.occasionTag),
+                    child: Container(
+                      width: tileSize,
+                      height: tileSize,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [theme.shopPrimary, theme.shopPrimaryDeep],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      alignment: Alignment.bottomLeft,
+                      child: Text(
+                        s.occasionLabel,
+                        style: TextStyle(
+                          fontFamily: theme.fontFamilyDevanagariDisplay,
+                          fontSize: 13,
+                          color: theme.shopAccentGlow,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

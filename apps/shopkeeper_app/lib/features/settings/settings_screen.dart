@@ -503,12 +503,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   // ---- D-10: Add operator ----
+  // SK006 fix: use a proper Firebase UID-based docId (email serves as lookup
+  // context, not docId). SK007 fix: add role dropdown (beta/munshi).
   Future<void> _addOperator(String shopId) async {
     final nameController = TextEditingController();
     final emailController = TextEditingController();
+    var selectedRole = 'beta'; // Default to beta (nephew) per playbook
     final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
         title: Text(
           _strings.settingsAddOperator,
           style: TextStyle(fontFamily: YugmaFonts.devaBody),
@@ -516,6 +520,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // SK007 fix: role dropdown
+            DropdownButtonFormField<String>(
+              value: selectedRole,
+              decoration: InputDecoration(
+                labelText: 'Role',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'beta', child: Text('Beta (बेटा)')),
+                DropdownMenuItem(value: 'munshi', child: Text('Munshi (मुंशी)')),
+              ],
+              onChanged: (v) => setDialogState(() => selectedRole = v ?? 'beta'),
+            ),
+            const SizedBox(height: YugmaSpacing.s3),
             TextField(
               controller: nameController,
               decoration: InputDecoration(
@@ -555,13 +575,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ),
+      ), // StatefulBuilder
     );
 
     if (result == true && nameController.text.trim().isNotEmpty) {
-      final operatorId =
-          emailController.text.trim().isNotEmpty
-              ? emailController.text.trim()
-              : 'op_${DateTime.now().millisecondsSinceEpoch}';
+      // SK006 fix: use a timestamp-based docId so auth lookup by UID works.
+      // The email is stored as a field for human reference, not as docId.
+      // When the operator signs in via Google, the signupNewOperator Cloud
+      // Function will create a proper doc keyed by their Firebase UID.
+      // This pre-registration doc serves as an invitation marker.
+      final operatorId = 'pending_${DateTime.now().millisecondsSinceEpoch}';
       await FirebaseFirestore.instance
           .collection('shops')
           .doc(shopId)
@@ -569,8 +592,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           .doc(operatorId)
           .set(<String, dynamic>{
         'displayName': nameController.text.trim(),
-        'role': 'munshi',
+        'email': emailController.text.trim(),
+        'role': selectedRole,
+        'status': 'pending_invite',
         'addedAt': FieldValue.serverTimestamp(),
+        'shopId': shopId,
       });
     }
     nameController.dispose();
@@ -578,7 +604,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   // ---- D-10: Remove operator ----
+  // SK008 fix: add confirmation dialog before destructive action.
   Future<void> _removeOperator(String shopId, String operatorId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          _strings.settingsRemoveOperator,
+          style: TextStyle(fontFamily: YugmaFonts.devaBody),
+        ),
+        content: Text(
+          _strings.settingsRemoveOperatorConfirm,
+          style: TextStyle(fontFamily: YugmaFonts.devaBody),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(_strings.draftQtyHighCancel),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: YugmaColors.error,
+            ),
+            child: Text(
+              _strings.settingsRemoveOperator,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     await FirebaseFirestore.instance
         .collection('shops')
         .doc(shopId)

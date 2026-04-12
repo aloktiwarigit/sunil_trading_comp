@@ -120,6 +120,10 @@ export const sendUdhaarReminder = onSchedule(
 
         for (const chunk of chunks) {
           const batch = db.batch();
+          // COM001 fix: track which ledgers had successful FCM sends.
+          // Only increment reminderCountLifetime for those — prevents
+          // consuming the 3x lifetime cap on failed deliveries.
+          const successfulLedgerRefs: admin.firestore.DocumentReference[] = [];
 
           for (const ledgerDoc of chunk) {
             const data = ledgerDoc.data();
@@ -144,6 +148,7 @@ export const sendUdhaarReminder = onSchedule(
                   },
                 });
                 totalSent++;
+                successfulLedgerRefs.push(ledgerDoc.ref);
               } catch (fcmErr) {
                 logger.warn('FCM send failed for ledger', {
                   shopId,
@@ -153,14 +158,16 @@ export const sendUdhaarReminder = onSchedule(
                       ? fcmErr.message
                       : String(fcmErr),
                 });
-                // Continue — FCM failure should not block batch update.
+                totalSkipped++;
               }
             } else {
               totalSkipped++;
             }
+          }
 
-            // Update ledger: increment counter + set lastReminderAt.
-            batch.update(ledgerDoc.ref, {
+          // Only increment counter for ledgers where FCM actually succeeded.
+          for (const ref of successfulLedgerRefs) {
+            batch.update(ref, {
               reminderCountLifetime: admin.firestore.FieldValue.increment(1),
               lastReminderAt: admin.firestore.FieldValue.serverTimestamp(),
               lastReminderByUid: SYSTEM_UID,

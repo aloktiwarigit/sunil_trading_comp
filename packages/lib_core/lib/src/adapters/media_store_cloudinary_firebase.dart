@@ -86,20 +86,45 @@ class MediaStoreCloudinaryFirebase implements MediaStore {
       );
     }
 
-    // Phase 1 scope: the signed-upload Cloud Function is not yet deployed.
-    // Surface this as a distinct error code so Sprint 2 wiring can detect
-    // it and Sprint 1 callers get a clear message instead of a silent failure.
-    _log.info(
-      'uploadCatalogImage called but signed-upload Cloud Function not yet '
-      'deployed (shop=$shopId, type=$type, bytes=${bytes.length}) — '
-      'Sprint 2 delta',
-    );
-    throw const MediaStoreException(
-      MediaStoreErrorCode.notYetWired,
-      'Catalog upload is not yet wired. The generateCloudinarySignature '
-      'Cloud Function deploys in Sprint 2 alongside B1.2. Voice note uploads '
-      'via Firebase Storage are unaffected and work from Phase 1.',
-    );
+    // F006 fix: use Firebase Storage as interim catalog upload path.
+    // Cloudinary signed-upload Cloud Function is not yet deployed, so we
+    // store images in Firebase Storage under /shops/{shopId}/catalog/{type}_{ts}
+    // and return the download URL. The marketing site and customer app can
+    // read these via the public download URL.
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final ext = 'jpg';
+      final path = 'shops/$shopId/catalog/${type.name}_$timestamp.$ext';
+      final ref = _firebaseStorage.ref().child(path);
+
+      final uploadTask = await ref.putData(
+        Uint8List.fromList(bytes),
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          customMetadata: {
+            'shopId': shopId,
+            'type': type.name,
+            if (metadata != null) ...metadata,
+          },
+        ),
+      );
+
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+      _log.info('uploadCatalogImage: stored in Firebase Storage ($path)');
+
+      return CatalogUploadResult(
+        publicId: path,
+        secureUrl: downloadUrl,
+        width: 0, // Not available without image decoding
+        height: 0,
+      );
+    } catch (e) {
+      _log.severe('uploadCatalogImage failed: $e');
+      throw MediaStoreException(
+        MediaStoreErrorCode.uploadFailed,
+        'Catalog image upload failed: $e',
+      );
+    }
   }
 
   @override

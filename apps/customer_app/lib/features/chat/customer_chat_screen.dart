@@ -92,9 +92,7 @@ class _CustomerChatScreenState extends ConsumerState<CustomerChatScreen> {
           title: Text(threadTitle, style: theme.bodyDeva),
           iconTheme: IconThemeData(color: theme.shopPrimary),
         ),
-        body: Center(
-          child: Text(err.toString(), style: theme.bodyDeva),
-        ),
+        body: YugmaErrorBanner(error: err),
       ),
       data: (chatState) {
         // P2.7: Mark all messages as read when the thread is first displayed.

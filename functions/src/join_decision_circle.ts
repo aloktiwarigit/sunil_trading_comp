@@ -68,8 +68,23 @@ export const joinDecisionCircle = onCall(
     const { sourceUid, destUid, shopId } = data;
     const callerUid = request.auth.uid;
 
-    // Caller must be the sourceUid or an operator (custom claim).
-    const isOperator = request.auth.token?.operator === true;
+    // SEC002 fix: validate caller's shopId token matches the provided shopId.
+    // Without this, a customer from Shop A could manipulate Shop B's data.
+    const callerShopId = request.auth.token?.shopId;
+    if (callerShopId !== shopId) {
+      throw new HttpsError(
+        'permission-denied',
+        'Shop mismatch: caller does not belong to this shop.',
+      );
+    }
+
+    // SEC001 fix: check `role` custom claim (bhaiya/beta/munshi), not the
+    // nonexistent `operator` boolean claim.
+    const callerRole = request.auth.token?.role;
+    const isOperator =
+      callerRole === 'bhaiya' ||
+      callerRole === 'beta' ||
+      callerRole === 'munshi';
     if (callerUid !== sourceUid && !isOperator) {
       throw new HttpsError(
         'permission-denied',
@@ -125,7 +140,10 @@ export const joinDecisionCircle = onCall(
         }
       });
 
-      // ── 2. Reassign Project.customerUid (outside transaction for batch) ──
+      // ── 2. Reassign Project.customerUid ──
+      // SEC003 fix: use sequential batches (not parallel) and merge
+      // arrayRemove + arrayUnion into a single update per document to
+      // prevent partial migration / overwrite race.
       const projectsSnap = await shopRef
         .collection('projects')
         .where('customerUid', '==', sourceUid)
@@ -166,13 +184,20 @@ export const joinDecisionCircle = onCall(
         for (const chunk of chunks) {
           const batch = db.batch();
           for (const threadDoc of chunk) {
+            // SEC003 fix: read current participants, compute new array,
+            // write once. Avoids the arrayRemove+arrayUnion double-update
+            // race within a single batch.
+            const currentData = threadDoc.data();
+            const currentParticipants: string[] =
+              currentData.participantUids ?? [];
+            const newParticipants = currentParticipants
+              .filter((uid: string) => uid !== sourceUid)
+              .concat(destUid);
+            // Deduplicate in case destUid was already a participant.
+            const uniqueParticipants = [...new Set(newParticipants)];
+
             batch.update(threadDoc.ref, {
-              participantUids: admin.firestore.FieldValue.arrayRemove(
-                sourceUid,
-              ),
-            });
-            batch.update(threadDoc.ref, {
-              participantUids: admin.firestore.FieldValue.arrayUnion(destUid),
+              participantUids: uniqueParticipants,
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
               updatedByUid: SYSTEM_UID,
             });

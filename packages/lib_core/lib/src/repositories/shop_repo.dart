@@ -44,23 +44,32 @@ class ShopRepo {
 
   /// Read a single shop document.
   Future<Shop?> getShop(String shopId) async {
-    final snap = await _collection().doc(shopId).get();
-    if (!snap.exists) return null;
-    final raw = snap.data()!;
-    return Shop.fromJson(<String, dynamic>{
-      ...raw,
-      'shopId': shopId,
-      'createdAt': _normalizeTimestamp(raw['createdAt']),
-      'activeFromDay': _normalizeTimestamp(raw['activeFromDay']),
-      'shopLifecycleChangedAt':
-          _normalizeTimestamp(raw['shopLifecycleChangedAt']),
-      'dpdpRetentionUntil': _normalizeTimestamp(raw['dpdpRetentionUntil']),
-    });
+    try {
+      final snap = await _collection().doc(shopId).get();
+      if (!snap.exists) return null;
+      final raw = snap.data()!;
+      return Shop.fromJson(<String, dynamic>{
+        ...raw,
+        'shopId': shopId,
+        'createdAt': _normalizeTimestamp(raw['createdAt']),
+        'activeFromDay': _normalizeTimestamp(raw['activeFromDay']),
+        'shopLifecycleChangedAt':
+            _normalizeTimestamp(raw['shopLifecycleChangedAt']),
+        'dpdpRetentionUntil': _normalizeTimestamp(raw['dpdpRetentionUntil']),
+      });
+    } on FirebaseException catch (e) {
+      throw ShopRepoException(
+        e.code,
+        'Failed to read shop $shopId: ${e.message ?? e.code}',
+      );
+    }
   }
 
   /// Watch a shop document in real-time.
-  Stream<Shop?> watchShop(String shopId) =>
-      _collection().doc(shopId).snapshots().map((snap) {
+  Stream<Shop?> watchShop(String shopId) => _collection()
+      .doc(shopId)
+      .snapshots()
+      .map((snap) {
         if (!snap.exists) return null;
         final raw = snap.data()!;
         return Shop.fromJson(<String, dynamic>{
@@ -73,7 +82,17 @@ class ShopRepo {
           'dpdpRetentionUntil':
               _normalizeTimestamp(raw['dpdpRetentionUntil']),
         });
-      });
+      })
+      .handleError(
+        (Object e) {
+          final fe = e as FirebaseException;
+          throw ShopRepoException(
+            fe.code,
+            'Failed to watch shop $shopId: ${fe.message ?? fe.code}',
+          );
+        },
+        test: (e) => e is FirebaseException,
+      );
 
   // ---------------------------------------------------------------------------
   // Helpers

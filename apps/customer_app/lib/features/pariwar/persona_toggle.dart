@@ -85,6 +85,8 @@ class PersonaNotifier extends StateNotifier<PersonaState> {
     }
   }
 
+  // F001 fix: write persona to Firestore (P2.2 AC #6) in addition to
+  // SharedPreferences, so the shopkeeper can see who is actively browsing.
   Future<void> setPersona(Persona persona, {String? customLabel}) async {
     state = PersonaState(persona: persona, customLabel: customLabel);
     final prefs = await SharedPreferences.getInstance();
@@ -93,6 +95,27 @@ class PersonaNotifier extends StateNotifier<PersonaState> {
       await prefs.setString('persona_custom_label', customLabel);
     } else {
       await prefs.remove('persona_custom_label');
+    }
+
+    // Write to Firestore for shopkeeper visibility.
+    try {
+      final shopId = prefs.getString('current_shop_id');
+      final uid = prefs.getString('current_user_uid');
+      if (shopId != null && uid != null) {
+        await FirebaseFirestore.instance
+            .collection('shops')
+            .doc(shopId)
+            .collection('decision_circles')
+            .doc(uid)
+            .set(<String, dynamic>{
+          'currentActivePersona': persona.name,
+          'personaDisplayLabel': customLabel ?? persona.label,
+          'isElderTier': persona.isElder,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    } catch (_) {
+      // Firestore write is best-effort — don't block the local persona change.
     }
   }
 }
@@ -110,10 +133,8 @@ class PersonaToggleButton extends ConsumerWidget {
 
     final personaState = ref.watch(personaProvider);
 
-    return Positioned(
-      right: YugmaSpacing.s4,
-      bottom: YugmaSpacing.s4,
-      child: Material(
+    // F002 fix: removed hardcoded Positioned — parent screen controls placement.
+    return Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _showPersonaSheet(context, ref),
@@ -155,7 +176,6 @@ class PersonaToggleButton extends ConsumerWidget {
             ),
           ),
         ),
-      ),
     );
   }
 

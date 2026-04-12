@@ -234,13 +234,28 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
             p.state != ProjectState.cancelled)
         .length;
 
-    // Rough udhaar total — count projects with udhaarLedgerId
+    // Udhaar total — use unpaid balance (totalAmount - amountReceivedByShop)
+    // as a conservative estimate. TODO: read runningBalance from udhaarLedger
+    // collection for exact figures once ledger stream is wired here.
     final openUdhaarTotal = projects
         .where((p) => p.udhaarLedgerId != null && p.state != ProjectState.closed)
-        .fold<int>(0, (sum, p) => sum + p.totalAmount);
+        .fold<int>(0, (sum, p) => sum + (p.totalAmount - p.amountReceivedByShop));
 
-    final uniqueCustomers =
-        monthProjects.map((p) => p.customerUid).toSet().length;
+    // New customers — those whose first-ever order falls within this month.
+    final allCustomerFirstDates = <String, DateTime>{};
+    for (final p in projects) {
+      final date = p.committedAt ?? p.createdAt;
+      final uid = p.customerUid;
+      if (!allCustomerFirstDates.containsKey(uid) ||
+          date.isBefore(allCustomerFirstDates[uid]!)) {
+        allCustomerFirstDates[uid] = date;
+      }
+    }
+    final uniqueCustomers = allCustomerFirstDates.entries
+        .where((e) =>
+            e.value.isAfter(monthStart) &&
+            e.value.isBefore(monthEnd.add(const Duration(days: 1))))
+        .length;
 
     return _MonthMetrics(
       committedCount: committedCount,

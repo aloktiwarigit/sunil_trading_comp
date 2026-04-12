@@ -288,12 +288,26 @@ class _CreateSkuScreenState extends ConsumerState<CreateSkuScreen> {
               const SizedBox(height: YugmaSpacing.s4),
 
               // ── Golden Hour photo placeholder (S4.5) ──
+              // SK004 fix: defer Golden Hour capture until SKU is saved
+              // and has a real skuId. Show guidance to save first.
               OutlinedButton.icon(
                 onPressed: () {
+                  final savedSkuId = controllerState.savedSkuId;
+                  if (savedSkuId == null || savedSkuId.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          strings.skuSaveBeforePhoto,
+                          style: TextStyle(fontFamily: YugmaFonts.devaBody),
+                        ),
+                      ),
+                    );
+                    return;
+                  }
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => GoldenHourCaptureScreen(
-                        skuId: '', // SKU not yet saved — will be assigned post-save
+                        skuId: savedSkuId,
                         skuName: _nameDevanagariController.text.trim().isNotEmpty
                             ? _nameDevanagariController.text.trim()
                             : 'New SKU',

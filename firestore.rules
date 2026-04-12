@@ -293,13 +293,17 @@ service cloud.firestore {
         // Update: operator only + forbidden vocabulary + RBI reminder caps.
         // reminderCountLifetime capped at 3 per PRD S4.10 AC #8.
         // reminderCadenceDays must be 7–30 per PRD S4.10 AC #9.
+        // DI005 fix: guard checks with field existence to avoid null comparison
+        // failures on ledgers created without these optional fields.
         allow update: if isShopOperator(shopId)
                       && shopIdMatches(shopId)
                       && !hasForbiddenUdhaarFields(request.resource.data)
                       && shopIsWritable(shopId)
-                      && request.resource.data.reminderCountLifetime <= 3
-                      && request.resource.data.reminderCadenceDays >= 7
-                      && request.resource.data.reminderCadenceDays <= 30;
+                      && (!('reminderCountLifetime' in request.resource.data)
+                          || request.resource.data.reminderCountLifetime <= 3)
+                      && (!('reminderCadenceDays' in request.resource.data)
+                          || (request.resource.data.reminderCadenceDays >= 7
+                              && request.resource.data.reminderCadenceDays <= 30));
         allow delete: if false;
       }
 
@@ -365,9 +369,12 @@ service cloud.firestore {
       // ---------------------------------------------------------------------
 
       match /projects/{projectId} {
-        // Read: any signed-in user (customer sees own via repo query filter,
-        // operator sees all). Anonymous customers need read access for orders.
-        allow read: if isSignedIn();
+        // Read: customer sees only own projects; operator sees all.
+        // BE002 fix: restrict customer reads to their own projects to
+        // prevent PII leakage (phone, VPA, name) of other customers.
+        allow read: if isSignedIn()
+                    && (resource.data.customerUid == request.auth.uid
+                        || isShopOperator(shopId));
 
         // Create: customer creates draft. Anonymous or phone-verified.
         allow create: if isSignedIn()
@@ -376,25 +383,47 @@ service cloud.firestore {
                       && request.resource.data.state == 'draft'
                       && shopIsWritable(shopId);
 
-        // Update: partitioned by identity + state machine.
+        // Update: partitioned by identity + state machine + field restriction.
+        // SEC004 fix: customer updates are now field-restricted via
+        // affectedKeys().hasOnly() to prevent REST API bypass of Dart
+        // typed-patch classes. Without this, a malicious client could set
+        // totalAmount: 0 via the Firebase REST API.
         allow update: if isSignedIn()
                       && shopIsWritable(shopId)
                       && (
                         // --- Customer updates ---
-                        // Customer can update their own projects with valid
-                        // state transitions. The Dart typed-patch classes
-                        // enforce field-level partition; rules enforce identity
-                        // + state machine.
+                        // Customer can update ONLY customer-partition fields.
+                        // Field allowlist enforces the partition discipline at
+                        // the security-rule layer, not just the Dart layer.
                         (resource.data.customerUid == request.auth.uid
                          && (
                            // Customer-partition fields (no state change)
-                           (request.resource.data.state == resource.data.state)
+                           (request.resource.data.state == resource.data.state
+                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                                 'occasion', 'unreadCountForCustomer',
+                                 'updatedAt', 'customerDisplayName',
+                                 'customerPhone', 'customerVpa',
+                                 'lineItems', 'selectedSkuIds'
+                               ]))
                            ||
-                           // State transitions gated by state machine
-                           isValidProjectStateTransition(
+                           // State transitions: customer can commit, pay, cancel
+                           (isValidProjectStateTransition(
                              resource.data.state,
                              request.resource.data.state
                            )
+                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                                 'state', 'updatedAt',
+                                 // commit fields
+                                 'customerPhone', 'committedAt',
+                                 // payment fields
+                                 'customerVpa', 'paymentMethod',
+                                 'amountReceivedByShop', 'paidAt',
+                                 'paymentConfirmedByCustomer',
+                                 // cancel fields
+                                 'cancelledAt', 'cancelledByRole',
+                                 // COD / bank transfer fields
+                                 'codConfirmedAt', 'bankTransferMarkedAt'
+                               ]))
                          ))
                         ||
                         // --- Operator updates ---
@@ -569,6 +598,24 @@ service cloud.firestore {
         allow create, update: if isShopOperator(shopId)
                               && shopIsWritable(shopId);
         allow delete: if false;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // /system/{docId} — Audit trail and system state (SEC006 fix)
+    // Written exclusively by Cloud Functions via Admin SDK.
+    // Readable by bhaiya for operational visibility (admin dashboard).
+    // -------------------------------------------------------------------------
+
+    match /system/{docId} {
+      allow read: if isSignedIn()
+                  && callerRole() == 'bhaiya';
+      allow write: if false; // Cloud Functions use Admin SDK (bypasses rules).
+
+      match /{subcollection=**} {
+        allow read: if isSignedIn()
+                    && callerRole() == 'bhaiya';
+        allow write: if false;
       }
     }
 
