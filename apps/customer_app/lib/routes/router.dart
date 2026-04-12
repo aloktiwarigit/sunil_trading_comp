@@ -333,42 +333,49 @@ final routerProvider = Provider<GoRouter>((ref) {
                 final skusAsync =
                     innerRef.watch(shortlistSkusProvider(occasionTag));
 
-                return shortlistAsync.when(
-                  loading: () => Scaffold(
+                // Wait for BOTH shortlist AND SKUs before rendering
+                final isLoading = shortlistAsync.isLoading || skusAsync.isLoading;
+                final error = shortlistAsync.error ?? skusAsync.error;
+
+                if (isLoading) {
+                  return Scaffold(
                     backgroundColor: theme.shopBackground,
                     body: Center(
                       child: CircularProgressIndicator(
                         color: theme.shopAccent,
                       ),
                     ),
-                  ),
-                  error: (e, _) => Scaffold(
+                  );
+                }
+
+                if (error != null) {
+                  return Scaffold(
                     backgroundColor: theme.shopBackground,
-                    body: Center(child: Text('$e')),
-                  ),
-                  data: (shortlist) {
-                    if (shortlist == null) {
-                      return Scaffold(
-                        backgroundColor: theme.shopBackground,
-                        appBar: AppBar(
-                          backgroundColor: theme.shopPrimary,
-                          foregroundColor: theme.shopTextOnPrimary,
-                        ),
-                        body: Center(
-                          child: Text(
-                            data.strings.emptyShortlistNotYetCurated,
-                            style: theme.bodyDeva,
-                          ),
-                        ),
-                      );
-                    }
-                    return ShortlistScreen(
-                      shortlist: shortlist,
-                      skus: skusAsync.valueOrNull ?? const [],
-                      strings: data.strings,
-                      onSkuTap: (sku) => context.push('/sku/${sku.skuId}'),
-                    );
-                  },
+                    body: Center(child: Text('$error')),
+                  );
+                }
+
+                final shortlist = shortlistAsync.valueOrNull;
+                if (shortlist == null) {
+                  return Scaffold(
+                    backgroundColor: theme.shopBackground,
+                    appBar: AppBar(
+                      backgroundColor: theme.shopPrimary,
+                      foregroundColor: theme.shopTextOnPrimary,
+                    ),
+                    body: Center(
+                      child: Text(
+                        data.strings.emptyShortlistNotYetCurated,
+                        style: theme.bodyDeva,
+                      ),
+                    ),
+                  );
+                }
+                return ShortlistScreen(
+                  shortlist: shortlist,
+                  skus: skusAsync.valueOrNull ?? const [],
+                  strings: data.strings,
+                  onSkuTap: (sku) => context.push('/sku/${sku.skuId}'),
                 );
               },
             ),

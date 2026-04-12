@@ -150,7 +150,10 @@ class _BharosaLandingState extends State<BharosaLanding>
   Widget build(BuildContext context) {
     final theme = context.yugmaTheme;
 
-    Widget body = Column(
+    final tileSize = theme.isElderTier ? 130.0 : 110.0;
+
+    Widget scrollBody = ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       children: [
         // D-8: Connectivity banner — slides down when offline
         YugmaConnectivityBanner(strings: widget.strings),
@@ -179,45 +182,40 @@ class _BharosaLandingState extends State<BharosaLanding>
             durationSeconds: widget.greetingDurationSeconds,
           ),
 
-        // Curated shortlist preview
-        Expanded(
-          child: _ShortlistPreviewScroll(
-            theme: theme,
-            strings: widget.strings,
-            shortlists: widget.previewShortlists,
-            onTap: widget.onShortlistTap,
-          ),
-        ),
-
-        // Presence Dock — B-2: nav buttons wired when callbacks provided
-        ShopkeeperPresenceDock(
-          onVoiceNote: widget.onPresenceVoiceNote,
+        // Curated shortlist preview — fixed height, horizontal scroll
+        _ShortlistPreviewScroll(
+          theme: theme,
           strings: widget.strings,
-          onMyListTap: widget.onMyListTap,
-          onOrdersTap: widget.onOrdersTap,
+          shortlists: widget.previewShortlists,
+          onTap: widget.onShortlistTap,
+          tileSize: tileSize,
         ),
       ],
     );
 
     // B1.2 AC #6: pull-to-refresh
     if (widget.onRefresh != null) {
-      body = RefreshIndicator(
+      scrollBody = RefreshIndicator(
         onRefresh: widget.onRefresh!,
         color: theme.shopAccent,
         backgroundColor: theme.shopSurface,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height,
-            child: body,
-          ),
-        ),
+        child: scrollBody,
       );
     }
 
-    return Scaffold(
-      backgroundColor: theme.shopBackground,
-      body: body,
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: theme.shopBackground,
+        body: SafeArea(child: scrollBody),
+        // Presence Dock — B-2: nav buttons wired when callbacks provided
+        bottomNavigationBar: ShopkeeperPresenceDock(
+          onVoiceNote: widget.onPresenceVoiceNote,
+          strings: widget.strings,
+          onMyListTap: widget.onMyListTap,
+          onOrdersTap: widget.onOrdersTap,
+        ),
+      ),
     );
   }
 }
@@ -557,12 +555,14 @@ class _ShortlistPreviewScroll extends StatelessWidget {
   final AppStrings strings;
   final List<CuratedShortlistPreview> shortlists;
   final void Function(String) onTap;
+  final double tileSize;
 
   const _ShortlistPreviewScroll({
     required this.theme,
     required this.strings,
     required this.shortlists,
     required this.onTap,
+    required this.tileSize,
   });
 
   @override
@@ -571,6 +571,7 @@ class _ShortlistPreviewScroll extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: YugmaSpacing.s4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -587,18 +588,21 @@ class _ShortlistPreviewScroll extends StatelessWidget {
                   color: theme.shopAccent,
                 ),
                 const SizedBox(width: YugmaSpacing.s2),
-                Text(
-                  strings.shortlistPreviewHeadline(theme.ownerName),
-                  style: TextStyle(
-                    fontFamily: theme.fontFamilyDevanagariDisplay,
-                    fontSize: theme.isElderTier ? 16 : 14,
-                    color: theme.shopPrimary,
+                Expanded(
+                  child: Text(
+                    strings.shortlistPreviewHeadline(theme.ownerName),
+                    style: TextStyle(
+                      fontFamily: theme.fontFamilyDevanagariDisplay,
+                      fontSize: theme.isElderTier ? 16 : 14,
+                      color: theme.shopPrimary,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          Expanded(
+          SizedBox(
+            height: tileSize + 8, // tile + bottom padding
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(
