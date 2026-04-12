@@ -25,11 +25,11 @@ import 'app.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
   _configureLogging();
 
   await runZonedGuarded<Future<void>>(
     () async {
+      WidgetsFlutterBinding.ensureInitialized();
       await FirebaseClient.initialize(
         options: DefaultFirebaseOptions.currentPlatform,
       );

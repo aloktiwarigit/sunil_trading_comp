@@ -102,29 +102,24 @@ final routerProvider = Provider<GoRouter>((ref) {
                   onShortlistTap: (occasionTag) {
                     context.push('/shortlist/$occasionTag');
                   },
-                  onGreetingPlay: () {
-                    // TODO(sprint-B4): wire audio playback via just_audio
-                  },
-                  autoPlayGreeting: true,
-                  onPresenceVoiceNote: () {
-                    // TODO(sprint-B4): wire presence dock voice note
-                  },
+                  onGreetingPlay: () {},
+                  autoPlayGreeting: false,
+                  onPresenceVoiceNote: () {},
                   previewShortlists: previews,
                   strings: data.strings,
                   hasGreetingVoiceNote:
                       data.themeTokens.greetingVoiceNoteId.isNotEmpty,
                   greetingDurationSeconds: 0,
-                  // TODO(sprint-B4): fetch voice note metadata for duration
                   currentLocaleCode: data.localeCode,
                   onLocaleToggle: () {
                     ref.read(onboardingControllerProvider.notifier).toggleLocale();
                   },
                   onRefresh: () async {
+                    ref.invalidate(curatedShortlistsPreviewProvider);
                     await ref
                         .read(onboardingControllerProvider.notifier)
                         .refreshTheme();
                   },
-                  // B-2: wire dock navigation
                   onMyListTap: () => context.push('/draft'),
                   onOrdersTap: () => context.push('/orders'),
                 );

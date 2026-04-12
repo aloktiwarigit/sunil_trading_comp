@@ -28,16 +28,16 @@ import 'app.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
-  // Step 1 — Flutter bindings
-  WidgetsFlutterBinding.ensureInitialized();
-
   // Configure logging before anything else so bootstrap errors are visible.
   _configureLogging();
 
-  // The rest of bootstrap runs inside runZonedGuarded so any async errors
-  // are caught by Observability's PlatformDispatcher hook.
+  // Everything runs inside runZonedGuarded so bindings + runApp share the
+  // same zone (Flutter requirement since 3.24). Any async errors are caught
+  // by Observability's PlatformDispatcher hook.
   await runZonedGuarded<Future<void>>(
     () async {
+      // Step 1 — Flutter bindings (MUST be in same zone as runApp)
+      WidgetsFlutterBinding.ensureInitialized();
       // Step 2 — Firebase + App Check
       await FirebaseClient.initialize(
         options: DefaultFirebaseOptions.currentPlatform,
