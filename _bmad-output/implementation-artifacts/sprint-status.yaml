@@ -41,7 +41,7 @@
 # ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 6) =====
 #
 # Epics: 6 total. 1 done (E6). 4 in-progress (E1, E3, E4, E5). 1 backlog (E2).
-# Stories: 67 total. 54 done. 0 ready-for-dev. 0 in-progress. 13 backlog.
+# Stories: 67 total. 60 done. 0 ready-for-dev. 0 in-progress. 7 backlog.
 # Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 #
@@ -55,13 +55,16 @@
 #   Sprint 17 (B1.8+P2.3) — greeting management + elder UI tier
 #   Sprint 18 (S4.5+B1.12) — golden hour photo + curation UX
 #   Sprint 19 (S4.12) — shop settings screen
+#   Sprint 20 (S4.19+S4.16) — shop deactivation + media spend
+#   Sprint 21 (B1.9+B1.10) — absence presence + voice fallback
+#   Sprint 22 (P2.8+M5.2) — large text toggle + marketing voice
 # Also completed B1.11 (foundation for S4.9).
-# 54 stories done total (33→54). Committed at 4ce42db on main.
+# 60 stories done total (33→60). Committed at 5bc66d4 on main.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-12  # Session 6 — Sprint 11-19 shipped, 54/67 done
+last_updated: 2026-04-12  # Session 6 — Sprint 11-22 shipped, 60/67 done
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -159,8 +162,10 @@ development_status:
   b1-7-voice-note-in-project-chat: done
   # B1.8 Greeting voice management — shipped Sprint 17 (49cb249)
   b1-8-shop-landing-voice-note-management: done
-  b1-9-absence-presence-status-banner: backlog
-  b1-10-away-voice-note-fallback: backlog
+  # B1.9 Absence presence — shipped Sprint 21 (3c770ca)
+  b1-9-absence-presence-status-banner: done
+  # B1.10 Away voice note — shipped Sprint 21 (3c770ca)
+  b1-10-away-voice-note-fallback: done
   # B1.11 Customer memory layer — foundation shipped Sprint 11 as part of S4.9
   b1-11-customer-memory-layer-ops-side: done
   # B1.12 Curation UX — shipped Sprint 18 (842037f)
@@ -188,7 +193,8 @@ development_status:
   p2-5-customer-sends-text-message: done
   p2-6-voice-note-inline-playback-in-chat: backlog
   p2-7-multi-participant-read-tracking: backlog
-  p2-8-universal-large-text-fallback: backlog
+  # P2.8 Large text toggle — shipped Sprint 22 (5bc66d4)
+  p2-8-universal-large-text-fallback: done
 
   epic-2-retrospective: optional
 
@@ -261,11 +267,13 @@ development_status:
   # S4.13 Today's task daily prompt — shipped Phase 2.1 Sprint 3 (6619851)
   # TodaysTaskCard + 30-day seed + HomeDashboard. 9 AppStrings keys.
   s4-13-todays-task-daily-prompt-card: done
-  s4-16-media-store-cost-monitor-tile: backlog
+  # S4.16 Media spend tile — shipped Sprint 20 (4e2b255)
+  s4-16-media-store-cost-monitor-tile: done
   # S4.17 NPS + burnout warning — shipped Sprint 14 (bccd70c)
   s4-17-shopkeeper-nps-burnout-warning: done
   s4-18-repeat-customer-event-tracking: backlog
-  s4-19-shopkeeper-triggered-shop-deactivation: backlog
+  # S4.19 Shop deactivation — shipped Sprint 20 (4e2b255)
+  s4-19-shopkeeper-triggered-shop-deactivation: done
 
   epic-4-retrospective: optional
 
@@ -277,7 +285,8 @@ development_status:
   epic-5: backlog
 
   m5-1-marketing-landing-page: done  # Sprint 10, Session 5
-  m5-2-greeting-voice-on-marketing-site: backlog
+  # M5.2 Marketing voice note — shipped Sprint 22 (5bc66d4)
+  m5-2-greeting-voice-on-marketing-site: done
   m5-3-catalog-preview-public: backlog
   m5-4-visit-page-map-hours-whatsapp: done  # Sprint 10, Session 5
   m5-5-build-trigger-automation-on-settings-change: backlog
