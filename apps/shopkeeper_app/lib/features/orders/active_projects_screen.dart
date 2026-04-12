@@ -10,6 +10,8 @@
 //   AC #6: Real-time via Firestore listener
 // =============================================================================
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,13 +20,37 @@ import 'package:lib_core/lib_core.dart';
 import 'active_projects_controller.dart';
 
 /// The active projects list screen for the shopkeeper ops app.
-class ActiveProjectsScreen extends ConsumerWidget {
+class ActiveProjectsScreen extends ConsumerStatefulWidget {
   const ActiveProjectsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ActiveProjectsScreen> createState() =>
+      _ActiveProjectsScreenState();
+}
+
+class _ActiveProjectsScreenState extends ConsumerState<ActiveProjectsScreen> {
+  final _searchController = TextEditingController();
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {}); // Update clear-button visibility.
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      ref.read(searchQueryProvider.notifier).state = value;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final strings = const AppStringsHi();
-    final projectsAsync = ref.watch(activeProjectsProvider);
+    final projectsAsync = ref.watch(filteredProjectsProvider);
     final currentFilter = ref.watch(projectFilterProvider);
 
     return Scaffold(
@@ -42,6 +68,66 @@ class ActiveProjectsScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              YugmaSpacing.s4,
+              YugmaSpacing.s3,
+              YugmaSpacing.s4,
+              0,
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaBody,
+                fontSize: YugmaTypeScale.body,
+                color: YugmaColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                hintText: 'खोजें — नाम, फ़ोन, रकम',
+                hintStyle: TextStyle(
+                  fontFamily: YugmaFonts.devaBody,
+                  fontSize: YugmaTypeScale.body,
+                  color: YugmaColors.textMuted,
+                ),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: YugmaColors.textMuted,
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.clear,
+                          color: YugmaColors.textMuted,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          ref.read(searchQueryProvider.notifier).state = '';
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: YugmaColors.surface,
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: YugmaSpacing.s3,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.pill),
+                  borderSide: BorderSide(color: YugmaColors.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.pill),
+                  borderSide: BorderSide(color: YugmaColors.divider),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.pill),
+                  borderSide: BorderSide(color: YugmaColors.primary),
+                ),
+              ),
+            ),
+          ),
           // Filter chips (AC #3)
           _FilterChipRow(
             currentFilter: currentFilter,

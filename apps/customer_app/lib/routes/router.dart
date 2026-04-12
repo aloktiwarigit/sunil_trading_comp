@@ -28,6 +28,7 @@ import 'package:customer_app/features/orders/order_detail_screen.dart';
 import 'package:customer_app/features/orders/order_list_screen.dart';
 import 'package:customer_app/features/shop/deactivation_banner.dart';
 import 'package:customer_app/features/project/commit_screen.dart';
+import 'package:customer_app/features/browse/shortlist_providers.dart';
 import 'package:customer_app/features/project/draft_controller.dart';
 import 'package:customer_app/features/project/draft_list_screen.dart';
 import 'package:customer_app/features/project/payment_screen.dart';
@@ -77,32 +78,39 @@ final routerProvider = Provider<GoRouter>((ref) {
               useMaterial3: true,
               extensions: [theme],
             ),
-            child: BharosaLanding(
-              onShortlistTap: (occasionTag) {
-                // TODO(sprint-3): route to /shortlist/:occasionTag (B1.4)
-              },
-              onGreetingPlay: () {
-                // TODO(sprint-2): wire MediaStore voice note playback (B1.3)
-              },
-              autoPlayGreeting: true,
-              onPresenceVoiceNote: () {
-                // TODO(sprint-2): wire presence dock voice note
-              },
-              previewShortlists: const [],
-              // TODO(sprint-3): fetch curated shortlists from Firestore (B1.4)
-              strings: data.strings,
-              hasGreetingVoiceNote:
-                  data.themeTokens.greetingVoiceNoteId.isNotEmpty,
-              greetingDurationSeconds: 0,
-              // TODO(sprint-2): fetch voice note metadata for duration
-              currentLocaleCode: data.localeCode,
-              onLocaleToggle: () {
-                ref.read(onboardingControllerProvider.notifier).toggleLocale();
-              },
-              onRefresh: () async {
-                await ref
-                    .read(onboardingControllerProvider.notifier)
-                    .refreshTheme();
+            child: Consumer(
+              builder: (ctx, innerRef, _) {
+                final previews = innerRef
+                    .watch(curatedShortlistsPreviewProvider)
+                    .valueOrNull ?? const [];
+
+                return BharosaLanding(
+                  onShortlistTap: (occasionTag) {
+                    context.go('/shortlist/$occasionTag');
+                  },
+                  onGreetingPlay: () {
+                    // TODO(sprint-B4): wire audio playback via just_audio
+                  },
+                  autoPlayGreeting: true,
+                  onPresenceVoiceNote: () {
+                    // TODO(sprint-B4): wire presence dock voice note
+                  },
+                  previewShortlists: previews,
+                  strings: data.strings,
+                  hasGreetingVoiceNote:
+                      data.themeTokens.greetingVoiceNoteId.isNotEmpty,
+                  greetingDurationSeconds: 0,
+                  // TODO(sprint-B4): fetch voice note metadata for duration
+                  currentLocaleCode: data.localeCode,
+                  onLocaleToggle: () {
+                    ref.read(onboardingControllerProvider.notifier).toggleLocale();
+                  },
+                  onRefresh: () async {
+                    await ref
+                        .read(onboardingControllerProvider.notifier)
+                        .refreshTheme();
+                  },
+                );
               },
             ),
           );
@@ -252,6 +260,159 @@ final routerProvider = Provider<GoRouter>((ref) {
             child: DeactivationFaqScreen(
               strings: data.strings,
               retentionDays: retentionDays,
+            ),
+          );
+        },
+      ),
+      // B1.4 — Curated shortlist screen (per occasion)
+      GoRoute(
+        path: '/shortlist/:occasionTag',
+        builder: (context, state) {
+          final data = onboarding.valueOrNull;
+          if (data == null) return const SplashScreen();
+
+          final occasionTag = state.pathParameters['occasionTag']!;
+          final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
+
+          return Theme(
+            data: ThemeData(
+              useMaterial3: true,
+              extensions: [theme],
+            ),
+            child: Consumer(
+              builder: (ctx, innerRef, _) {
+                final shortlistAsync =
+                    innerRef.watch(curatedShortlistByOccasionProvider(occasionTag));
+                final skusAsync =
+                    innerRef.watch(shortlistSkusProvider(occasionTag));
+
+                return shortlistAsync.when(
+                  loading: () => Scaffold(
+                    backgroundColor: theme.shopBackground,
+                    body: Center(
+                      child: CircularProgressIndicator(
+                        color: theme.shopAccent,
+                      ),
+                    ),
+                  ),
+                  error: (e, _) => Scaffold(
+                    backgroundColor: theme.shopBackground,
+                    body: Center(child: Text('$e')),
+                  ),
+                  data: (shortlist) {
+                    if (shortlist == null) {
+                      return Scaffold(
+                        backgroundColor: theme.shopBackground,
+                        appBar: AppBar(
+                          backgroundColor: theme.shopPrimary,
+                          foregroundColor: theme.shopTextOnPrimary,
+                        ),
+                        body: Center(
+                          child: Text(
+                            data.strings.emptyShortlistNotYetCurated,
+                            style: theme.bodyDeva,
+                          ),
+                        ),
+                      );
+                    }
+                    return ShortlistScreen(
+                      shortlist: shortlist,
+                      skus: skusAsync.valueOrNull ?? const [],
+                      strings: data.strings,
+                      onSkuTap: (sku) => context.go('/sku/${sku.skuId}'),
+                    );
+                  },
+                );
+              },
+            ),
+          );
+        },
+      ),
+      // B1.5 — SKU detail screen
+      GoRoute(
+        path: '/sku/:skuId',
+        builder: (context, state) {
+          final data = onboarding.valueOrNull;
+          if (data == null) return const SplashScreen();
+
+          final skuId = state.pathParameters['skuId']!;
+          final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
+
+          return Theme(
+            data: ThemeData(
+              useMaterial3: true,
+              extensions: [theme],
+            ),
+            child: Consumer(
+              builder: (ctx, innerRef, _) {
+                final skuAsync = innerRef.watch(skuByIdProvider(skuId));
+
+                return skuAsync.when(
+                  loading: () => Scaffold(
+                    backgroundColor: theme.shopBackground,
+                    body: Center(
+                      child: CircularProgressIndicator(
+                        color: theme.shopAccent,
+                      ),
+                    ),
+                  ),
+                  error: (e, _) => Scaffold(
+                    backgroundColor: theme.shopBackground,
+                    body: Center(child: Text('$e')),
+                  ),
+                  data: (sku) {
+                    if (sku == null) {
+                      return Scaffold(
+                        backgroundColor: theme.shopBackground,
+                        body: Center(
+                          child: Text(
+                            data.strings.emptyShortlistNotYetCurated,
+                            style: theme.bodyDeva,
+                          ),
+                        ),
+                      );
+                    }
+                    // Resolve photo URLs from SKU model.
+                    final goldenHourUrl = sku.fallbackPhotoUrls.isNotEmpty
+                        ? sku.fallbackPhotoUrls.first
+                        : '';
+                    final workingUrl = sku.fallbackPhotoUrls.length > 1
+                        ? sku.fallbackPhotoUrls[1]
+                        : null;
+
+                    return SkuDetailCard(
+                      sku: sku,
+                      strings: data.strings,
+                      goldenHourPhotoUrl: goldenHourUrl,
+                      workingLightPhotoUrl: workingUrl,
+                      onAddToList: () {
+                        // C3.1: Add SKU to draft list and navigate.
+                        innerRef
+                            .read(draftControllerProvider.notifier)
+                            .addSku(sku);
+                        context.go('/draft');
+                      },
+                      onTalkToBhaiya: () {
+                        // Navigate to chat — first ensure a draft exists.
+                        final draft = innerRef
+                            .read(draftControllerProvider)
+                            .valueOrNull;
+                        final projectId = draft?.projectId;
+                        if (projectId != null) {
+                          context.go('/project/$projectId/chat');
+                        } else {
+                          // Add to draft first, then navigate.
+                          innerRef
+                              .read(draftControllerProvider.notifier)
+                              .addSku(sku);
+                          // Draft creation is async — navigate to draft list.
+                          context.go('/draft');
+                        }
+                      },
+                    );
+                  },
+                );
+              },
             ),
           );
         },

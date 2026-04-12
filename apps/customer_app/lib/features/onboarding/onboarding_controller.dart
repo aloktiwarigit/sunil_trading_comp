@@ -2,7 +2,7 @@
 //
 // Sequence (B1.1 AC #3: all silent, no UI step):
 //   1. Anonymous auth (if not already signed in from a persisted session)
-//   2. ShopThemeTokens fetch from Firestore
+//   2. Shop + theme fetch from Firestore (with fallback on error)
 //   3. Locale resolution (Remote Config + user preference)
 //   4. Signal ready → router transitions splash → BharosaLanding
 //
@@ -11,6 +11,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,57 +63,33 @@ const _localePrefsKey = 'user_locale_override';
 class OnboardingController extends AsyncNotifier<OnboardingState> {
   @override
   Future<OnboardingState> build() async {
+    debugPrint('[ONBOARDING] build() ENTERED');
     final authProvider = ref.read(authProviderInstanceProvider);
+    debugPrint('[ONBOARDING] authProvider OK');
     final shopId = ref.read(shopIdProviderProvider).shopId;
+    debugPrint('[ONBOARDING] shopId=$shopId');
 
     // Step 1: Ensure anonymous auth (B1.1 AC #3 — silent, before splash ends)
     AppUser user;
     final existing = authProvider.currentUser;
+    debugPrint('[ONBOARDING] currentUser=${existing?.uid ?? "null"}');
     if (existing != null) {
       user = existing;
     } else {
       user = await authProvider.signInAnonymous();
     }
 
-    // Step 2: Parallel fetch — shop doc, theme doc, and locale prefs (F13).
-    //
-    // These three operations are independent once auth completes (auth is
-    // required for Firestore security rules). Running them via Future.wait
-    // saves ~2 RTTs vs sequential reads on poor connectivity.
+    // Step 2: Fetch Shop document from Firestore (with fallback)
     final firestore = FirebaseFirestore.instance;
 
-    final results = await Future.wait(<Future<Object?>>[
-      // [0] Shop document
-      firestore.collection('shops').doc(shopId).get(),
-      // [1] Theme document
-      firestore
+    Shop shop;
+    try {
+      _log.info('Reading shop doc...');
+      final shopDoc = await firestore
           .collection('shops')
           .doc(shopId)
-          .collection('theme')
-          .doc('current')
-          .get(),
-      // [2] SharedPreferences (local I/O, no Firestore dependency)
-      SharedPreferences.getInstance(),
-    ]);
-
-    final shopDoc = results[0]! as DocumentSnapshot<Map<String, dynamic>>;
-    final themeDoc = results[1]! as DocumentSnapshot<Map<String, dynamic>>;
-    final prefs = results[2]! as SharedPreferences;
-
-    // --- Shop deserialization (F7: normalize Firestore Timestamps) ---
-    final fallbackShop = Shop(
-      shopId: shopId,
-      brandName: 'Sunil Trading Company',
-      brandNameDevanagari: 'सुनील ट्रेडिंग कंपनी',
-      ownerUid: '',
-      market: 'Harringtonganj',
-      createdAt: DateTime.now(),
-      activeFromDay: DateTime.now(),
-    );
-
-    Shop shop;
-    if (shopDoc.exists && shopDoc.data() != null) {
-      try {
+          .get(const GetOptions(source: Source.server));
+      if (shopDoc.exists && shopDoc.data() != null) {
         final raw = shopDoc.data()!;
         shop = Shop.fromJson(<String, dynamic>{
           ...raw,
@@ -123,23 +100,38 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
           'dpdpRetentionUntil':
               _normalizeTimestamp(raw['dpdpRetentionUntil']),
         });
-      } catch (e, st) {
-        _log.warning('Shop.fromJson failed, using fallback: $e', e, st);
-        shop = fallbackShop;
+      } else {
+        shop = _fallbackShop(shopId);
       }
-    } else {
-      shop = fallbackShop;
+    } catch (e) {
+      _log.warning('Shop doc read failed: $e');
+      shop = _fallbackShop(shopId);
     }
 
-    // --- Theme deserialization ---
+    // Fetch ShopThemeTokens (with fallback)
     ShopThemeTokens themeTokens;
-    if (themeDoc.exists && themeDoc.data() != null) {
-      themeTokens = ShopThemeTokens.fromJson(themeDoc.data()!);
-    } else {
+    try {
+      _log.info('Reading theme doc...');
+      final themeDoc = await firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('theme')
+          .doc('current')
+          .get(const GetOptions(source: Source.server));
+      if (themeDoc.exists && themeDoc.data() != null) {
+        themeTokens = ShopThemeTokens.fromJson(themeDoc.data()!);
+      } else {
+        themeTokens = ShopThemeTokens.sunilTradingCompanyDefault();
+      }
+    } catch (e) {
+      _log.warning('Theme doc read failed: $e');
       themeTokens = ShopThemeTokens.sunilTradingCompanyDefault();
     }
 
-    // --- Locale resolution ---
+    // Step 3: Resolve locale
+    _log.info('Firestore reads done, getting SharedPreferences...');
+    final prefs = await SharedPreferences.getInstance();
+    _log.info('SharedPreferences loaded, resolving locale...');
     final remoteConfig = FirebaseRemoteConfig.instance;
     final userOverride = prefs.getString(_localePrefsKey) ?? '';
 
@@ -148,6 +140,8 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
       userOverride: userOverride,
     );
     final localeCode = strings.localeCode;
+
+    _log.info('Onboarding complete — locale=$localeCode, shop=${shop.shopId}');
 
     return OnboardingState(
       themeTokens: themeTokens,
@@ -209,10 +203,18 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
     ));
   }
 
+  /// Fallback Shop for when Firestore is unavailable or permission denied.
+  static Shop _fallbackShop(String shopId) => Shop(
+        shopId: shopId,
+        brandName: 'Sunil Trading Company',
+        brandNameDevanagari: 'सुनील ट्रेडिंग कंपनी',
+        ownerUid: '',
+        market: 'Harringtonganj',
+        createdAt: DateTime.now(),
+        activeFromDay: DateTime.now(),
+      );
+
   /// Normalize Firestore Timestamp → ISO8601 for Freezed JSON round-trip.
-  ///
-  /// Identical to the helper in operator_repo, inventory_sku_repo,
-  /// voice_note_repo, kill_switch_listener — per established pattern.
   static Object? _normalizeTimestamp(Object? value) {
     if (value == null) return null;
     if (value is Timestamp) return value.toDate().toIso8601String();

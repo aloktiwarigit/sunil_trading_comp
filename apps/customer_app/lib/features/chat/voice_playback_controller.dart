@@ -1,18 +1,21 @@
 // =============================================================================
 // VoicePlaybackController — P2.6: voice note playback in chat.
 //
-// AC #1: messages with type voiceNote render as audio player (already done in ChatBubble)
+// AC #1: messages with type voiceNote render as audio player (ChatBubble)
 // AC #2: player shows play/pause, waveform, duration, position, sender label
 // AC #4: only one plays at a time (auto-pause previous)
-// AC #5: cached locally after first play
+// AC #5: cached locally after first play (just_audio default cache)
 //
-// This controller manages playback state for voice notes in the chat.
-// It tracks which voice note is playing and provides progress updates.
-// Actual audio decoding is deferred to a platform plugin (just_audio or
-// audioplayers) — this sprint wires the state management layer.
+// Uses just_audio for actual platform audio playback with Firebase Storage
+// download URLs. Provides progress stream for waveform display.
 // =============================================================================
 
+import 'dart:async';
+
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:just_audio/just_audio.dart';
 
 /// State for a single voice note playback.
 class VoicePlaybackState {
@@ -44,18 +47,40 @@ final voicePlaybackProvider =
 class VoicePlaybackNotifier extends StateNotifier<VoicePlaybackState> {
   VoicePlaybackNotifier() : super(const VoicePlaybackState());
 
+  AudioPlayer? _player;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<PlayerState>? _playerStateSub;
+
   /// Start or resume playback for a voice note.
   /// AC #4: auto-pauses any currently playing note.
+  ///
+  /// [audioStorageRef] is the Firebase Storage path (e.g.,
+  /// "shops/{shopId}/voice_notes/{noteId}.aac").
   Future<void> play({
     required String voiceNoteId,
     required int durationSeconds,
     required String audioStorageRef,
   }) async {
-    // If a different note is playing, stop it first.
+    // If a different note is playing, stop it first (AC #4).
     if (state.activeVoiceNoteId != null &&
         state.activeVoiceNoteId != voiceNoteId) {
       await stop();
     }
+
+    // If same note is paused, resume.
+    if (state.activeVoiceNoteId == voiceNoteId && !state.isPlaying) {
+      state = VoicePlaybackState(
+        activeVoiceNoteId: voiceNoteId,
+        isPlaying: true,
+        progress: state.progress,
+        durationSeconds: durationSeconds,
+      );
+      await _player?.play();
+      return;
+    }
+
+    // New note — create player and start fresh.
+    _player ??= AudioPlayer();
 
     state = VoicePlaybackState(
       activeVoiceNoteId: voiceNoteId,
@@ -64,17 +89,54 @@ class VoicePlaybackNotifier extends StateNotifier<VoicePlaybackState> {
       durationSeconds: durationSeconds,
     );
 
-    // TODO: wire actual audio playback via just_audio or audioplayers.
-    // For now, simulate progress for UI testing.
-    // In production:
-    //   1. Fetch download URL from Firebase Storage
-    //   2. Cache locally (AC #5)
-    //   3. Stream audio with progress updates
+    try {
+      // Fetch download URL from Firebase Storage.
+      final ref = FirebaseStorage.instance.ref(audioStorageRef);
+      final url = await ref.getDownloadURL();
+
+      // Set source — just_audio caches internally (AC #5).
+      await _player!.setUrl(url);
+
+      // Listen to position for progress updates.
+      _positionSub?.cancel();
+      _positionSub = _player!.positionStream.listen((position) {
+        final totalMs = _player!.duration?.inMilliseconds ?? 1;
+        if (totalMs > 0) {
+          final progress = (position.inMilliseconds / totalMs).clamp(0.0, 1.0);
+          if (mounted) {
+            state = VoicePlaybackState(
+              activeVoiceNoteId: voiceNoteId,
+              isPlaying: state.isPlaying,
+              progress: progress,
+              durationSeconds: durationSeconds,
+            );
+          }
+        }
+      });
+
+      // Listen for completion.
+      _playerStateSub?.cancel();
+      _playerStateSub = _player!.playerStateStream.listen((playerState) {
+        if (playerState.processingState == ProcessingState.completed) {
+          if (mounted) {
+            stop();
+          }
+        }
+      });
+
+      await _player!.play();
+    } catch (e) {
+      // On error (network, storage, etc.), reset to idle.
+      if (mounted) {
+        state = const VoicePlaybackState();
+      }
+    }
   }
 
   /// Pause the current playback.
   void pause() {
     if (state.isPlaying) {
+      _player?.pause();
       state = VoicePlaybackState(
         activeVoiceNoteId: state.activeVoiceNoteId,
         isPlaying: false,
@@ -86,23 +148,19 @@ class VoicePlaybackNotifier extends StateNotifier<VoicePlaybackState> {
 
   /// Stop and reset playback.
   Future<void> stop() async {
-    state = const VoicePlaybackState();
+    _positionSub?.cancel();
+    _playerStateSub?.cancel();
+    await _player?.stop();
+    if (mounted) {
+      state = const VoicePlaybackState();
+    }
   }
 
-  /// Update progress (called by the audio player stream).
-  void updateProgress(double progress) {
-    if (state.isPlaying) {
-      state = VoicePlaybackState(
-        activeVoiceNoteId: state.activeVoiceNoteId,
-        isPlaying: true,
-        progress: progress.clamp(0.0, 1.0),
-        durationSeconds: state.durationSeconds,
-      );
-    }
-
-    // Auto-stop at end.
-    if (progress >= 1.0) {
-      stop();
-    }
+  @override
+  void dispose() {
+    _positionSub?.cancel();
+    _playerStateSub?.cancel();
+    _player?.dispose();
+    super.dispose();
   }
 }

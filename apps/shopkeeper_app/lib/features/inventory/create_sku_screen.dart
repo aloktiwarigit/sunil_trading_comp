@@ -24,6 +24,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
 import 'create_sku_controller.dart';
+import 'golden_hour_capture_screen.dart';
 
 /// SKU creation form screen.
 class CreateSkuScreen extends ConsumerStatefulWidget {
@@ -289,15 +290,13 @@ class _CreateSkuScreenState extends ConsumerState<CreateSkuScreen> {
               // ── Golden Hour photo placeholder (S4.5) ──
               OutlinedButton.icon(
                 onPressed: () {
-                  // Placeholder for S4.5 — photo capture deferred per AC edge case #2.
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'S4.5',
-                        style: TextStyle(
-                          fontFamily: YugmaFonts.enBody,
-                          fontSize: YugmaTypeScale.body,
-                        ),
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => GoldenHourCaptureScreen(
+                        skuId: '', // SKU not yet saved — will be assigned post-save
+                        skuName: _nameDevanagariController.text.trim().isNotEmpty
+                            ? _nameDevanagariController.text.trim()
+                            : 'New SKU',
                       ),
                     ),
                   );

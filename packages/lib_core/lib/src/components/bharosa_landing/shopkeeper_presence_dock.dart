@@ -20,6 +20,12 @@ class ShopkeeperPresenceDock extends StatelessWidget {
   /// Called when the voice note quick-play button is tapped.
   final VoidCallback onVoiceNote;
 
+  /// Called when the "My List" (draft) navigation target is tapped.
+  final VoidCallback? onMyListTap;
+
+  /// Called when the "My Orders" navigation target is tapped.
+  final VoidCallback? onOrdersTap;
+
   /// Locale strings for status labels.
   final AppStrings strings;
 
@@ -27,6 +33,8 @@ class ShopkeeperPresenceDock extends StatelessWidget {
     super.key,
     required this.onVoiceNote,
     required this.strings,
+    this.onMyListTap,
+    this.onOrdersTap,
   });
 
   @override
@@ -102,6 +110,21 @@ class ShopkeeperPresenceDock extends StatelessWidget {
               ],
             ),
           ),
+          // Navigation targets — "My List" and "My Orders"
+          if (onMyListTap != null)
+            _DockNavButton(
+              icon: Icons.list_alt_rounded,
+              onTap: onMyListTap!,
+              theme: theme,
+            ),
+          if (onOrdersTap != null)
+            _DockNavButton(
+              icon: Icons.receipt_long_rounded,
+              onTap: onOrdersTap!,
+              theme: theme,
+            ),
+          if (onMyListTap != null || onOrdersTap != null)
+            const SizedBox(width: YugmaSpacing.s2),
           // Voice note quick-play button
           Material(
             color: theme.shopAccent,
@@ -122,6 +145,40 @@ class ShopkeeperPresenceDock extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Compact icon button for dock navigation targets.
+class _DockNavButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final YugmaThemeExtension theme;
+
+  const _DockNavButton({
+    required this.icon,
+    required this.onTap,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final size = theme.tapTargetMin * 0.83;
+    return Padding(
+      padding: const EdgeInsets.only(right: YugmaSpacing.s1),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Icon(
+            icon,
+            color: theme.shopTextSecondary,
+            size: theme.isElderTier ? 22 : 18,
+          ),
+        ),
       ),
     );
   }

@@ -31,7 +31,7 @@ final projectFilterProvider = StateProvider<ProjectFilter>(
 final activeProjectsProvider = StreamProvider<List<Project>>((ref) {
   final filter = ref.watch(projectFilterProvider);
   final firestore = FirebaseFirestore.instance;
-  const shopId = 'sunil-trading-company'; // flagship shop
+  final shopId = ref.read(shopIdProviderProvider).shopId;
 
   var query = firestore
       .collection('shops')
@@ -70,6 +70,33 @@ final activeProjectsProvider = StreamProvider<List<Project>>((ref) {
         ...doc.data(),
         'projectId': doc.id,
       });
+    }).toList();
+  });
+});
+
+/// Provider for the search query text.
+final searchQueryProvider = StateProvider<String>(
+  (ref) => '',
+);
+
+/// Filtered projects — applies client-side search over active projects.
+///
+/// Matches against customerDisplayName, customerPhone, or totalAmount.
+/// Empty query returns all projects unfiltered.
+final filteredProjectsProvider = Provider<AsyncValue<List<Project>>>((ref) {
+  final query = ref.watch(searchQueryProvider).trim().toLowerCase();
+  final projectsAsync = ref.watch(activeProjectsProvider);
+
+  if (query.isEmpty) return projectsAsync;
+
+  return projectsAsync.whenData((projects) {
+    return projects.where((p) {
+      final name = (p.customerDisplayName ?? '').toLowerCase();
+      final phone = (p.customerPhone ?? '').toLowerCase();
+      final amount = p.totalAmount.toString();
+      return name.contains(query) ||
+          phone.contains(query) ||
+          amount.contains(query);
     }).toList();
   });
 });

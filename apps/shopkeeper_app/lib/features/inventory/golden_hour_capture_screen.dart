@@ -16,6 +16,7 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lib_core/lib_core.dart';
 
 import '../../main.dart';
@@ -124,7 +125,7 @@ class _GoldenHourCaptureScreenState
             width: 80,
             height: 80,
             child: ElevatedButton(
-              onPressed: _simulateCapture,
+              onPressed: _capturePhoto,
               style: ElevatedButton.styleFrom(
                 backgroundColor: YugmaColors.primary,
                 shape: const CircleBorder(),
@@ -150,26 +151,21 @@ class _GoldenHourCaptureScreenState
     );
   }
 
-  /// Simulate capture — in production this opens the camera.
-  /// For now creates a placeholder image bytes.
-  Future<void> _simulateCapture() async {
-    // In production: use image_picker or camera package.
-    // For this sprint: generate a placeholder to wire the full upload flow.
-    // The actual camera integration needs platform-specific config
-    // (AndroidManifest, Info.plist) which is a deployment concern.
+  /// Capture a photo using the device camera via image_picker.
+  Future<void> _capturePhoto() async {
+    final picker = ImagePicker();
+    final XFile? photo = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1920,
+      maxHeight: 1920,
+      imageQuality: 85,
+    );
+
+    if (photo == null) return; // User cancelled camera.
+
+    final bytes = await photo.readAsBytes();
     setState(() {
-      // 1x1 PNG placeholder — real bytes come from camera capture
-      _capturedBytes = Uint8List.fromList([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG header
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
-        0xDE, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41,
-        0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
-        0x00, 0x00, 0x02, 0x00, 0x01, 0xE2, 0x21, 0xBC,
-        0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E,
-        0x44, 0xAE, 0x42, 0x60, 0x82,
-      ]);
+      _capturedBytes = bytes;
     });
   }
 
@@ -186,11 +182,13 @@ class _GoldenHourCaptureScreenState
               color: YugmaColors.divider,
               borderRadius: BorderRadius.circular(YugmaRadius.lg),
             ),
-            child: Center(
-              child: Icon(
-                Icons.photo,
-                color: YugmaColors.textMuted,
-                size: 64,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(YugmaRadius.lg),
+              child: Image.memory(
+                _capturedBytes!,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: 300,
               ),
             ),
           ),

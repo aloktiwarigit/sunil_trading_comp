@@ -34,6 +34,14 @@ dependencies:
   # ---- UPI intent (C3.5 — free, no payment gateway) ----
   url_launcher: ^6.3.1
 
+  # ---- Audio playback (B1.3, B1.7, B1.10, P2.6 — voice notes) ----
+  just_audio: ^0.9.40
+  firebase_storage: ^12.3.4
+
+  # ---- Invoice sharing (B1.13) ----
+  share_plus: ^10.0.0
+  path_provider: ^2.1.5
+
   # ---- Persistence ----
   shared_preferences: ^2.3.3
 

@@ -21,6 +21,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'todays_task_seed.dart';
 
@@ -34,15 +35,46 @@ final todaysTaskDayProvider = Provider.family<int, DateTime>((ref, joinedAt) {
   return daysSinceJoin + 1;
 });
 
+/// SharedPreferences-backed state notifier for daily task persistence.
+/// Key pattern: `{prefix}_{dayNumber}` — auto-resets each day.
+class _DayKeyNotifier extends StateNotifier<bool> {
+  _DayKeyNotifier(this._keyPrefix) : super(false) {
+    _load();
+  }
+
+  final String _keyPrefix;
+
+  String get _key {
+    final now = DateTime.now();
+    final dayNumber = now.difference(DateTime(2024)).inDays;
+    return '${_keyPrefix}_$dayNumber';
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getBool(_key) ?? false;
+  }
+
+  Future<void> set(bool value) async {
+    state = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_key, value);
+  }
+}
+
 /// Provider that tracks whether today's task is completed.
-/// In the full implementation, this reads from Firestore
-/// `shops/{shopId}/operators/{uid}/today_tasks/{date}`.
-/// For Sprint 3, this is a simple StateProvider.
-final todaysTaskCompletedProvider = StateProvider<bool>((ref) => false);
+/// Persisted via SharedPreferences — survives app restart.
+final todaysTaskCompletedProvider =
+    StateNotifierProvider<_DayKeyNotifier, bool>(
+  (ref) => _DayKeyNotifier('today_task_completed'),
+);
 
 /// Provider that tracks whether the task card has been dismissed.
-/// Persisted per operator via SharedPreferences in the full implementation.
-final todaysTaskDismissedProvider = StateProvider<bool>((ref) => false);
+/// Persisted via SharedPreferences — survives app restart.
+final todaysTaskDismissedProvider =
+    StateNotifierProvider<_DayKeyNotifier, bool>(
+  (ref) => _DayKeyNotifier('today_task_dismissed'),
+);
 
 /// The "Today's task" card widget.
 class TodaysTaskCard extends ConsumerWidget {
@@ -223,8 +255,7 @@ class TodaysTaskCard extends ConsumerWidget {
   /// Mark today's task as complete. In the full implementation, this
   /// writes to Firestore `shops/{shopId}/operators/{uid}/today_tasks/{date}`.
   void _markComplete(WidgetRef ref) {
-    ref.read(todaysTaskCompletedProvider.notifier).state = true;
-    // TODO(sprint-4): Write to Firestore today_tasks subcollection.
+    ref.read(todaysTaskCompletedProvider.notifier).set(true);
   }
 
   /// Show the dismiss confirmation dialog (AC #6).
@@ -261,9 +292,8 @@ class TodaysTaskCard extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () {
-              ref.read(todaysTaskDismissedProvider.notifier).state = true;
+              ref.read(todaysTaskDismissedProvider.notifier).set(true);
               Navigator.of(dialogContext).pop();
-              // TODO(sprint-4): Persist dismiss in SharedPreferences per operator.
             },
             child: Text(
               strings.todaysTaskDismiss,
