@@ -31,6 +31,7 @@ import '../features/orders/active_projects_screen.dart';
 import '../features/orders/project_detail_screen.dart';
 import '../features/udhaar/udhaar_detail_screen.dart';
 import '../features/udhaar/udhaar_list_screen.dart';
+import '../features/voice/greeting_management_screen.dart';
 
 final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -62,7 +63,8 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
               state.matchedLocation.startsWith('/inventory') ||
               state.matchedLocation.startsWith('/orders') ||
               state.matchedLocation.startsWith('/udhaar') ||
-              state.matchedLocation.startsWith('/dashboard')) {
+              state.matchedLocation.startsWith('/dashboard') ||
+              state.matchedLocation.startsWith('/greeting')) {
             return null;
           }
           return '/home';
@@ -108,6 +110,11 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/dashboard',
         builder: (context, state) => const AnalyticsDashboardScreen(),
+      ),
+      // B1.8 — Greeting voice note management (bhaiya only)
+      GoRoute(
+        path: '/greeting',
+        builder: (context, state) => const GreetingManagementScreen(),
       ),
       // S4.10 — Udhaar ledger management
       GoRoute(
