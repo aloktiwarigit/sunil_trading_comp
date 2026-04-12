@@ -41,6 +41,7 @@ import 'package:logging/logging.dart';
 
 import '../models/project.dart';
 import '../models/project_patch.dart';
+import '../services/read_budget_meter.dart';
 import '../shop_id_provider.dart';
 
 /// Exceptions thrown when a patch violates a runtime invariant that the type
@@ -63,11 +64,14 @@ class ProjectRepo {
   ProjectRepo({
     required FirebaseFirestore firestore,
     required ShopIdProvider shopIdProvider,
+    ReadBudgetMeter? meter,
   })  : _firestore = firestore,
-        _shopIdProvider = shopIdProvider;
+        _shopIdProvider = shopIdProvider,
+        _meter = meter;
 
   final FirebaseFirestore _firestore;
   final ShopIdProvider _shopIdProvider;
+  final ReadBudgetMeter? _meter;
   static final Logger _log = Logger('ProjectRepo');
 
   CollectionReference<Map<String, dynamic>> _projectsCollection() =>
@@ -78,6 +82,7 @@ class ProjectRepo {
 
   /// Read a single Project document.
   Future<Project?> getById(String projectId) async {
+    _meter?.trackRead();
     final snap = await _projectsCollection().doc(projectId).get();
     if (!snap.exists) return null;
     return Project.fromJson(<String, dynamic>{
