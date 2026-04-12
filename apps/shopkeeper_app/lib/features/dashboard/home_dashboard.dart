@@ -20,6 +20,7 @@ import 'package:lib_core/lib_core.dart';
 
 import '../auth/auth_controller.dart';
 import '../auth/role_gate.dart';
+import 'media_spend_tile.dart';
 import 'nps_card.dart';
 import 'todays_task_card.dart';
 
@@ -128,6 +129,10 @@ class HomeDashboard extends ConsumerWidget {
             // ── S4.12: Settings — bhaiya only ──
             BhaiyaOnlyGate(
               child: const _SettingsSection(),
+            ),
+            // ── S4.16: Media spend tile — bhaiya only ──
+            BhaiyaOnlyGate(
+              child: const MediaSpendTile(),
             ),
             // ── S4.10: Udhaar section — bhaiya + munshi only ──
             // S4.2 AC #2: beta cannot access udhaar

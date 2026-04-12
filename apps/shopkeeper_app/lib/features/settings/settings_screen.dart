@@ -169,9 +169,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           icon: Icons.power_settings_new,
           label: strings.shopClosureSettingsOption,
           color: YugmaColors.commit,
-          onTap: () {
-            // S4.19 wiring — deferred until S4.19 is implemented
-          },
+          onTap: () => context.push('/deactivate'),
         ),
         const SizedBox(height: YugmaSpacing.s6),
 

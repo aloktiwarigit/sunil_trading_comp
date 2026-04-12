@@ -30,6 +30,7 @@ import '../features/chat/shopkeeper_chat_screen.dart';
 import '../features/curation/curation_screen.dart';
 import '../features/inventory/golden_hour_capture_screen.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/settings/shop_deactivation_screen.dart';
 import '../features/orders/active_projects_screen.dart';
 import '../features/orders/project_detail_screen.dart';
 import '../features/udhaar/udhaar_detail_screen.dart';
@@ -70,7 +71,8 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
               state.matchedLocation.startsWith('/greeting') ||
               state.matchedLocation.startsWith('/curation') ||
               state.matchedLocation.startsWith('/golden-hour') ||
-              state.matchedLocation.startsWith('/settings')) {
+              state.matchedLocation.startsWith('/settings') ||
+              state.matchedLocation.startsWith('/deactivate')) {
             return null;
           }
           return '/home';
@@ -121,6 +123,11 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      // S4.19 — Shop deactivation flow
+      GoRoute(
+        path: '/deactivate',
+        builder: (context, state) => const ShopDeactivationScreen(),
       ),
       // S4.5 — Golden Hour photo capture
       GoRoute(
