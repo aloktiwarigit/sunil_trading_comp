@@ -19,9 +19,14 @@
 // collection is operator-write-only per ADR-010. Even reading the patch
 // class name is a policy violation (customers have no construction surface).
 //
-// We use an empty-show clause to make the intent explicit: no symbols
-// from this module are reachable from customer_app code paths.
-import 'package:lib_core/src/models/udhaar_ledger_patch.dart' show;
+// We deliberately DO NOT import the module at all — the absence of the
+// import is the enforcement. `UdhaarLedgerOperatorPatch` is out of scope
+// in this file, so referencing it (see the commented-out block below)
+// would produce an `undefined_identifier` error at analysis time.
+//
+// If a future engineer adds the import here to "fix the error", the
+// `tools/audit_project_patch_imports.sh` CI script catches it and fails
+// the build.
 
 void expectThisFileFailsToCompile() {
   // The following lines are DELIBERATELY broken to trigger compile errors.

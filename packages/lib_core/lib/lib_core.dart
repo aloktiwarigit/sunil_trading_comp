@@ -46,6 +46,11 @@ export 'src/locale/strings_hi.dart';
 export 'src/locale/strings_en.dart';
 export 'src/locale/locale_resolver.dart';
 
+// ---------- Theme (Phase 2.0 Wave 1) ----------
+export 'src/theme/tokens.dart';
+export 'src/theme/shop_theme_tokens.dart';
+export 'src/theme/yugma_theme_extension.dart';
+
 // ---------- Observability ----------
 export 'src/observability/analytics_events.dart';
 export 'src/observability/observability.dart';
