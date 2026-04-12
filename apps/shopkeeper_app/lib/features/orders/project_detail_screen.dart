@@ -19,11 +19,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
+/// Normalize Firestore Timestamp → ISO8601 for Freezed JSON parsing.
+/// CR #1: prevents P0 crash from Timestamp → String cast failure.
+Object? _normalizeTimestamp(Object? value) {
+  if (value == null) return null;
+  if (value is Timestamp) return value.toDate().toIso8601String();
+  if (value is DateTime) return value.toIso8601String();
+  return value;
+}
+
+/// Normalize all timestamp fields in a raw Firestore map.
+Map<String, dynamic> _normalizeProjectTimestamps(Map<String, dynamic> raw) {
+  return <String, dynamic>{
+    ...raw,
+    'createdAt': _normalizeTimestamp(raw['createdAt']),
+    'committedAt': _normalizeTimestamp(raw['committedAt']),
+    'paidAt': _normalizeTimestamp(raw['paidAt']),
+    'deliveredAt': _normalizeTimestamp(raw['deliveredAt']),
+    'closedAt': _normalizeTimestamp(raw['closedAt']),
+    'lastMessageAt': _normalizeTimestamp(raw['lastMessageAt']),
+    'updatedAt': _normalizeTimestamp(raw['updatedAt']),
+  };
+}
+
 /// Provider for a single project, streamed by ID.
+/// CR #2: reads shopId from provider instead of hardcoding.
 final projectDetailProvider =
     StreamProvider.autoDispose.family<Project?, String>((ref, projectId) {
   final firestore = FirebaseFirestore.instance;
-  const shopId = 'sunil-trading-company';
+  final shopId = ref.read(shopIdProviderProvider).shopId;
 
   return firestore
       .collection('shops')
@@ -33,18 +57,20 @@ final projectDetailProvider =
       .snapshots()
       .map((snap) {
     if (!snap.exists) return null;
+    final raw = snap.data()!;
     return Project.fromJson(<String, dynamic>{
-      ...snap.data()!,
+      ..._normalizeProjectTimestamps(raw),
       'projectId': snap.id,
     });
   });
 });
 
 /// Provider for chat preview messages (last 10).
+/// CR #2: reads shopId from provider instead of hardcoding.
 final chatPreviewProvider =
     StreamProvider.autoDispose.family<List<Message>, String>((ref, projectId) {
   final firestore = FirebaseFirestore.instance;
-  const shopId = 'sunil-trading-company';
+  final shopId = ref.read(shopIdProviderProvider).shopId;
 
   return firestore
       .collection('shops')
@@ -57,9 +83,11 @@ final chatPreviewProvider =
       .snapshots()
       .map((snap) {
     return snap.docs.map((doc) {
+      final raw = doc.data();
       return Message.fromJson(<String, dynamic>{
-        ...doc.data(),
+        ...raw,
         'messageId': doc.id,
+        'sentAt': _normalizeTimestamp(raw['sentAt']),
       });
     }).toList()
       ..sort((a, b) => a.sentAt.compareTo(b.sentAt));
@@ -172,15 +200,16 @@ class ProjectDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(Project project, AppStrings strings) {
+    // CR #6: correct state labels — paid ≠ pending payment, cancelled ≠ action.
     final stateLabel = switch (project.state) {
       ProjectState.draft => 'Draft',
       ProjectState.negotiating => strings.filterNegotiating,
       ProjectState.committed => strings.filterCommitted,
-      ProjectState.paid => strings.filterPendingPayment,
+      ProjectState.paid => 'Paid',
       ProjectState.delivering => strings.filterDelivering,
       ProjectState.awaitingVerification => strings.filterPendingPayment,
       ProjectState.closed => strings.filterClosed,
-      ProjectState.cancelled => strings.cancelOrderButton,
+      ProjectState.cancelled => 'Cancelled',
     };
 
     return Container(
@@ -563,7 +592,13 @@ class _ChatPreviewRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCustomer = message.authorRole == MessageAuthorRole.customer;
     final sender = isCustomer ? strings.chatSenderYou : strings.chatSenderBhaiya;
-    final body = message.textBody ?? '';
+    // CR #8: show meaningful preview for non-text messages.
+    final body = switch (message.type) {
+      MessageType.text || MessageType.system => message.textBody ?? '',
+      MessageType.priceProposal => '₹${message.proposedPrice ?? 0}',
+      MessageType.voiceNote => '🎤',
+      MessageType.image => '📷',
+    };
 
     return Padding(
       padding: const EdgeInsets.symmetric(

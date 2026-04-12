@@ -237,12 +237,22 @@ class ShopkeeperChatController
         .get();
 
     return snap.docs.map((doc) {
+      final raw = doc.data();
       return Message.fromJson(<String, dynamic>{
-        ...doc.data(),
+        ...raw,
         'messageId': doc.id,
+        'sentAt': _normalizeTimestamp(raw['sentAt']),
       });
     }).toList()
       ..sort((a, b) => a.sentAt.compareTo(b.sentAt));
+  }
+
+  /// CR #1: normalize Firestore Timestamp → ISO8601 for Freezed.
+  static Object? _normalizeTimestamp(Object? value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate().toIso8601String();
+    if (value is DateTime) return value.toIso8601String();
+    return value;
   }
 
   void _startMessageListener(
@@ -261,9 +271,11 @@ class ShopkeeperChatController
         .snapshots()
         .listen((snap) {
       final messages = snap.docs.map((doc) {
+        final raw = doc.data();
         return Message.fromJson(<String, dynamic>{
-          ...doc.data(),
+          ...raw,
           'messageId': doc.id,
+          'sentAt': _normalizeTimestamp(raw['sentAt']),
         });
       }).toList();
 

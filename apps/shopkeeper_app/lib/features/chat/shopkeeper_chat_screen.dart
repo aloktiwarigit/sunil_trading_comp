@@ -175,8 +175,11 @@ class _ProposePriceBar extends ConsumerWidget {
           lineItems: project.lineItems,
           strings: strings,
           onSend: (lineItemId, price) {
+            // CR #4: safe lookup — line item may have been removed concurrently.
             final lineItem = project.lineItems
-                .firstWhere((li) => li.lineItemId == lineItemId);
+                .where((li) => li.lineItemId == lineItemId)
+                .firstOrNull;
+            if (lineItem == null) return;
             ref
                 .read(
                     shopkeeperChatControllerProvider(projectId).notifier)
@@ -215,6 +218,13 @@ class _PriceProposalSheet extends StatefulWidget {
 class _PriceProposalSheetState extends State<_PriceProposalSheet> {
   String? _selectedLineItemId;
   final _priceController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // CR #3: rebuild on text changes so _canSend updates the button state.
+    _priceController.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {

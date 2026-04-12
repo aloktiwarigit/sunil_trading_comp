@@ -35,6 +35,21 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
   bool _saving = false;
   bool _loaded = false;
 
+  // CR #10: create stream once in initState to avoid re-subscription on rebuild.
+  late final Stream<DocumentSnapshot<Map<String, dynamic>>> _skuStream;
+
+  @override
+  void initState() {
+    super.initState();
+    final shopId = ref.read(shopIdProviderProvider).shopId;
+    _skuStream = FirebaseFirestore.instance
+        .collection('shops')
+        .doc(shopId)
+        .collection('inventory')
+        .doc(widget.skuId)
+        .snapshots();
+  }
+
   @override
   void dispose() {
     _basePriceController.dispose();
@@ -57,13 +72,6 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
   @override
   Widget build(BuildContext context) {
     final strings = const AppStringsHi();
-    final shopId = ref.read(shopIdProviderProvider).shopId;
-    final skuStream = FirebaseFirestore.instance
-        .collection('shops')
-        .doc(shopId)
-        .collection('inventory')
-        .doc(widget.skuId)
-        .snapshots();
 
     return Scaffold(
       backgroundColor: YugmaColors.background,
@@ -79,7 +87,7 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: skuStream,
+        stream: _skuStream,
         builder: (context, snapshot) {
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return Center(
@@ -306,11 +314,25 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
   }
 
   Future<void> _handleSave(InventorySku sku, AppStrings strings) async {
-    setState(() => _saving = true);
-
     final basePrice = int.tryParse(_basePriceController.text.trim()) ?? 0;
     final floorPrice = int.tryParse(_floorPriceController.text.trim()) ?? 0;
     final stockCount = int.tryParse(_stockCountController.text.trim());
+
+    // CR #5: validate before save — basePrice > 0, floorPrice <= basePrice.
+    if (basePrice <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(strings.validationPricePositive)),
+      );
+      return;
+    }
+    if (floorPrice > basePrice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(strings.validationFloorExceedsBase)),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
 
     final updated = sku.copyWith(
       basePrice: basePrice,
