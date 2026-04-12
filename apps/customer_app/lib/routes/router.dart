@@ -100,7 +100,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
                 return BharosaLanding(
                   onShortlistTap: (occasionTag) {
-                    context.go('/shortlist/$occasionTag');
+                    context.push('/shortlist/$occasionTag');
                   },
                   onGreetingPlay: () {
                     // TODO(sprint-B4): wire audio playback via just_audio
@@ -125,8 +125,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                         .refreshTheme();
                   },
                   // B-2: wire dock navigation
-                  onMyListTap: () => context.go('/draft'),
-                  onOrdersTap: () => context.go('/orders'),
+                  onMyListTap: () => context.push('/draft'),
+                  onOrdersTap: () => context.push('/orders'),
                 );
               },
             ),
@@ -155,7 +155,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 final draftState = ref.read(draftControllerProvider).valueOrNull;
                 final projectId = draftState?.projectId;
                 if (projectId != null) {
-                  context.go('/project/$projectId/chat');
+                  context.push('/project/$projectId/chat');
                 }
               },
               onCommit: () {
@@ -163,7 +163,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 final draftState = ref.read(draftControllerProvider).valueOrNull;
                 final projectId = draftState?.projectId;
                 if (projectId != null) {
-                  context.go('/project/$projectId/commit');
+                  context.push('/project/$projectId/commit');
                 }
               },
             ),
@@ -366,7 +366,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                       shortlist: shortlist,
                       skus: skusAsync.valueOrNull ?? const [],
                       strings: data.strings,
-                      onSkuTap: (sku) => context.go('/sku/${sku.skuId}'),
+                      onSkuTap: (sku) => context.push('/sku/${sku.skuId}'),
                     );
                   },
                 );
@@ -440,7 +440,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                         innerRef
                             .read(draftControllerProvider.notifier)
                             .addSku(sku);
-                        context.go('/draft');
+                        context.push('/draft');
                       },
                       onTalkToBhaiya: () {
                         // Navigate to chat — first ensure a draft exists.
@@ -449,14 +449,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                             .valueOrNull;
                         final projectId = draft?.projectId;
                         if (projectId != null) {
-                          context.go('/project/$projectId/chat');
+                          context.push('/project/$projectId/chat');
                         } else {
                           // Add to draft first, then navigate.
                           innerRef
                               .read(draftControllerProvider.notifier)
                               .addSku(sku);
                           // Draft creation is async — navigate to draft list.
-                          context.go('/draft');
+                          context.push('/draft');
                         }
                       },
                     );
