@@ -41,7 +41,7 @@
 # ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 6) =====
 #
 # Epics: 6 total. 1 done (E6). 4 in-progress (E1, E3, E4, E5). 1 backlog (E2).
-# Stories: 67 total. 60 done. 0 ready-for-dev. 0 in-progress. 7 backlog.
+# Stories: 67 total. 62 done. 0 ready-for-dev. 0 in-progress. 5 backlog.
 # Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 #
@@ -58,13 +58,14 @@
 #   Sprint 20 (S4.19+S4.16) — shop deactivation + media spend
 #   Sprint 21 (B1.9+B1.10) — absence presence + voice fallback
 #   Sprint 22 (P2.8+M5.2) — large text toggle + marketing voice
+#   Sprint 23 (P2.6+P2.7) — voice playback + read tracking
 # Also completed B1.11 (foundation for S4.9).
-# 60 stories done total (33→60). Committed at 5bc66d4 on main.
+# 62 stories done total (33→62). Committed at 4fdb359 on main.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-12  # Session 6 — Sprint 11-22 shipped, 60/67 done
+last_updated: 2026-04-12  # Session 6 — Sprint 11-23 shipped, 62/67 done
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -191,8 +192,10 @@ development_status:
   p2-4-sunil-bhaiya-ka-kamra-chat-thread: done
   # P2.5 Customer sends text message — shipped Phase 2.1 Sprint 4 (c9d6aea)
   p2-5-customer-sends-text-message: done
-  p2-6-voice-note-inline-playback-in-chat: backlog
-  p2-7-multi-participant-read-tracking: backlog
+  # P2.6 Voice playback — shipped Sprint 23 (4fdb359)
+  p2-6-voice-note-inline-playback-in-chat: done
+  # P2.7 Read tracking — shipped Sprint 23 (4fdb359)
+  p2-7-multi-participant-read-tracking: done
   # P2.8 Large text toggle — shipped Sprint 22 (5bc66d4)
   p2-8-universal-large-text-fallback: done
 
