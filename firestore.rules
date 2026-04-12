@@ -283,7 +283,7 @@ service cloud.firestore {
       // freeze automatically when shopLifecycle != 'active' per ADR-013.
       match /udhaarLedger/{ledgerId} {
         // Read: operator sees all; customer sees only own ledgers.
-        allow read: if isShopMember(shopId)
+        allow read: if isSignedIn()
                     && (isShopOperator(shopId)
                         || resource.data.customerId == request.auth.uid);
         allow create: if isShopOperator(shopId)
@@ -365,21 +365,19 @@ service cloud.firestore {
       // ---------------------------------------------------------------------
 
       match /projects/{projectId} {
-        // Read: any shop member (customer sees own, operator sees all).
-        // Customers browsing someone else's project is prevented at the
-        // Dart repo layer (queries filter by customerUid), not here —
-        // Firestore doesn't support request.query-based read restrictions.
-        allow read: if isShopMember(shopId);
+        // Read: any signed-in user (customer sees own via repo query filter,
+        // operator sees all). Anonymous customers need read access for orders.
+        allow read: if isSignedIn();
 
         // Create: customer creates draft. Anonymous or phone-verified.
-        allow create: if isShopMember(shopId)
+        allow create: if isSignedIn()
                       && shopIdMatches(shopId)
                       && request.resource.data.customerUid == request.auth.uid
                       && request.resource.data.state == 'draft'
                       && shopIsWritable(shopId);
 
         // Update: partitioned by identity + state machine.
-        allow update: if isShopMember(shopId)
+        allow update: if isSignedIn()
                       && shopIsWritable(shopId)
                       && (
                         // --- Customer updates ---
@@ -424,17 +422,17 @@ service cloud.firestore {
 
       match /chatThreads/{threadId} {
         // Read: participant only (customer who owns it OR shop operator).
-        allow read: if isShopMember(shopId)
+        allow read: if isSignedIn()
                     && (resource.data.customerUid == request.auth.uid
                         || isShopOperator(shopId));
 
-        // Create: any shop member can initiate a thread.
-        allow create: if isShopMember(shopId)
+        // Create: any signed-in user can initiate a thread.
+        allow create: if isSignedIn()
                       && shopIdMatches(shopId)
                       && shopIsWritable(shopId);
 
         // Update: participant can update (unread counts, last message preview).
-        allow update: if isShopMember(shopId)
+        allow update: if isSignedIn()
                       && shopIsWritable(shopId)
                       && (resource.data.customerUid == request.auth.uid
                           || isShopOperator(shopId));
@@ -449,19 +447,19 @@ service cloud.firestore {
 
         match /messages/{messageId} {
           // Read: same participant gate as parent thread.
-          allow read: if isShopMember(shopId)
+          allow read: if isSignedIn()
                       && (get(/databases/$(database)/documents/shops/$(shopId)/chatThreads/$(threadId)).data.customerUid == request.auth.uid
                           || isShopOperator(shopId));
 
           // Create: participant can send messages.
           // authorUid must match the authenticated user.
-          allow create: if isShopMember(shopId)
+          allow create: if isSignedIn()
                         && shopIsWritable(shopId)
                         && request.resource.data.authorUid == request.auth.uid;
 
           // Update: ONLY readByUids field (read tracking per P2.7).
           // No other field may change after creation (immutability).
-          allow update: if isShopMember(shopId)
+          allow update: if isSignedIn()
                         && shopIsWritable(shopId)
                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readByUids']);
 
@@ -526,12 +524,12 @@ service cloud.firestore {
       // ---------------------------------------------------------------------
 
       match /decision_circles/{dcId} {
-        // Read: any shop member (participants + operator can view).
-        allow read: if isShopMember(shopId);
+        // Read: any signed-in user (participants + operator can view).
+        allow read: if isSignedIn();
 
-        // Create/Update: any shop member can create (customer on draft) or
+        // Create/Update: any signed-in user can create (customer on draft) or
         // update (persona toggle adds participant entries).
-        allow create, update: if isShopMember(shopId)
+        allow create, update: if isSignedIn()
                               && shopIdMatches(shopId)
                               && shopIsWritable(shopId);
 
@@ -544,7 +542,7 @@ service cloud.firestore {
       // ---------------------------------------------------------------------
 
       match /golden_hour_photos/{photoId} {
-        allow read: if isShopMember(shopId);
+        allow read: if isSignedIn();
         allow create, update: if isShopOperator(shopId)
                               && shopIdMatches(shopId)
                               && shopIsWritable(shopId);

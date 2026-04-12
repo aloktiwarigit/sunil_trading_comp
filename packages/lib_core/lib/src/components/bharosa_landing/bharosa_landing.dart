@@ -152,68 +152,59 @@ class _BharosaLandingState extends State<BharosaLanding>
 
     final tileSize = theme.isElderTier ? 130.0 : 110.0;
 
-    Widget scrollBody = ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        // D-8: Connectivity banner — slides down when offline
-        YugmaConnectivityBanner(strings: widget.strings),
-
-        // Hero: face + name + tagline
-        _BharosaHero(
-          theme: theme,
-          entranceAnimation: _entranceController,
-          strings: widget.strings,
-          onLocaleToggle: widget.onLocaleToggle,
-          currentLocaleCode: widget.currentLocaleCode,
-        ),
-
-        // Meta bar: years in business, GST, map
-        _MetaBar(theme: theme, strings: widget.strings),
-
-        // Greeting voice note card — suppressed if no voice note exists
-        // (B1.3 AC #8)
-        if (widget.hasGreetingVoiceNote)
-          _GreetingCard(
-            theme: theme,
-            strings: widget.strings,
-            isMuted: _isMuted,
-            onPlay: widget.onGreetingPlay,
-            onMuteToggle: () => setState(() => _isMuted = !_isMuted),
-            durationSeconds: widget.greetingDurationSeconds,
-          ),
-
-        // Curated shortlist preview — fixed height, horizontal scroll
-        _ShortlistPreviewScroll(
-          theme: theme,
-          strings: widget.strings,
-          shortlists: widget.previewShortlists,
-          onTap: widget.onShortlistTap,
-          tileSize: tileSize,
-        ),
-      ],
-    );
-
-    // B1.2 AC #6: pull-to-refresh
-    if (widget.onRefresh != null) {
-      scrollBody = RefreshIndicator(
-        onRefresh: widget.onRefresh!,
-        color: theme.shopAccent,
-        backgroundColor: theme.shopSurface,
-        child: scrollBody,
-      );
-    }
-
     return PopScope(
       canPop: false,
       child: Scaffold(
         backgroundColor: theme.shopBackground,
-        body: SafeArea(child: scrollBody),
-        // Presence Dock — B-2: nav buttons wired when callbacks provided
         bottomNavigationBar: ShopkeeperPresenceDock(
           onVoiceNote: widget.onPresenceVoiceNote,
           strings: widget.strings,
           onMyListTap: widget.onMyListTap,
           onOrdersTap: widget.onOrdersTap,
+        ),
+        body: RefreshIndicator(
+          onRefresh: widget.onRefresh ?? () async {},
+          color: theme.shopAccent,
+          backgroundColor: theme.shopSurface,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Hero: face + name + tagline
+                _BharosaHero(
+                  theme: theme,
+                  entranceAnimation: _entranceController,
+                  strings: widget.strings,
+                  onLocaleToggle: widget.onLocaleToggle,
+                  currentLocaleCode: widget.currentLocaleCode,
+                ),
+
+                // Meta bar: years in business, GST, map
+                _MetaBar(theme: theme, strings: widget.strings),
+
+                // Greeting voice note card — suppressed if no voice note exists
+                if (widget.hasGreetingVoiceNote)
+                  _GreetingCard(
+                    theme: theme,
+                    strings: widget.strings,
+                    isMuted: _isMuted,
+                    onPlay: widget.onGreetingPlay,
+                    onMuteToggle: () => setState(() => _isMuted = !_isMuted),
+                    durationSeconds: widget.greetingDurationSeconds,
+                  ),
+
+                // Curated shortlist preview — fixed height, horizontal scroll
+                _ShortlistPreviewScroll(
+                  theme: theme,
+                  strings: widget.strings,
+                  shortlists: widget.previewShortlists,
+                  onTap: widget.onShortlistTap,
+                  tileSize: tileSize,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
