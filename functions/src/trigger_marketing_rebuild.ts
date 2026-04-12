@@ -12,7 +12,8 @@
 //   AC #7: Failed builds notify ops via email (configured in ci-marketing.yml)
 //
 // Edge cases:
-//   #1: Multiple theme updates within 60s → debounce via lastRebuildTriggeredAt
+//   #1: Multiple theme updates within 60s → debounce via transactional
+//       read-check-write on system/marketing_builds (F4 TOCTOU fix)
 //   #2: Build fails → previous version stays deployed (Firebase Hosting default)
 //   #3: GitHub PAT rotation → update via `firebase functions:secrets:set GITHUB_PAT`
 //
@@ -60,40 +61,84 @@ export const triggerMarketingRebuild = onDocumentWritten(
     secrets: [githubPat],
   },
   async (event) => {
+    // ── F5: Skip delete events ──
+    // onDocumentWritten fires on create, update, AND delete. When the theme
+    // document is deleted (e.g. shopDeactivationSweep per ADR-013 DPDP),
+    // there is no theme to rebuild — exit early. Create + update proceed.
+    if (!event.data?.after?.exists) {
+      logger.info('Theme document deleted — skipping rebuild', {
+        shopId: event.params.shopId,
+      });
+      return;
+    }
+
     const shopId = event.params.shopId;
 
     logger.info('Theme update detected', { shopId });
 
-    // ── Debounce check ──
-    // Read the last rebuild timestamp from system/marketing_builds.
-    // If a rebuild was triggered less than 60s ago for this shop, skip.
+    // ── F4: Transactional debounce ──
+    // Use a Firestore transaction for atomic read-check-write on
+    // system/marketing_builds. This prevents two concurrent invocations
+    // from both passing the debounce window and dispatching duplicate
+    // workflow_dispatch calls (TOCTOU fix).
     const db = admin.firestore();
     const statusRef = db
       .collection(REBUILD_STATUS_COLLECTION)
       .doc(REBUILD_STATUS_DOC);
 
-    const statusDoc = await statusRef.get();
-    const statusData = statusDoc.data() ?? {};
     const lastTriggeredField = `lastTriggeredAt_${shopId}`;
-    const lastTriggered = statusData[lastTriggeredField];
 
-    if (lastTriggered) {
-      const lastTriggeredMs =
-        lastTriggered instanceof admin.firestore.Timestamp
-          ? lastTriggered.toMillis()
-          : typeof lastTriggered === 'number'
-            ? lastTriggered
-            : 0;
+    let shouldDispatch: boolean;
+    try {
+      shouldDispatch = await db.runTransaction(async (txn) => {
+        const statusDoc = await txn.get(statusRef);
+        const statusData = statusDoc.data() ?? {};
+        const lastTriggered = statusData[lastTriggeredField];
 
-      const elapsed = Date.now() - lastTriggeredMs;
-      if (elapsed < DEBOUNCE_MS) {
-        logger.info('Debounced — rebuild already triggered recently', {
-          shopId,
-          elapsedMs: elapsed,
-          debounceMs: DEBOUNCE_MS,
-        });
-        return;
-      }
+        if (lastTriggered) {
+          const lastTriggeredMs =
+            lastTriggered instanceof admin.firestore.Timestamp
+              ? lastTriggered.toMillis()
+              : typeof lastTriggered === 'number'
+                ? lastTriggered
+                : 0;
+
+          const elapsed = Date.now() - lastTriggeredMs;
+          if (elapsed < DEBOUNCE_MS) {
+            logger.info('Debounced — rebuild already triggered recently', {
+              shopId,
+              elapsedMs: elapsed,
+              debounceMs: DEBOUNCE_MS,
+            });
+            return false;
+          }
+        }
+
+        // Claim the debounce slot atomically. Any concurrent transaction
+        // that reads after this commit will see the fresh timestamp and
+        // be debounced.
+        txn.set(
+          statusRef,
+          {
+            [lastTriggeredField]:
+              admin.firestore.FieldValue.serverTimestamp(),
+            lastShopId: shopId,
+          },
+          { merge: true },
+        );
+        return true;
+      });
+    } catch (err) {
+      // Fail closed: nightly cron (AC #6) will catch any missed rebuilds.
+      logger.error('Debounce transaction failed — skipping dispatch', {
+        shopId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return;
+    }
+
+    if (!shouldDispatch) {
+      return;
     }
 
     // ── Dispatch GitHub Actions workflow ──
@@ -139,8 +184,6 @@ export const triggerMarketingRebuild = onDocumentWritten(
           status: response.status,
           body,
         });
-        // Do not throw — failed dispatch should not retry. The nightly cron
-        // (AC #6) acts as a safety net. The error is logged for ops visibility.
         return;
       }
     } catch (err) {
@@ -149,26 +192,6 @@ export const triggerMarketingRebuild = onDocumentWritten(
         error: err instanceof Error ? err.message : String(err),
       });
       return;
-    }
-
-    // ── Update debounce timestamp ──
-    // Only update after successful dispatch so failed attempts can be retried.
-    try {
-      await statusRef.set(
-        {
-          [lastTriggeredField]:
-            admin.firestore.FieldValue.serverTimestamp(),
-          lastShopId: shopId,
-        },
-        { merge: true },
-      );
-    } catch (err) {
-      // Non-critical — debounce state is best-effort. Next trigger may
-      // fire a duplicate build, which is harmless (idempotent deploy).
-      logger.warn('Failed to update rebuild debounce timestamp', {
-        shopId,
-        error: err instanceof Error ? err.message : String(err),
-      });
     }
 
     logger.info('Marketing rebuild triggered successfully', { shopId });

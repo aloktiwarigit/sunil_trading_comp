@@ -15,9 +15,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../main.dart';
+
+final _log = Logger('OnboardingController');
 
 /// The resolved onboarding state. Contains everything the landing screen
 /// needs to render without additional async work.
@@ -71,43 +74,73 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
       user = await authProvider.signInAnonymous();
     }
 
-    // Step 2: Fetch Shop document + ShopThemeTokens from Firestore
+    // Step 2: Parallel fetch — shop doc, theme doc, and locale prefs (F13).
+    //
+    // These three operations are independent once auth completes (auth is
+    // required for Firestore security rules). Running them via Future.wait
+    // saves ~2 RTTs vs sequential reads on poor connectivity.
     final firestore = FirebaseFirestore.instance;
-    final shopDoc = await firestore
-        .collection('shops')
-        .doc(shopId)
-        .get();
 
-    final shop = shopDoc.exists && shopDoc.data() != null
-        ? Shop.fromJson(shopDoc.data()!)
-        : Shop(
-            shopId: shopId,
-            brandName: 'Sunil Trading Company',
-            brandNameDevanagari: 'सुनील ट्रेडिंग कंपनी',
-            ownerUid: '',
-            market: 'Harringtonganj',
-            createdAt: DateTime.now(),
-            activeFromDay: DateTime.now(),
-          );
+    final results = await Future.wait(<Future<Object?>>[
+      // [0] Shop document
+      firestore.collection('shops').doc(shopId).get(),
+      // [1] Theme document
+      firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('theme')
+          .doc('current')
+          .get(),
+      // [2] SharedPreferences (local I/O, no Firestore dependency)
+      SharedPreferences.getInstance(),
+    ]);
 
-    final themeDoc = await firestore
-        .collection('shops')
-        .doc(shopId)
-        .collection('theme')
-        .doc('current')
-        .get();
+    final shopDoc = results[0]! as DocumentSnapshot<Map<String, dynamic>>;
+    final themeDoc = results[1]! as DocumentSnapshot<Map<String, dynamic>>;
+    final prefs = results[2]! as SharedPreferences;
 
+    // --- Shop deserialization (F7: normalize Firestore Timestamps) ---
+    final fallbackShop = Shop(
+      shopId: shopId,
+      brandName: 'Sunil Trading Company',
+      brandNameDevanagari: 'सुनील ट्रेडिंग कंपनी',
+      ownerUid: '',
+      market: 'Harringtonganj',
+      createdAt: DateTime.now(),
+      activeFromDay: DateTime.now(),
+    );
+
+    Shop shop;
+    if (shopDoc.exists && shopDoc.data() != null) {
+      try {
+        final raw = shopDoc.data()!;
+        shop = Shop.fromJson(<String, dynamic>{
+          ...raw,
+          'createdAt': _normalizeTimestamp(raw['createdAt']),
+          'activeFromDay': _normalizeTimestamp(raw['activeFromDay']),
+          'shopLifecycleChangedAt':
+              _normalizeTimestamp(raw['shopLifecycleChangedAt']),
+          'dpdpRetentionUntil':
+              _normalizeTimestamp(raw['dpdpRetentionUntil']),
+        });
+      } catch (e, st) {
+        _log.warning('Shop.fromJson failed, using fallback: $e', e, st);
+        shop = fallbackShop;
+      }
+    } else {
+      shop = fallbackShop;
+    }
+
+    // --- Theme deserialization ---
     ShopThemeTokens themeTokens;
     if (themeDoc.exists && themeDoc.data() != null) {
       themeTokens = ShopThemeTokens.fromJson(themeDoc.data()!);
     } else {
-      // Fallback to compile-time defaults — shop hasn't customized yet
       themeTokens = ShopThemeTokens.sunilTradingCompanyDefault();
     }
 
-    // Step 3: Resolve locale
+    // --- Locale resolution ---
     final remoteConfig = FirebaseRemoteConfig.instance;
-    final prefs = await SharedPreferences.getInstance();
     final userOverride = prefs.getString(_localePrefsKey) ?? '';
 
     final strings = LocaleResolver.resolve(
@@ -174,5 +207,16 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
       user: current.user,
       shop: current.shop,
     ));
+  }
+
+  /// Normalize Firestore Timestamp → ISO8601 for Freezed JSON round-trip.
+  ///
+  /// Identical to the helper in operator_repo, inventory_sku_repo,
+  /// voice_note_repo, kill_switch_listener — per established pattern.
+  static Object? _normalizeTimestamp(Object? value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate().toIso8601String();
+    if (value is DateTime) return value.toIso8601String();
+    return value;
   }
 }

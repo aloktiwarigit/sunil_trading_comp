@@ -552,9 +552,12 @@ const hasFacePhoto = shop.shopkeeperFaceUrl.length > 0;
   }
 </style>
 
-<script define:vars={{ skuData: JSON.stringify(shop.curatedPreview) }}>
+<script define:vars={{ skuData: JSON.stringify(shop.curatedPreview), ownerName: shop.ownerName }}>
   // Parse SKU data baked at build time for modal rendering.
   const skus = JSON.parse(skuData);
+
+  // F17: voice button reset text uses dynamic ownerName, not hardcoded.
+  const voiceBtnLabel = '🎤 ' + ownerName + ' की आवाज़ सुनिए';
 
   // M5.2: voice note playback toggle.
   function toggleVoice() {
@@ -573,16 +576,16 @@ const hasFacePhoto = shop.shopkeeperFaceUrl.length > 0;
       audio.pause();
       audio.currentTime = 0;
       btn.classList.remove('playing');
-      btn.textContent = '🎤 सुनील भैया की आवाज़ सुनिए';
+      btn.textContent = voiceBtnLabel;
     }
 
     audio.addEventListener('ended', () => {
       btn.classList.remove('playing');
-      btn.textContent = '🎤 सुनील भैया की आवाज़ सुनिए';
+      btn.textContent = voiceBtnLabel;
     }, { once: true });
   }
 
-  // M5.3 AC #3: SKU detail modal.
+  // M5.3 AC #3: SKU detail modal — DOM API only, no innerHTML (F1 XSS fix).
   function openSkuModal(skuId) {
     const sku = skus.find(s => s.skuId === skuId);
     if (!sku) return;
@@ -591,18 +594,42 @@ const hasFacePhoto = shop.shopkeeperFaceUrl.length > 0;
     const body = document.getElementById('modalBody');
     if (!modal || !body) return;
 
-    const photoHtml = sku.thumbnailUrl
-      ? `<img src="${sku.thumbnailUrl}" alt="${sku.nameDevanagari}" class="modal-photo" />`
-      : '<div class="modal-photo-placeholder"></div>';
+    // Clear previous content safely
+    body.textContent = '';
 
-    body.innerHTML = `
-      ${photoHtml}
-      <div class="modal-body-inner">
-        <h3 class="modal-sku-name">${sku.nameDevanagari}</h3>
-        <p class="modal-sku-name-en">${sku.nameEnglish}</p>
-        <p class="modal-sku-price">₹${Number(sku.priceInr).toLocaleString('en-IN')}</p>
-      </div>
-    `;
+    // Photo or placeholder — built via DOM API to prevent XSS
+    if (sku.thumbnailUrl) {
+      const img = document.createElement('img');
+      img.src = sku.thumbnailUrl;
+      img.alt = sku.nameDevanagari;
+      img.className = 'modal-photo';
+      body.appendChild(img);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'modal-photo-placeholder';
+      body.appendChild(placeholder);
+    }
+
+    // Body inner container — all text via textContent (auto-escapes)
+    const inner = document.createElement('div');
+    inner.className = 'modal-body-inner';
+
+    const h3 = document.createElement('h3');
+    h3.className = 'modal-sku-name';
+    h3.textContent = sku.nameDevanagari;
+    inner.appendChild(h3);
+
+    const pEn = document.createElement('p');
+    pEn.className = 'modal-sku-name-en';
+    pEn.textContent = sku.nameEnglish;
+    inner.appendChild(pEn);
+
+    const pPrice = document.createElement('p');
+    pPrice.className = 'modal-sku-price';
+    pPrice.textContent = '\u20B9' + Number(sku.priceInr).toLocaleString('en-IN');
+    inner.appendChild(pPrice);
+
+    body.appendChild(inner);
 
     modal.classList.add('open');
   }

@@ -6,13 +6,15 @@
 //
 // Coverage:
 //   1. Theme update triggers GitHub Actions workflow_dispatch
-//   2. Debounce — recent rebuild skips dispatch
+//   2. Debounce — recent rebuild skips dispatch (transactional)
 //   3. Debounce — stale timestamp allows dispatch
 //   4. Empty GITHUB_PAT logs error and returns
 //   5. GitHub API non-204 response logs error
 //   6. Network error on fetch logs error
-//   7. Debounce timestamp update failure is non-blocking
+//   7. Debounce transaction failure prevents dispatch (fail-closed, F4)
 //   8. First-ever trigger (no status doc) dispatches successfully
+//   9. Different shop IDs use separate debounce keys
+//  10. Delete event does NOT trigger rebuild (F5)
 // =============================================================================
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -21,19 +23,23 @@
 
 const mockStatusGet = jest.fn();
 const mockStatusSet = jest.fn().mockResolvedValue(undefined);
+const mockRunTransaction = jest.fn();
+
+const mockStatusRef = {
+  get: mockStatusGet,
+  set: mockStatusSet,
+};
 
 const mockFirestore = jest.fn(() => ({
   collection: jest.fn((name: string) => {
     if (name === 'system') {
       return {
-        doc: (_id: string) => ({
-          get: mockStatusGet,
-          set: mockStatusSet,
-        }),
+        doc: (_id: string) => mockStatusRef,
       };
     }
     return {};
   }),
+  runTransaction: mockRunTransaction,
 }));
 
 (mockFirestore as any).FieldValue = {
@@ -108,9 +114,14 @@ import './../src/trigger_marketing_rebuild';
 
 // ---- Test helpers ----
 
-function makeEvent(shopId: string) {
+function makeEvent(shopId: string, options?: { deleted?: boolean }) {
   return {
     params: { shopId },
+    data: {
+      after: {
+        exists: !(options?.deleted),
+      },
+    },
   };
 }
 
@@ -125,6 +136,17 @@ beforeEach(() => {
   mockSecretValue = 'ghp_test_pat_1234567890';
   mockStatusDocWith(null); // Default: no previous status doc
   mockFetch.mockResolvedValue({ status: 204 });
+
+  // Default transaction mock: simulate Firestore transaction semantics.
+  // Calls the update function with a fake transaction object that delegates
+  // get/set to the existing status ref mocks.
+  mockRunTransaction.mockImplementation(async (updateFn: any) => {
+    const txn = {
+      get: async (_ref: any) => mockStatusGet(),
+      set: mockStatusSet,
+    };
+    return updateFn(txn);
+  });
 });
 
 describe('triggerMarketingRebuild', () => {
@@ -147,8 +169,9 @@ describe('triggerMarketingRebuild', () => {
     expect(body.ref).toBe('main');
     expect(body.inputs.shop_id).toBe('sunil-trading-company');
 
-    // Debounce timestamp updated
+    // Debounce timestamp claimed inside transaction
     expect(mockStatusSet).toHaveBeenCalledWith(
+      expect.anything(), // statusRef passed by transaction
       expect.objectContaining({
         'lastTriggeredAt_sunil-trading-company': '__server_timestamp__',
         lastShopId: 'sunil-trading-company',
@@ -219,7 +242,7 @@ describe('triggerMarketingRebuild', () => {
   // 5. GitHub API non-204 response
   // ---------------------------------------------------------------------------
 
-  test('non-204 response logs error and does not update debounce', async () => {
+  test('non-204 response logs error', async () => {
     mockFetch.mockResolvedValue({
       status: 403,
       text: async () => '{"message":"Bad credentials"}',
@@ -234,15 +257,13 @@ describe('triggerMarketingRebuild', () => {
         status: 403,
       }),
     );
-    // Debounce timestamp NOT updated on failure
-    expect(mockStatusSet).not.toHaveBeenCalled();
   });
 
   // ---------------------------------------------------------------------------
   // 6. Network error on fetch
   // ---------------------------------------------------------------------------
 
-  test('network error logs error and does not update debounce', async () => {
+  test('network error logs error', async () => {
     mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
 
     await capturedHandler!(makeEvent('sunil-trading-company'));
@@ -254,29 +275,28 @@ describe('triggerMarketingRebuild', () => {
         error: 'ECONNREFUSED',
       }),
     );
-    expect(mockStatusSet).not.toHaveBeenCalled();
   });
 
   // ---------------------------------------------------------------------------
-  // 7. Debounce timestamp update failure is non-blocking
+  // 7. F4: Transaction failure prevents dispatch (fail-closed)
   // ---------------------------------------------------------------------------
 
-  test('debounce write failure logs warning but function succeeds', async () => {
-    mockStatusSet.mockRejectedValueOnce(new Error('Firestore write failed'));
+  test('transaction failure prevents dispatch and logs error', async () => {
+    mockRunTransaction.mockRejectedValueOnce(
+      new Error('Transaction contention'),
+    );
 
     await capturedHandler!(makeEvent('sunil-trading-company'));
 
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockLoggerWarn).toHaveBeenCalledWith(
-      'Failed to update rebuild debounce timestamp',
+    // Fail closed — no dispatch on transaction failure.
+    // Nightly cron (AC #6) is the safety net.
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockLoggerError).toHaveBeenCalledWith(
+      'Debounce transaction failed — skipping dispatch',
       expect.objectContaining({
         shopId: 'sunil-trading-company',
+        error: 'Transaction contention',
       }),
-    );
-    // Function still logs success
-    expect(mockLoggerInfo).toHaveBeenCalledWith(
-      'Marketing rebuild triggered successfully',
-      expect.any(Object),
     );
   });
 
@@ -307,5 +327,23 @@ describe('triggerMarketingRebuild', () => {
     await capturedHandler!(makeEvent('shop-b'));
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 10. F5: Delete event does NOT trigger rebuild
+  // ---------------------------------------------------------------------------
+
+  test('delete event skips rebuild entirely', async () => {
+    await capturedHandler!(
+      makeEvent('sunil-trading-company', { deleted: true }),
+    );
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockStatusSet).not.toHaveBeenCalled();
+    expect(mockRunTransaction).not.toHaveBeenCalled();
+    expect(mockLoggerInfo).toHaveBeenCalledWith(
+      'Theme document deleted — skipping rebuild',
+      expect.objectContaining({ shopId: 'sunil-trading-company' }),
+    );
   });
 });

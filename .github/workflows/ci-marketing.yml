@@ -40,9 +40,10 @@ on:
   schedule:
     - cron: '30 20 * * *'  # 20:30 UTC = 02:00 IST
 
-# Prevent concurrent deploys for the same shop
+# Prevent concurrent deploys for the same shop.
+# Include event_name so cron ('schedule') never collides with dispatch/push (F12).
 concurrency:
-  group: marketing-deploy-${{ github.event.inputs.shop_id || 'default' }}
+  group: marketing-deploy-${{ github.event_name }}-${{ github.event.inputs.shop_id || 'default' }}
   cancel-in-progress: true
 
 jobs:
@@ -75,10 +76,18 @@ jobs:
       # workflow_dispatch provides it; cron + push default to flagship shop.
       - name: Resolve shop ID
         id: shop
+        env:
+          RAW_SHOP_ID: ${{ github.event.inputs.shop_id }}
         run: |
-          SHOP_ID="${{ github.event.inputs.shop_id }}"
+          SHOP_ID="${RAW_SHOP_ID}"
           if [ -z "$SHOP_ID" ]; then
             SHOP_ID="sunil-trading-company"
+          fi
+          # F2: Validate shop_id format — lowercase alphanumeric + hyphens only.
+          # Prevents shell injection via workflow_dispatch input.
+          if ! echo "$SHOP_ID" | grep -qE '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$'; then
+            echo "::error::Invalid shop_id '${SHOP_ID}'. Must be lowercase alphanumeric + hyphens, 1-63 chars."
+            exit 1
           fi
           echo "shop_id=$SHOP_ID" >> "$GITHUB_OUTPUT"
 
