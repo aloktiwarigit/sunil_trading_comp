@@ -40,20 +40,22 @@
 #
 # ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 5) =====
 #
-# Epics: 6 total. 1 done (E6). 3 in-progress (E1, E3, E4). 2 backlog (E2/E5).
-# Stories: 67 total. 29 done. 0 ready-for-dev. 0 in-progress. 38 backlog.
+# Epics: 6 total. 1 done (E6). 4 in-progress (E1, E3, E4, E5). 1 backlog (E2).
+# Stories: 67 total. 33 done. 0 ready-for-dev. 0 in-progress. 34 backlog.
 # Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
-# Phase 1.10 test debt: CLEARED (0 test failures remaining).
 #
-# Session 5 shipped: Sprint 7 (C3.2+C3.3) — draft editing + negotiation.
-# + Sprint 8 (S4.7+S4.8+S4.4) — shopkeeper order management.
-# 29 stories done total. Committed at 716221c on main.
+# Session 5 shipped 4 sprints:
+#   Sprint 7 (C3.2+C3.3) — draft editing + negotiation
+#   Sprint 8 (S4.7+S4.8+S4.4) — shopkeeper order management
+#   Sprint 9 (C3.8+C3.9) — udhaar khaata
+#   Sprint 10 (M5.1+M5.4) — marketing site
+# 33 stories done total. Committed at d80b870 on main.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-12  # Session 5 — Sprint 7+8 shipped, 29/67 done
+last_updated: 2026-04-12  # Session 5 — Sprint 7-10 shipped, 33/67 done
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -197,8 +199,8 @@ development_status:
   c3-6-cash-on-delivery: done
   # C3.7 Bank transfer instructions — shipped Sprint 6 (314f7a9)
   c3-7-bank-transfer: done
-  c3-8-udhaar-setup-shopkeeper-initiated: backlog
-  c3-9-udhaar-payment-record: backlog
+  c3-8-udhaar-setup-shopkeeper-initiated: done  # Sprint 9, Session 5
+  c3-9-udhaar-payment-record: done  # Sprint 9, Session 5
   c3-10-order-state-tracking: backlog
   c3-11-delivery-confirmation-with-photo: backlog
   c3-12-shop-deactivation-customer-notification: backlog
@@ -249,10 +251,10 @@ development_status:
   # =========================================================================
   epic-5: backlog
 
-  m5-1-marketing-landing-page: backlog
+  m5-1-marketing-landing-page: done  # Sprint 10, Session 5
   m5-2-greeting-voice-on-marketing-site: backlog
   m5-3-catalog-preview-public: backlog
-  m5-4-visit-page-map-hours-whatsapp: backlog
+  m5-4-visit-page-map-hours-whatsapp: done  # Sprint 10, Session 5
   m5-5-build-trigger-automation-on-settings-change: backlog
 
   epic-5-retrospective: optional
