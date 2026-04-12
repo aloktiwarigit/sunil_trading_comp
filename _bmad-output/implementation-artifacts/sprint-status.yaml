@@ -41,15 +41,14 @@
 # ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 4) =====
 #
 # Epics: 6 total. 1 done (E6). 3 in-progress (E1, E3, E4). 2 backlog (E2/E5).
-# Stories: 67 total. 21 done. 0 ready-for-dev. 0 in-progress. 46 backlog.
+# Stories: 67 total. 24 done. 0 ready-for-dev. 0 in-progress. 43 backlog.
 # Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 # Phase 1.10 test debt: CLEARED (0 test failures remaining).
 #
-# Session 4 shipped: Sprint 5 (C3.4+C3.5) — Walking Skeleton 19/19 COMPLETE.
-# Code review: 7 patches applied, 5 deferred, 9 dismissed.
-# Tests: 316 pass (+19 new), 8 pre-existing auth adapter failures.
-# Committed at 32c0e5b on main.
+# Session 4 shipped: Sprint 5 (C3.4+C3.5) — WS 19/19 COMPLETE.
+# + Sprint 6 (C3.6+C3.7+S4.6) — payment alternatives + shopkeeper orders.
+# 24 stories done total. Committed at 314f7a9 on main.
 #
 # =================================
 
@@ -194,8 +193,10 @@ development_status:
   # ProjectCustomerPaymentPatch + UpiIntentBuilder + PaymentController/Screen
   # + 12 tests. Triple Zero machine-verified.
   c3-5-upi-payment-intent-flow: done
-  c3-6-cash-on-delivery: backlog
-  c3-7-bank-transfer: backlog
+  # C3.6 COD workflow — shipped Sprint 6 (314f7a9)
+  c3-6-cash-on-delivery: done
+  # C3.7 Bank transfer instructions — shipped Sprint 6 (314f7a9)
+  c3-7-bank-transfer: done
   c3-8-udhaar-setup-shopkeeper-initiated: backlog
   c3-9-udhaar-payment-record: backlog
   c3-10-order-state-tracking: backlog
@@ -219,9 +220,12 @@ development_status:
   s4-2-multi-operator-role-based-access: backlog
   # S4.3 Inventory create new SKU — shipped Phase 2.1 Sprint 4 (c9d6aea)
   s4-3-inventory-create-new-sku: done
+  # S4.6 Active projects list — shipped Sprint 6 (314f7a9)
+  # ActiveProjectsScreen + filter chips + project cards + /orders route
+  s4-6-active-projects-list: done
   s4-4-inventory-edit-price-stock: backlog
   s4-5-golden-hour-photo-capture: backlog
-  s4-6-active-projects-list: backlog
+  # (moved up — see above)
   s4-7-project-detail-with-memory: backlog
   s4-8-chat-reply-text-or-voice: backlog
   s4-9-customer-memory-inline-edit: backlog
