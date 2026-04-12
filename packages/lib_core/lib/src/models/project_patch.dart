@@ -82,6 +82,75 @@ class ProjectCustomerCancelPatch with _$ProjectCustomerCancelPatch {
       };
 }
 
+/// The second cross-partition customer mutation: committing a draft Project.
+///
+/// This is the PRD C3.4 "promote-to-operator-patch" — the customer_app writes
+/// operator-partition fields (`state`, `committedAt`, `amountReceivedByShop`,
+/// `customerPhone`, `customerDisplayName`) for this ONE gated transition.
+///
+/// Security rule gate: `state in ['draft', 'negotiating'] &&
+/// request.auth.uid == resource.data.customerUid`.
+///
+/// The repo method computes `totalAmount` from line items and enforces the
+/// Triple Zero invariant (`amountReceivedByShop == totalAmount`) at write time.
+@freezed
+class ProjectCustomerCommitPatch with _$ProjectCustomerCommitPatch {
+  const factory ProjectCustomerCommitPatch({
+    /// E.164 phone number from the OTP upgrade (null if OTP was skipped).
+    String? customerPhone,
+
+    /// Display name captured during the OTP flow (null if unavailable).
+    String? customerDisplayName,
+  }) = _ProjectCustomerCommitPatch;
+
+  const ProjectCustomerCommitPatch._();
+
+  /// Build the Firestore map. The caller (ProjectRepo.applyCustomerCommitPatch)
+  /// supplies `totalAmount` computed from line items — this patch does not
+  /// carry it because the repo transaction reads the authoritative line items
+  /// from the server snapshot, not from client state.
+  Map<String, Object?> toFirestoreMap({
+    required int totalAmount,
+  }) {
+    return <String, Object?>{
+      'state': 'committed',
+      // Triple Zero invariant — no commission, no platform fee.
+      'totalAmount': totalAmount,
+      'amountReceivedByShop': totalAmount,
+      if (customerPhone != null) 'customerPhone': customerPhone,
+      if (customerDisplayName != null)
+        'customerDisplayName': customerDisplayName,
+    };
+  }
+}
+
+/// The third cross-partition customer mutation: recording UPI payment.
+///
+/// PRD C3.5 "committed → paid" transition. The customer_app writes
+/// operator-partition fields (`state`, `paidAt`, `customerVpa`) for this
+/// gated transition. Security rule gate: `state == 'committed' &&
+/// request.auth.uid == resource.data.customerUid`.
+///
+/// Triple Zero invariant re-verified: the repo transaction asserts
+/// `amountReceivedByShop == totalAmount` (set at commit time by C3.4)
+/// before allowing the transition. If they diverge, the transition fails.
+@freezed
+class ProjectCustomerPaymentPatch with _$ProjectCustomerPaymentPatch {
+  const factory ProjectCustomerPaymentPatch({
+    /// UPI VPA the customer used (captured from the UPI intent return).
+    String? customerVpa,
+  }) = _ProjectCustomerPaymentPatch;
+
+  const ProjectCustomerPaymentPatch._();
+
+  Map<String, Object?> toFirestoreMap() {
+    return <String, Object?>{
+      'state': 'paid',
+      if (customerVpa != null) 'customerVpa': customerVpa,
+    };
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Operator-owned patches
 // -----------------------------------------------------------------------------

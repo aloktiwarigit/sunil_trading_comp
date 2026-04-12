@@ -147,6 +147,121 @@ class ProjectRepo {
         .set(map, SetOptions(merge: true));
   }
 
+  /// Typed customer cross-partition payment — the committed → paid transition
+  /// per PRD C3.5. Re-verifies the Triple Zero invariant at transition time:
+  /// `amountReceivedByShop == totalAmount` must hold (set at commit by C3.4).
+  ///
+  /// Throws [ProjectRepoException] if the precondition fails or if the
+  /// Triple Zero invariant is violated.
+  Future<void> applyCustomerPaymentPatch(
+    String projectId,
+    ProjectCustomerPaymentPatch patch,
+  ) async {
+    final ref = _projectsCollection().doc(projectId);
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (!snap.exists) {
+        throw const ProjectRepoException(
+          'not-found',
+          'Project does not exist',
+        );
+      }
+      final data = snap.data()!;
+      final currentState = data['state'] as String?;
+      if (currentState != 'committed') {
+        throw ProjectRepoException(
+          'invalid-state-transition',
+          'Cannot pay Project in state $currentState — '
+          'only committed can transition to paid',
+        );
+      }
+
+      // Re-verify Triple Zero invariant before allowing paid transition.
+      final totalAmount = (data['totalAmount'] as num?)?.toInt() ?? 0;
+      final received = (data['amountReceivedByShop'] as num?)?.toInt() ?? 0;
+      if (received != totalAmount) {
+        throw ProjectRepoException(
+          'triple-zero-violation',
+          'amountReceivedByShop ($received) != totalAmount ($totalAmount) — '
+          'Triple Zero invariant violated, refusing paid transition',
+        );
+      }
+
+      final map = patch.toFirestoreMap();
+      map['paidAt'] = FieldValue.serverTimestamp();
+      map['updatedAt'] = FieldValue.serverTimestamp();
+      txn.set(ref, map, SetOptions(merge: true));
+    });
+    _log.info('customer payment patch applied: projectId=$projectId');
+  }
+
+  /// Typed customer cross-partition commit — the draft/negotiating → committed
+  /// transition per PRD C3.4. This is the "promote-to-operator-patch" path:
+  /// the customer writes operator-partition fields for this one gated
+  /// transition. Security rules enforce `state in ['draft', 'negotiating']
+  /// && request.auth.uid == resource.data.customerUid`.
+  ///
+  /// The transaction:
+  ///   1. Reads the current Project snapshot
+  ///   2. Asserts state is 'draft' or 'negotiating'
+  ///   3. Computes totalAmount from sum(lineItems[].quantity * unitPriceInr)
+  ///   4. Sets amountReceivedByShop = totalAmount (Triple Zero invariant)
+  ///   5. Sets state = 'committed' + committedAt + customerPhone/DisplayName
+  ///
+  /// Throws [ProjectRepoException] if the precondition fails.
+  Future<void> applyCustomerCommitPatch(
+    String projectId,
+    ProjectCustomerCommitPatch patch,
+  ) async {
+    final ref = _projectsCollection().doc(projectId);
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (!snap.exists) {
+        throw const ProjectRepoException(
+          'not-found',
+          'Project does not exist',
+        );
+      }
+      final data = snap.data()!;
+      final currentState = data['state'] as String?;
+      if (currentState != 'draft' && currentState != 'negotiating') {
+        throw ProjectRepoException(
+          'invalid-state-transition',
+          'Cannot commit Project in state $currentState — '
+          'only draft or negotiating can transition to committed',
+        );
+      }
+
+      // Compute totalAmount from server-side line items (authoritative).
+      final rawItems = data['lineItems'] as List<dynamic>? ?? <dynamic>[];
+      if (rawItems.isEmpty) {
+        throw const ProjectRepoException(
+          'empty-cart',
+          'Cannot commit a Project with no line items',
+        );
+      }
+      var totalAmount = 0;
+      for (final raw in rawItems) {
+        final item = raw as Map<String, dynamic>;
+        final qty = (item['quantity'] as num?)?.toInt() ?? 1;
+        final price = (item['unitPriceInr'] as num?)?.toInt() ?? 0;
+        totalAmount += qty * price;
+      }
+      if (totalAmount <= 0) {
+        throw ProjectRepoException(
+          'zero-amount',
+          'Cannot commit a Project with totalAmount=$totalAmount',
+        );
+      }
+
+      final map = patch.toFirestoreMap(totalAmount: totalAmount);
+      map['committedAt'] = FieldValue.serverTimestamp();
+      map['updatedAt'] = FieldValue.serverTimestamp();
+      txn.set(ref, map, SetOptions(merge: true));
+    });
+    _log.info('customer commit patch applied: projectId=$projectId');
+  }
+
   /// Typed customer cross-partition cancel — the ONE cross-partition
   /// mutation customers are allowed per PRD I6.12 edge case #1. Gated by a
   /// security rule checking `resource.data.state == 'draft'`. Runs in a

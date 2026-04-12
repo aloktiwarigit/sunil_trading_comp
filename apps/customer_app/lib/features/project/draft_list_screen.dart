@@ -23,6 +23,7 @@ class DraftListScreen extends ConsumerWidget {
     required this.strings,
     this.onBrowse,
     this.onTalkToBhaiya,
+    this.onCommit,
   });
 
   /// Locale-resolved strings.
@@ -33,6 +34,9 @@ class DraftListScreen extends ConsumerWidget {
 
   /// Called when user taps "talk to bhaiya" to open chat.
   final VoidCallback? onTalkToBhaiya;
+
+  /// Called when user taps "ऑर्डर पक्का कीजिए" to start commit flow (C3.4).
+  final VoidCallback? onCommit;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -179,14 +183,37 @@ class DraftListScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (onTalkToBhaiya != null)
+            // C3.4 — Oxblood commit button (first legitimate use of shopCommit)
+            if (onCommit != null)
               SizedBox(
                 height: theme.tapTargetMin,
                 child: ElevatedButton(
-                  onPressed: onTalkToBhaiya,
+                  onPressed: onCommit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.shopPrimary,
-                    foregroundColor: theme.shopTextOnPrimary,
+                    backgroundColor: theme.shopCommit,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(YugmaRadius.md),
+                    ),
+                    textStyle: TextStyle(
+                      fontFamily: theme.fontFamilyDevanagariBody,
+                      fontSize: theme.isElderTier ? 20.0 : 16.0,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  child: Text(strings.commitButtonPakka),
+                ),
+              ),
+            if (onCommit != null && onTalkToBhaiya != null)
+              const SizedBox(height: YugmaSpacing.s2),
+            if (onTalkToBhaiya != null)
+              SizedBox(
+                height: theme.tapTargetMin,
+                child: OutlinedButton(
+                  onPressed: onTalkToBhaiya,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: theme.shopPrimary,
+                    side: BorderSide(color: theme.shopPrimary),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(YugmaRadius.md),
                     ),

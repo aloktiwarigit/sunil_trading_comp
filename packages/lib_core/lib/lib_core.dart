@@ -92,3 +92,4 @@ export 'src/components/chat/chat_barrel.dart';
 // ---------- Services (orchestration over adapters + repositories) ----------
 export 'src/services/phone_upgrade_coordinator.dart';
 export 'src/services/session_bootstrap.dart';
+export 'src/services/upi_intent_builder.dart';

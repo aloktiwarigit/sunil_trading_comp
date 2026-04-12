@@ -8,6 +8,8 @@
 //   /                       → Splash (while onboarding loads) → redirects to /landing
 //   /landing                → BharosaLanding (the real first screen)
 //   /draft                  → DraftListScreen (C3.1 — "My List")
+//   /project/:id/commit     → CommitScreen (C3.4 — commit with phone OTP)
+//   /project/:id/payment    → PaymentScreen (C3.5 — UPI payment intent)
 //   /project/:id/chat       → CustomerChatScreen (P2.4 + P2.5)
 //
 // Deep link handling (B1.1 edge cases #3, #4):
@@ -22,8 +24,10 @@ import 'package:lib_core/lib_core.dart';
 import 'package:customer_app/features/chat/customer_chat_screen.dart';
 import 'package:customer_app/features/onboarding/onboarding_controller.dart';
 import 'package:customer_app/features/onboarding/splash_screen.dart';
+import 'package:customer_app/features/project/commit_screen.dart';
 import 'package:customer_app/features/project/draft_controller.dart';
 import 'package:customer_app/features/project/draft_list_screen.dart';
+import 'package:customer_app/features/project/payment_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final onboarding = ref.watch(onboardingControllerProvider);
@@ -126,6 +130,58 @@ final routerProvider = Provider<GoRouter>((ref) {
                   context.go('/project/$projectId/chat');
                 }
               },
+              onCommit: () {
+                // C3.4 — Navigate to commit flow.
+                final draftState = ref.read(draftControllerProvider).valueOrNull;
+                final projectId = draftState?.projectId;
+                if (projectId != null) {
+                  context.go('/project/$projectId/commit');
+                }
+              },
+            ),
+          );
+        },
+      ),
+      // C3.4 — Commit flow screen
+      GoRoute(
+        path: '/project/:id/commit',
+        builder: (context, state) {
+          final data = onboarding.valueOrNull;
+          if (data == null) return const SplashScreen();
+
+          final projectId = state.pathParameters['id']!;
+          final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
+
+          return Theme(
+            data: ThemeData(
+              useMaterial3: true,
+              extensions: [theme],
+            ),
+            child: CommitScreen(
+              projectId: projectId,
+              strings: data.strings,
+            ),
+          );
+        },
+      ),
+      // C3.5 — Payment flow screen
+      GoRoute(
+        path: '/project/:id/payment',
+        builder: (context, state) {
+          final data = onboarding.valueOrNull;
+          if (data == null) return const SplashScreen();
+
+          final projectId = state.pathParameters['id']!;
+          final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
+
+          return Theme(
+            data: ThemeData(
+              useMaterial3: true,
+              extensions: [theme],
+            ),
+            child: PaymentScreen(
+              projectId: projectId,
+              strings: data.strings,
             ),
           );
         },

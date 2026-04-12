@@ -197,8 +197,47 @@ abstract class AppStrings {
   /// Critical R12 mitigation copy.
   String get otpPromptBhaiyaNeedsIt;
 
+  /// Phone number input field label (C3.4 OTP flow).
+  String get phoneInputLabel;
+
+  /// OTP code input field label.
+  String get otpCodeLabel;
+
+  /// "Send OTP" button on phone input screen.
+  String get otpSendButton;
+
+  /// "Verify" button on OTP code entry screen.
+  String get otpVerifyButton;
+
+  /// Invalid OTP code error.
+  String get otpInvalidCode;
+
+  /// OTP code expired error.
+  String get otpCodeExpired;
+
+  /// Post-commit confirmation title.
+  String get commitSuccessTitle;
+
+  /// "Proceed to payment" CTA after commit.
+  String get proceedToPayment;
+
+  /// "Total amount" label on order summary.
+  String get orderTotalLabel;
+
+  /// Commit transaction failed error.
+  String get commitFailed;
+
   /// UPI primary payment button.
   String get upiPayButton;
+
+  /// "Other ways to pay" expandable link (C3.5 AC #1).
+  String get paymentOtherMethods;
+
+  /// "No UPI app found" error (C3.5 edge case #1).
+  String get noUpiAppFound;
+
+  /// "Payment processing" loading indicator.
+  String get paymentProcessing;
 
   /// Payment success toast.
   String get paymentSuccessPakka;

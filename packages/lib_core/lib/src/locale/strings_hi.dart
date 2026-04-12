@@ -163,7 +163,47 @@ class AppStringsHi extends AppStrings {
       'सुनील भैया डिलीवरी के लिए संपर्क करेंगे, आपका फ़ोन नंबर चाहिए';
 
   @override
+  String get phoneInputLabel => 'अपना फ़ोन नंबर दीजिए';
+
+  @override
+  String get otpCodeLabel => 'OTP कोड दीजिए';
+
+  @override
+  String get otpSendButton => 'OTP भेजिए';
+
+  @override
+  String get otpVerifyButton => 'पुष्टि कीजिए';
+
+  @override
+  String get otpInvalidCode => 'OTP सही नहीं है — दुबारा कोशिश कीजिए';
+
+  @override
+  String get otpCodeExpired => 'OTP की समय सीमा बीत गई — दुबारा भेजिए';
+
+  @override
+  String get commitSuccessTitle => 'ऑर्डर पक्का हुआ!';
+
+  @override
+  String get proceedToPayment => 'अब भुगतान कीजिए';
+
+  @override
+  String get orderTotalLabel => 'कुल रकम';
+
+  @override
+  String get commitFailed => 'ऑर्डर नहीं हो सका — दुबारा कोशिश कीजिए';
+
+  @override
   String get upiPayButton => 'UPI से दीजिए';
+
+  @override
+  String get paymentOtherMethods => 'और तरीके';
+
+  @override
+  String get noUpiAppFound =>
+      'UPI ऐप नहीं मिला — कोई और तरीका चुनिए';
+
+  @override
+  String get paymentProcessing => 'भुगतान हो रहा है...';
 
   @override
   String get paymentSuccessPakka => 'ऑर्डर पक्का हुआ! धन्यवाद।';

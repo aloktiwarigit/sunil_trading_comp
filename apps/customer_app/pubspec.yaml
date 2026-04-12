@@ -31,6 +31,9 @@ dependencies:
   cloud_firestore: ^5.4.4
   firebase_remote_config: ^5.1.3
 
+  # ---- UPI intent (C3.5 — free, no payment gateway) ----
+  url_launcher: ^6.3.1
+
   # ---- Persistence ----
   shared_preferences: ^2.3.3
 

@@ -157,7 +157,47 @@ class AppStringsEn extends AppStrings {
       'Sunil-bhaiya will contact you for delivery — we need your phone number';
 
   @override
+  String get phoneInputLabel => 'Enter your phone number';
+
+  @override
+  String get otpCodeLabel => 'Enter OTP code';
+
+  @override
+  String get otpSendButton => 'Send OTP';
+
+  @override
+  String get otpVerifyButton => 'Verify';
+
+  @override
+  String get otpInvalidCode => 'Invalid OTP — please try again';
+
+  @override
+  String get otpCodeExpired => 'OTP expired — please resend';
+
+  @override
+  String get commitSuccessTitle => 'Order confirmed!';
+
+  @override
+  String get proceedToPayment => 'Proceed to payment';
+
+  @override
+  String get orderTotalLabel => 'Total amount';
+
+  @override
+  String get commitFailed => 'Order failed — please try again';
+
+  @override
   String get upiPayButton => 'Pay via UPI';
+
+  @override
+  String get paymentOtherMethods => 'Other ways to pay';
+
+  @override
+  String get noUpiAppFound =>
+      'No UPI app found — choose another method';
+
+  @override
+  String get paymentProcessing => 'Processing payment...';
 
   @override
   String get paymentSuccessPakka => 'Order confirmed. Thank you.';
