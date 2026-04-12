@@ -41,7 +41,7 @@
 # ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 6) =====
 #
 # Epics: 6 total. 1 done (E6). 4 in-progress (E1, E3, E4, E5). 1 backlog (E2).
-# Stories: 67 total. 53 done. 0 ready-for-dev. 0 in-progress. 14 backlog.
+# Stories: 67 total. 54 done. 0 ready-for-dev. 0 in-progress. 13 backlog.
 # Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 #
@@ -54,13 +54,14 @@
 #   Sprint 16 (P2.1+P2.2) — Decision Circle + persona toggle
 #   Sprint 17 (B1.8+P2.3) — greeting management + elder UI tier
 #   Sprint 18 (S4.5+B1.12) — golden hour photo + curation UX
+#   Sprint 19 (S4.12) — shop settings screen
 # Also completed B1.11 (foundation for S4.9).
-# 53 stories done total (33→53). Committed at 842037f on main.
+# 54 stories done total (33→54). Committed at 4ce42db on main.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-12  # Session 6 — Sprint 11-18 shipped, 53/67 done
+last_updated: 2026-04-12  # Session 6 — Sprint 11-19 shipped, 54/67 done
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -255,7 +256,8 @@ development_status:
   s4-10-udhaar-ledger-with-rbi-guardrails: done
   # S4.11 Analytics dashboard — shipped Sprint 13 (0940909)
   s4-11-analytics-dashboard: done
-  s4-12-shop-settings-theme-operators-flags: backlog
+  # S4.12 Settings — shipped Sprint 19 (4ce42db)
+  s4-12-shop-settings-theme-operators-flags: done
   # S4.13 Today's task daily prompt — shipped Phase 2.1 Sprint 3 (6619851)
   # TodaysTaskCard + 30-day seed + HomeDashboard. 9 AppStrings keys.
   s4-13-todays-task-daily-prompt-card: done
