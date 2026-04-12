@@ -129,6 +129,30 @@ class AppStringsHi extends AppStrings {
   @override
   String get chatInputPlaceholder => 'यहाँ संदेश लिखिए...';
 
+  // ---- §4b C3.1 + P2.4 + P2.5 Chat + Draft ----
+
+  @override
+  String chatThreadTitleWithOrder(String suffix) =>
+      'सुनील भैया का कमरा — आपका ऑर्डर #$suffix';
+
+  @override
+  String get myListTitle => 'मेरी सूची';
+
+  @override
+  String get addedToList => 'सूची में जोड़ा गया';
+
+  @override
+  String get chatSenderYou => 'आप';
+
+  @override
+  String get chatSenderBhaiya => 'सुनील भैया';
+
+  @override
+  String get chatSendButton => 'भेजिए';
+
+  @override
+  String get chatMessagePending => 'भेज रहे हैं...';
+
   // ---- §5 Commit + OTP + payment ----
 
   @override
@@ -320,6 +344,54 @@ class AppStringsHi extends AppStrings {
   @override
   String get opsPermissionRevoked =>
       'अब आप authorized नहीं हैं। Yugma Labs से संपर्क कीजिए।';
+
+  // ---- §18 S4.3 Inventory SKU creation ----
+
+  @override
+  String get inventoryTitle => 'सामान';
+  @override
+  String get createSkuButton => 'नया सामान जोड़िए';
+  @override
+  String get skuNameDevanagariLabel => 'सामान का नाम (हिंदी)';
+  @override
+  String get skuNameEnglishLabel => 'सामान का नाम (English)';
+  @override
+  String get skuCategoryLabel => 'श्रेणी';
+  @override
+  String get skuBasePriceLabel => 'दाम (₹)';
+  @override
+  String get skuNegotiableFloorLabel => 'मोल भाव में कम से कम (₹)';
+  @override
+  String get skuDimensionsLabel => 'साइज़ (ऊँचाई × चौड़ाई × गहराई cm)';
+  @override
+  String get skuMaterialLabel => 'सामग्री';
+  @override
+  String get skuInStockLabel => 'स्टॉक में है';
+  @override
+  String get skuDescriptionLabel => 'जानकारी (हिंदी)';
+  @override
+  String get skuSaveButton => 'सामान जोड़ दीजिए';
+  @override
+  String get skuGoldenHourPhotoButton => 'Golden Hour फ़ोटो लीजिए';
+  @override
+  String get skuStockCountLabel => 'कितने हैं';
+  @override
+  String get skuDuplicateNameWarning =>
+      'इस नाम का सामान पहले से है। फिर भी जोड़ सकते हैं।';
+  @override
+  String get skuSavedSuccess => 'सामान जुड़ गया!';
+  @override
+  String get validationRequired => 'यह भरना ज़रूरी है';
+  @override
+  String get validationPricePositive => 'दाम 0 से ज़्यादा होना चाहिए';
+  @override
+  String get validationFloorExceedsBase =>
+      'मोल भाव की कीमत दाम से कम होनी चाहिए';
+  @override
+  String get validationDimensionPositive => 'साइज़ 0 से ज़्यादा होना चाहिए';
+  @override
+  String get inventoryEmpty =>
+      'अभी कोई सामान नहीं है। + बटन से नया सामान जोड़िए।';
 
   // ---------------------------------------------------------------------------
   // Internal helpers

@@ -123,6 +123,30 @@ class AppStringsEn extends AppStrings {
   @override
   String get chatInputPlaceholder => 'Type your message here…';
 
+  // ---- §4b C3.1 + P2.4 + P2.5 Chat + Draft ----
+
+  @override
+  String chatThreadTitleWithOrder(String suffix) =>
+      "Sunil-bhaiya's room — your order #$suffix";
+
+  @override
+  String get myListTitle => 'My list';
+
+  @override
+  String get addedToList => 'Added to list';
+
+  @override
+  String get chatSenderYou => 'You';
+
+  @override
+  String get chatSenderBhaiya => 'Sunil-bhaiya';
+
+  @override
+  String get chatSendButton => 'Send';
+
+  @override
+  String get chatMessagePending => 'Sending...';
+
   // ---- §5 Commit + OTP + payment ----
 
   @override
@@ -313,6 +337,53 @@ class AppStringsEn extends AppStrings {
   @override
   String get opsPermissionRevoked =>
       'You are no longer authorized. Contact Yugma Labs.';
+
+  // ---- §18 S4.3 Inventory SKU creation ----
+
+  @override
+  String get inventoryTitle => 'Inventory';
+  @override
+  String get createSkuButton => 'Add new item';
+  @override
+  String get skuNameDevanagariLabel => 'Item name (Hindi)';
+  @override
+  String get skuNameEnglishLabel => 'Item name (English)';
+  @override
+  String get skuCategoryLabel => 'Category';
+  @override
+  String get skuBasePriceLabel => 'Price (₹)';
+  @override
+  String get skuNegotiableFloorLabel => 'Negotiate-to floor (₹)';
+  @override
+  String get skuDimensionsLabel => 'Size (H × W × D cm)';
+  @override
+  String get skuMaterialLabel => 'Material';
+  @override
+  String get skuInStockLabel => 'In stock';
+  @override
+  String get skuDescriptionLabel => 'Description (Hindi)';
+  @override
+  String get skuSaveButton => 'Add item';
+  @override
+  String get skuGoldenHourPhotoButton => 'Capture Golden Hour photo';
+  @override
+  String get skuStockCountLabel => 'How many';
+  @override
+  String get skuDuplicateNameWarning =>
+      'An item with this name already exists. You can still add it.';
+  @override
+  String get skuSavedSuccess => 'Item added!';
+  @override
+  String get validationRequired => 'This field is required';
+  @override
+  String get validationPricePositive => 'Price must be greater than 0';
+  @override
+  String get validationFloorExceedsBase =>
+      'Floor price must be less than base price';
+  @override
+  String get validationDimensionPositive => 'Dimension must be greater than 0';
+  @override
+  String get inventoryEmpty => 'No items yet. Tap + to add your first item.';
 
   // ---------------------------------------------------------------------------
   // Internal helpers

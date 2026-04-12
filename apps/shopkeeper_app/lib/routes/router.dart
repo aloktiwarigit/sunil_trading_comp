@@ -4,6 +4,10 @@
 // Flow per S4.1:
 //   / (boot splash) → /sign-in (if not authenticated) → /home (dashboard)
 //
+// S4.3 additions:
+//   /inventory → inventory list with + FAB
+//   /inventory/create → SKU creation form
+//
 // The router watches the OpsAuthController state and redirects accordingly:
 //   - loading → boot splash
 //   - signedOut / unauthorized / permissionRevoked → sign-in screen
@@ -18,6 +22,8 @@ import 'package:lib_core/lib_core.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/dashboard/home_dashboard.dart';
+import '../features/inventory/create_sku_screen.dart';
+import '../features/inventory/inventory_list_screen.dart';
 
 final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -44,7 +50,11 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
           return isOnSignIn ? null : '/sign-in';
 
         case OpsAuthStatus.authorized:
-          return isOnHome ? null : '/home';
+          // Allow navigation to sub-routes when authorized.
+          if (isOnHome || state.matchedLocation.startsWith('/inventory')) {
+            return null;
+          }
+          return '/home';
       }
     },
     routes: <RouteBase>[
@@ -59,6 +69,16 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeDashboard(),
+      ),
+      GoRoute(
+        path: '/inventory',
+        builder: (context, state) => const InventoryListScreen(),
+        routes: <RouteBase>[
+          GoRoute(
+            path: 'create',
+            builder: (context, state) => const CreateSkuScreen(),
+          ),
+        ],
       ),
     ],
   );

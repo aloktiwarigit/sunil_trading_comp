@@ -468,8 +468,9 @@ void main() {
       // Operator name + role
       expect(find.text('Test Bhaiya (bhaiya)'), findsOneWidget);
 
-      // Placeholder sections
-      expect(find.text('Inventory'), findsOneWidget);
+      // Inventory section (S4.3 — now live, uses Hindi label)
+      expect(find.text(const AppStringsHi().inventoryTitle), findsOneWidget);
+      // Remaining placeholder sections
       expect(find.text('Orders'), findsOneWidget);
       expect(find.text('Chat'), findsOneWidget);
       expect(find.text('Udhaar'), findsOneWidget);

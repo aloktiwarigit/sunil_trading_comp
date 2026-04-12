@@ -5,8 +5,10 @@
 // screen — the first screen IS the shopkeeper."
 //
 // Route structure:
-//   /         → Splash (while onboarding loads) → redirects to /landing
-//   /landing  → BharosaLanding (the real first screen)
+//   /                       → Splash (while onboarding loads) → redirects to /landing
+//   /landing                → BharosaLanding (the real first screen)
+//   /draft                  → DraftListScreen (C3.1 — "My List")
+//   /project/:id/chat       → CustomerChatScreen (P2.4 + P2.5)
 //
 // Deep link handling (B1.1 edge cases #3, #4):
 //   /project/:projectId → bypass landing, go to Project view (future sprint)
@@ -17,8 +19,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
-import '../features/onboarding/onboarding_controller.dart';
-import '../features/onboarding/splash_screen.dart';
+import 'package:customer_app/features/chat/customer_chat_screen.dart';
+import 'package:customer_app/features/onboarding/onboarding_controller.dart';
+import 'package:customer_app/features/onboarding/splash_screen.dart';
+import 'package:customer_app/features/project/draft_controller.dart';
+import 'package:customer_app/features/project/draft_list_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final onboarding = ref.watch(onboardingControllerProvider);
@@ -92,6 +97,57 @@ final routerProvider = Provider<GoRouter>((ref) {
                     .read(onboardingControllerProvider.notifier)
                     .refreshTheme();
               },
+            ),
+          );
+        },
+      ),
+      // C3.1 — "My List" draft screen
+      GoRoute(
+        path: '/draft',
+        builder: (context, state) {
+          final data = onboarding.valueOrNull;
+          if (data == null) return const SplashScreen();
+
+          final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
+
+          return Theme(
+            data: ThemeData(
+              useMaterial3: true,
+              extensions: [theme],
+            ),
+            child: DraftListScreen(
+              strings: data.strings,
+              onBrowse: () => context.go('/landing'),
+              onTalkToBhaiya: () {
+                // Navigate to chat once a draft project exists.
+                final draftState = ref.read(draftControllerProvider).valueOrNull;
+                final projectId = draftState?.projectId;
+                if (projectId != null) {
+                  context.go('/project/$projectId/chat');
+                }
+              },
+            ),
+          );
+        },
+      ),
+      // P2.4 + P2.5 — Chat thread screen
+      GoRoute(
+        path: '/project/:id/chat',
+        builder: (context, state) {
+          final data = onboarding.valueOrNull;
+          if (data == null) return const SplashScreen();
+
+          final projectId = state.pathParameters['id']!;
+          final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
+
+          return Theme(
+            data: ThemeData(
+              useMaterial3: true,
+              extensions: [theme],
+            ),
+            child: CustomerChatScreen(
+              projectId: projectId,
+              strings: data.strings,
             ),
           );
         },

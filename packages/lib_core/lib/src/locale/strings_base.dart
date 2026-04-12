@@ -161,6 +161,32 @@ abstract class AppStrings {
   String get chatInputPlaceholder;
 
   // =========================================================================
+  // §4b — C3.1 + P2.4 + P2.5 Chat + Draft (Sprint 4)
+  // =========================================================================
+
+  /// Chat thread title with order suffix.
+  /// Example hi: `सुनील भैया का कमरा — आपका ऑर्डर #abc123`
+  String chatThreadTitleWithOrder(String suffix);
+
+  /// "My list" title for the draft list screen.
+  String get myListTitle;
+
+  /// "Added to list" snackbar confirmation.
+  String get addedToList;
+
+  /// Chat sender label — the customer.
+  String get chatSenderYou;
+
+  /// Chat sender label — the shopkeeper.
+  String get chatSenderBhaiya;
+
+  /// Chat send button label.
+  String get chatSendButton;
+
+  /// Chat message pending / sending indicator.
+  String get chatMessagePending;
+
+  // =========================================================================
   // §5 — Commit + OTP + payment (UX Spec §5.5 #11–14)
   // =========================================================================
 
@@ -364,4 +390,30 @@ abstract class AppStrings {
 
   /// Permission-revoked banner (operator doc deleted while signed in).
   String get opsPermissionRevoked;
+
+  // =========================================================================
+  // §18 — S4.3 Inventory SKU creation (Sprint 4)
+  // =========================================================================
+
+  String get inventoryTitle;
+  String get createSkuButton;
+  String get skuNameDevanagariLabel;
+  String get skuNameEnglishLabel;
+  String get skuCategoryLabel;
+  String get skuBasePriceLabel;
+  String get skuNegotiableFloorLabel;
+  String get skuDimensionsLabel;
+  String get skuMaterialLabel;
+  String get skuInStockLabel;
+  String get skuDescriptionLabel;
+  String get skuSaveButton;
+  String get skuGoldenHourPhotoButton;
+  String get skuStockCountLabel;
+  String get skuDuplicateNameWarning;
+  String get skuSavedSuccess;
+  String get validationRequired;
+  String get validationPricePositive;
+  String get validationFloorExceedsBase;
+  String get validationDimensionPositive;
+  String get inventoryEmpty;
 }

@@ -67,6 +67,15 @@ Map<String, String> _renderAllStrings(AppStrings s) {
     'chatThreadTitle': s.chatThreadTitle,
     'chatInputPlaceholder': s.chatInputPlaceholder,
 
+    // ---- §4b C3.1 + P2.4 + P2.5 Chat + Draft ----
+    'chatThreadTitleWithOrder': s.chatThreadTitleWithOrder('abc123'),
+    'myListTitle': s.myListTitle,
+    'addedToList': s.addedToList,
+    'chatSenderYou': s.chatSenderYou,
+    'chatSenderBhaiya': s.chatSenderBhaiya,
+    'chatSendButton': s.chatSendButton,
+    'chatMessagePending': s.chatMessagePending,
+
     // ---- §5 Commit + OTP + payment ----
     'commitButtonPakka': s.commitButtonPakka,
     'otpPromptBhaiyaNeedsIt': s.otpPromptBhaiyaNeedsIt,
@@ -141,6 +150,29 @@ Map<String, String> _renderAllStrings(AppStrings s) {
     'opsDashboardTitle': s.opsDashboardTitle,
     'todaysTaskDay30Celebration': s.todaysTaskDay30Celebration,
     'opsPermissionRevoked': s.opsPermissionRevoked,
+
+    // ---- §18 S4.3 Inventory SKU creation ----
+    'inventoryTitle': s.inventoryTitle,
+    'createSkuButton': s.createSkuButton,
+    'skuNameDevanagariLabel': s.skuNameDevanagariLabel,
+    'skuNameEnglishLabel': s.skuNameEnglishLabel,
+    'skuCategoryLabel': s.skuCategoryLabel,
+    'skuBasePriceLabel': s.skuBasePriceLabel,
+    'skuNegotiableFloorLabel': s.skuNegotiableFloorLabel,
+    'skuDimensionsLabel': s.skuDimensionsLabel,
+    'skuMaterialLabel': s.skuMaterialLabel,
+    'skuInStockLabel': s.skuInStockLabel,
+    'skuDescriptionLabel': s.skuDescriptionLabel,
+    'skuSaveButton': s.skuSaveButton,
+    'skuGoldenHourPhotoButton': s.skuGoldenHourPhotoButton,
+    'skuStockCountLabel': s.skuStockCountLabel,
+    'skuDuplicateNameWarning': s.skuDuplicateNameWarning,
+    'skuSavedSuccess': s.skuSavedSuccess,
+    'validationRequired': s.validationRequired,
+    'validationPricePositive': s.validationPricePositive,
+    'validationFloorExceedsBase': s.validationFloorExceedsBase,
+    'validationDimensionPositive': s.validationDimensionPositive,
+    'inventoryEmpty': s.inventoryEmpty,
   };
 }
 

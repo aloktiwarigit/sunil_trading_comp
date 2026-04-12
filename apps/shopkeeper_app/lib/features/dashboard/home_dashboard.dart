@@ -15,6 +15,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
 import '../auth/auth_controller.dart';
@@ -104,11 +105,8 @@ class HomeDashboard extends ConsumerWidget {
 
             const SizedBox(height: YugmaSpacing.s4),
 
-            // ── Placeholder sections for future Sprint stories ──
-            _PlaceholderSection(
-              title: 'Inventory',
-              icon: Icons.inventory_2_outlined,
-            ),
+            // ── S4.3: Inventory section (live) ──
+            _InventorySection(),
             _PlaceholderSection(
               title: 'Orders',
               icon: Icons.receipt_long_outlined,
@@ -120,6 +118,60 @@ class HomeDashboard extends ConsumerWidget {
             _PlaceholderSection(
               title: 'Udhaar',
               icon: Icons.account_balance_wallet_outlined,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Inventory section — tappable card that navigates to /inventory.
+/// Replaces the placeholder after S4.3 implementation.
+class _InventorySection extends StatelessWidget {
+  const _InventorySection();
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = const AppStringsHi();
+
+    return GestureDetector(
+      onTap: () => context.push('/inventory'),
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: YugmaSpacing.s4,
+          vertical: YugmaSpacing.s2,
+        ),
+        padding: const EdgeInsets.all(YugmaSpacing.s5),
+        decoration: BoxDecoration(
+          color: YugmaColors.surface,
+          borderRadius: BorderRadius.circular(YugmaRadius.lg),
+          border: Border.all(
+            color: YugmaColors.primary.withValues(alpha: 0.2),
+          ),
+          boxShadow: YugmaShadows.card,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              color: YugmaColors.primary,
+              size: 24,
+            ),
+            const SizedBox(width: YugmaSpacing.s3),
+            Text(
+              strings.inventoryTitle,
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaBody,
+                fontSize: YugmaTypeScale.body,
+                color: YugmaColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.chevron_right,
+              color: YugmaColors.textMuted,
             ),
           ],
         ),
