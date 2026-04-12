@@ -24,6 +24,9 @@ import 'package:lib_core/lib_core.dart';
 import 'package:customer_app/features/chat/customer_chat_screen.dart';
 import 'package:customer_app/features/onboarding/onboarding_controller.dart';
 import 'package:customer_app/features/onboarding/splash_screen.dart';
+import 'package:customer_app/features/orders/order_detail_screen.dart';
+import 'package:customer_app/features/orders/order_list_screen.dart';
+import 'package:customer_app/features/shop/deactivation_banner.dart';
 import 'package:customer_app/features/project/commit_screen.dart';
 import 'package:customer_app/features/project/draft_controller.dart';
 import 'package:customer_app/features/project/draft_list_screen.dart';
@@ -182,6 +185,71 @@ final routerProvider = Provider<GoRouter>((ref) {
             child: PaymentScreen(
               projectId: projectId,
               strings: data.strings,
+            ),
+          );
+        },
+      ),
+      // C3.10 — Order list ("मेरे ऑर्डर")
+      GoRoute(
+        path: '/orders',
+        builder: (context, state) {
+          final data = onboarding.valueOrNull;
+          if (data == null) return const SplashScreen();
+
+          final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
+
+          return Theme(
+            data: ThemeData(
+              useMaterial3: true,
+              extensions: [theme],
+            ),
+            child: OrderListScreen(strings: data.strings),
+          );
+        },
+      ),
+      // C3.10 — Order detail with state timeline
+      GoRoute(
+        path: '/orders/:id',
+        builder: (context, state) {
+          final data = onboarding.valueOrNull;
+          if (data == null) return const SplashScreen();
+
+          final projectId = state.pathParameters['id']!;
+          final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
+
+          return Theme(
+            data: ThemeData(
+              useMaterial3: true,
+              extensions: [theme],
+            ),
+            child: OrderDetailScreen(
+              projectId: projectId,
+              strings: data.strings,
+            ),
+          );
+        },
+      ),
+      // C3.12 — Shop deactivation FAQ screen
+      GoRoute(
+        path: '/deactivation-faq',
+        builder: (context, state) {
+          final data = onboarding.valueOrNull;
+          if (data == null) return const SplashScreen();
+
+          final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
+          // CR F6: compute retention days from Shop state, not hardcoded.
+          // The actual dpdpRetentionUntil is on the Shop doc (loaded via
+          // onboarding or a dedicated provider). Default to 180 if unavailable.
+          final retentionDays = 180; // TODO(C3.12): wire from Shop.dpdpRetentionUntil
+
+          return Theme(
+            data: ThemeData(
+              useMaterial3: true,
+              extensions: [theme],
+            ),
+            child: DeactivationFaqScreen(
+              strings: data.strings,
+              retentionDays: retentionDays,
             ),
           );
         },

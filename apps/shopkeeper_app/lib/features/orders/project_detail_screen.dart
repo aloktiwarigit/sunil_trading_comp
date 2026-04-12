@@ -529,15 +529,14 @@ class ProjectDetailScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: YugmaSpacing.s2),
-        // Contextual action based on state
+        // C3.11: Delivery confirmation — visible for paid/committed/delivering.
         if (project.state == ProjectState.paid ||
-            project.state == ProjectState.committed)
+            project.state == ProjectState.committed ||
+            project.state == ProjectState.delivering)
           SizedBox(
             height: YugmaSpacing.s12,
             child: OutlinedButton.icon(
-              onPressed: () {
-                // Mark delivered — deferred to full state machine wiring
-              },
+              onPressed: () => _confirmDelivery(context, ref, project, strings),
               icon: const Icon(Icons.local_shipping_outlined, size: 20),
               label: Text(strings.markDeliveredButton),
               style: OutlinedButton.styleFrom(
@@ -607,6 +606,86 @@ class ProjectDetailScreen extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+
+  /// C3.11 AC #1–3: One-tap delivery confirmation with optional photo.
+  /// State transition: current → closed, deliveredAt set.
+  void _confirmDelivery(
+    BuildContext context,
+    WidgetRef ref,
+    Project project,
+    AppStrings strings,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          strings.markDeliveredButton,
+          style: TextStyle(
+            fontFamily: YugmaFonts.devaBody,
+            fontSize: YugmaTypeScale.bodyLarge,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          strings.deliveryConfirmed,
+          style: TextStyle(fontFamily: YugmaFonts.devaBody),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(strings.draftQtyHighCancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+
+              final repo = ProjectRepo(
+                firestore: FirebaseFirestore.instance,
+                shopIdProvider: ShopIdProvider(
+                  ref.read(shopIdProviderProvider).shopId,
+                ),
+              );
+
+              try {
+                // CR F1+F3: use server timestamps, include closedAt.
+                final patchMap = const ProjectOperatorPatch(
+                  state: ProjectState.closed,
+                ).toFirestoreMap();
+                patchMap['deliveredAt'] = FieldValue.serverTimestamp();
+                patchMap['closedAt'] = FieldValue.serverTimestamp();
+                patchMap['updatedAt'] = FieldValue.serverTimestamp();
+
+                await FirebaseFirestore.instance
+                    .collection('shops')
+                    .doc(ref.read(shopIdProviderProvider).shopId)
+                    .collection('projects')
+                    .doc(project.projectId)
+                    .set(patchMap, SetOptions(merge: true));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(strings.deliveryConfirmed),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString())),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: YugmaColors.primary,
+              foregroundColor: YugmaColors.textOnPrimary,
+            ),
+            child: Text(strings.draftQtyHighConfirm),
+          ),
+        ],
+      ),
     );
   }
 
