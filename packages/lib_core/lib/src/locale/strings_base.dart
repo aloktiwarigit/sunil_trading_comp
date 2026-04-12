@@ -626,4 +626,50 @@ abstract class AppStrings {
 
   /// "Stock" quick-adjust label.
   String get skuStockAdjustLabel;
+
+  // =========================================================================
+  // §22 — C3.8 + C3.9 Udhaar khaata flow (Sprint 9)
+  // =========================================================================
+
+  /// "Start udhaar khaata" button on project detail.
+  String get udhaarStartButton;
+
+  /// "How much will they pay today?" dialog label.
+  String get udhaarTodayPaymentLabel;
+
+  /// "Running balance" dialog label.
+  String get udhaarBalanceLabel;
+
+  /// "Confirm" button on udhaar initiation dialog.
+  String get udhaarConfirmButton;
+
+  /// Udhaar created success toast.
+  String get udhaarCreatedSuccess;
+
+  /// "Accept" button on customer-side udhaar proposal.
+  String get udhaarAcceptButton;
+
+  /// "Decline" button on customer-side udhaar proposal.
+  String get udhaarDeclineButton;
+
+  /// Udhaar accepted confirmation.
+  String get udhaarAcceptedConfirmation;
+
+  /// "Record payment" button on udhaar ledger view.
+  String get udhaarRecordPaymentButton;
+
+  /// "Amount paid" input label.
+  String get udhaarAmountPaidLabel;
+
+  /// "Payment method" input label.
+  String get udhaarPaymentMethodLabel;
+
+  /// Payment recorded success toast.
+  String get udhaarPaymentRecordedSuccess;
+
+  /// "Ledger closed" — balance reached zero.
+  String get udhaarLedgerClosed;
+
+  /// Overpayment error.
+  String get udhaarOverpaymentError;
 }

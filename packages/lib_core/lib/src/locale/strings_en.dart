@@ -574,6 +574,37 @@ class AppStringsEn extends AppStrings {
   @override
   String get skuStockAdjustLabel => 'Stock';
 
+  // ---- §22 C3.8 + C3.9 Udhaar khaata flow ----
+
+  @override
+  String get udhaarStartButton => 'Start udhaar khaata';
+  @override
+  String get udhaarTodayPaymentLabel => 'How much will they pay today?';
+  @override
+  String get udhaarBalanceLabel => 'Running balance';
+  @override
+  String get udhaarConfirmButton => 'Confirm';
+  @override
+  String get udhaarCreatedSuccess => 'Udhaar khaata created';
+  @override
+  String get udhaarAcceptButton => 'Accept';
+  @override
+  String get udhaarDeclineButton => 'Decline';
+  @override
+  String get udhaarAcceptedConfirmation => 'Udhaar khaata accepted';
+  @override
+  String get udhaarRecordPaymentButton => 'Record payment';
+  @override
+  String get udhaarAmountPaidLabel => 'Amount received';
+  @override
+  String get udhaarPaymentMethodLabel => 'Payment method';
+  @override
+  String get udhaarPaymentRecordedSuccess => 'Payment recorded';
+  @override
+  String get udhaarLedgerClosed => 'Udhaar khaata closed — balance zero';
+  @override
+  String get udhaarOverpaymentError => 'Amount exceeds balance';
+
   // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------

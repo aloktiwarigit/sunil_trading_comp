@@ -582,6 +582,37 @@ class AppStringsHi extends AppStrings {
   @override
   String get skuStockAdjustLabel => 'स्टॉक';
 
+  // ---- §22 C3.8 + C3.9 Udhaar khaata flow ----
+
+  @override
+  String get udhaarStartButton => 'उधार खाता शुरू कीजिए';
+  @override
+  String get udhaarTodayPaymentLabel => 'आज कितना देंगे?';
+  @override
+  String get udhaarBalanceLabel => 'बाकी रकम';
+  @override
+  String get udhaarConfirmButton => 'पक्का कीजिए';
+  @override
+  String get udhaarCreatedSuccess => 'उधार खाता बन गया';
+  @override
+  String get udhaarAcceptButton => 'मंज़ूर है';
+  @override
+  String get udhaarDeclineButton => 'नहीं चाहिए';
+  @override
+  String get udhaarAcceptedConfirmation => 'उधार खाता मंज़ूर हुआ';
+  @override
+  String get udhaarRecordPaymentButton => 'भुगतान दर्ज कीजिए';
+  @override
+  String get udhaarAmountPaidLabel => 'कितना मिला?';
+  @override
+  String get udhaarPaymentMethodLabel => 'किस तरह?';
+  @override
+  String get udhaarPaymentRecordedSuccess => 'भुगतान दर्ज हुआ';
+  @override
+  String get udhaarLedgerClosed => 'उधार खाता बंद — बाकी शून्य';
+  @override
+  String get udhaarOverpaymentError => 'रकम बाकी से ज़्यादा है';
+
   // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------

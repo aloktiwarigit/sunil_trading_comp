@@ -139,7 +139,7 @@ class ProjectDetailScreen extends ConsumerWidget {
               ),
             );
           }
-          return _buildDetail(context, project, chatAsync, strings);
+          return _buildDetail(context, ref, project, chatAsync, strings);
         },
       ),
     );
@@ -147,6 +147,7 @@ class ProjectDetailScreen extends ConsumerWidget {
 
   Widget _buildDetail(
     BuildContext context,
+    WidgetRef ref,
     Project project,
     AsyncValue<List<Message>> chatAsync,
     AppStrings strings,
@@ -192,7 +193,7 @@ class ProjectDetailScreen extends ConsumerWidget {
           ),
 
           // ---- Action buttons ----
-          _buildActionButtons(context, project, strings),
+          _buildActionButtons(context, ref, project, strings),
           const SizedBox(height: YugmaSpacing.s8),
         ],
       ),
@@ -423,6 +424,7 @@ class ProjectDetailScreen extends ConsumerWidget {
 
   Widget _buildActionButtons(
     BuildContext context,
+    WidgetRef ref,
     Project project,
     AppStrings strings,
   ) {
@@ -476,7 +478,267 @@ class ProjectDetailScreen extends ConsumerWidget {
               ),
             ),
           ),
+        // C3.9: Record payment — visible when udhaar ledger exists.
+        if (project.udhaarLedgerId != null) ...[
+          const SizedBox(height: YugmaSpacing.s2),
+          SizedBox(
+            height: YugmaSpacing.s12,
+            child: OutlinedButton.icon(
+              onPressed: () =>
+                  _showRecordPaymentDialog(context, ref, project, strings),
+              icon: const Icon(Icons.payments_outlined, size: 20),
+              label: Text(strings.udhaarRecordPaymentButton),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: YugmaColors.accent,
+                side: BorderSide(color: YugmaColors.accent),
+                textStyle: TextStyle(
+                  fontFamily: YugmaFonts.devaBody,
+                  fontSize: YugmaTypeScale.body,
+                  fontWeight: FontWeight.w600,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+              ),
+            ),
+          ),
+        ],
+        // C3.8: Udhaar khaata button — visible for committed/paid projects
+        // that don't already have a ledger.
+        if ((project.state == ProjectState.committed ||
+                project.state == ProjectState.paid) &&
+            project.udhaarLedgerId == null) ...[
+          const SizedBox(height: YugmaSpacing.s2),
+          SizedBox(
+            height: YugmaSpacing.s12,
+            child: OutlinedButton.icon(
+              onPressed: () => _showUdhaarDialog(context, ref, project, strings),
+              icon: const Icon(Icons.account_balance_wallet_outlined, size: 20),
+              label: Text(strings.udhaarStartButton),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: YugmaColors.accent,
+                side: BorderSide(color: YugmaColors.accent),
+                textStyle: TextStyle(
+                  fontFamily: YugmaFonts.devaBody,
+                  fontSize: YugmaTypeScale.body,
+                  fontWeight: FontWeight.w600,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
+    );
+  }
+
+  void _showUdhaarDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Project project,
+    AppStrings strings,
+  ) {
+    final todayController = TextEditingController();
+    final balanceController = TextEditingController();
+
+    // Pre-fill balance with totalAmount.
+    balanceController.text = project.totalAmount.toString();
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          strings.udhaarStartButton,
+          style: TextStyle(
+            fontFamily: YugmaFonts.devaBody,
+            fontSize: YugmaTypeScale.bodyLarge,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: todayController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: strings.udhaarTodayPaymentLabel,
+                labelStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
+                prefixText: '₹ ',
+              ),
+            ),
+            const SizedBox(height: YugmaSpacing.s3),
+            TextField(
+              controller: balanceController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: strings.udhaarBalanceLabel,
+                labelStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
+                prefixText: '₹ ',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(strings.draftQtyHighCancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final balance =
+                  int.tryParse(balanceController.text.trim()) ?? 0;
+              if (balance <= 0) return;
+
+              Navigator.of(ctx).pop();
+
+              final repo = UdhaarLedgerRepo(
+                firestore: FirebaseFirestore.instance,
+                shopIdProvider: ShopIdProvider(
+                  ref.read(shopIdProviderProvider).shopId,
+                ),
+              );
+
+              try {
+                await repo.createLedger(
+                  projectId: project.projectId,
+                  customerId: project.customerUid,
+                  recordedAmount: balance,
+                  runningBalance: balance,
+                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(strings.udhaarCreatedSuccess)),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString())),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: YugmaColors.primary,
+              foregroundColor: YugmaColors.textOnPrimary,
+            ),
+            child: Text(strings.udhaarConfirmButton),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// C3.9: Record a partial payment on the udhaar ledger.
+  void _showRecordPaymentDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Project project,
+    AppStrings strings,
+  ) {
+    final amountController = TextEditingController();
+    var selectedMethod = 'cash';
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(
+            strings.udhaarRecordPaymentButton,
+            style: TextStyle(
+              fontFamily: YugmaFonts.devaBody,
+              fontSize: YugmaTypeScale.bodyLarge,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: amountController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: strings.udhaarAmountPaidLabel,
+                  labelStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
+                  prefixText: '₹ ',
+                ),
+              ),
+              const SizedBox(height: YugmaSpacing.s3),
+              DropdownButtonFormField<String>(
+                value: selectedMethod,
+                decoration: InputDecoration(
+                  labelText: strings.udhaarPaymentMethodLabel,
+                  labelStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                  DropdownMenuItem(value: 'upi', child: Text('UPI')),
+                  DropdownMenuItem(value: 'bank', child: Text('Bank')),
+                ],
+                onChanged: (v) {
+                  if (v != null) {
+                    setDialogState(() => selectedMethod = v);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(strings.draftQtyHighCancel),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final amount =
+                    int.tryParse(amountController.text.trim()) ?? 0;
+                if (amount <= 0) return;
+
+                Navigator.of(ctx).pop();
+
+                final repo = UdhaarLedgerRepo(
+                  firestore: FirebaseFirestore.instance,
+                  shopIdProvider: ShopIdProvider(
+                    ref.read(shopIdProviderProvider).shopId,
+                  ),
+                );
+
+                try {
+                  await repo.recordPayment(
+                    ledgerId: project.udhaarLedgerId!,
+                    amount: amount,
+                    method: selectedMethod,
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(strings.udhaarPaymentRecordedSuccess),
+                      ),
+                    );
+                  }
+                } on UdhaarLedgerRepoException catch (e) {
+                  if (context.mounted) {
+                    final msg = e.code == 'overpayment'
+                        ? strings.udhaarOverpaymentError
+                        : e.message;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(msg)),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: YugmaColors.primary,
+                foregroundColor: YugmaColors.textOnPrimary,
+              ),
+              child: Text(strings.udhaarConfirmButton),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

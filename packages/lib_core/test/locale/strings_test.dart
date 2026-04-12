@@ -214,6 +214,22 @@ Map<String, String> _renderAllStrings(AppStrings s) {
     'skuSaveChangesButton': s.skuSaveChangesButton,
     'skuChangesSaved': s.skuChangesSaved,
     'skuStockAdjustLabel': s.skuStockAdjustLabel,
+
+    // ---- §22 C3.8 + C3.9 Udhaar khaata flow ----
+    'udhaarStartButton': s.udhaarStartButton,
+    'udhaarTodayPaymentLabel': s.udhaarTodayPaymentLabel,
+    'udhaarBalanceLabel': s.udhaarBalanceLabel,
+    'udhaarConfirmButton': s.udhaarConfirmButton,
+    'udhaarCreatedSuccess': s.udhaarCreatedSuccess,
+    'udhaarAcceptButton': s.udhaarAcceptButton,
+    'udhaarDeclineButton': s.udhaarDeclineButton,
+    'udhaarAcceptedConfirmation': s.udhaarAcceptedConfirmation,
+    'udhaarRecordPaymentButton': s.udhaarRecordPaymentButton,
+    'udhaarAmountPaidLabel': s.udhaarAmountPaidLabel,
+    'udhaarPaymentMethodLabel': s.udhaarPaymentMethodLabel,
+    'udhaarPaymentRecordedSuccess': s.udhaarPaymentRecordedSuccess,
+    'udhaarLedgerClosed': s.udhaarLedgerClosed,
+    'udhaarOverpaymentError': s.udhaarOverpaymentError,
   };
 }
 
