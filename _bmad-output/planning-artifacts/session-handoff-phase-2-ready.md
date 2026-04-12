@@ -1,18 +1,42 @@
 ---
-artifact: Session Handoff — Phase 1 + Phase 2.0 Wave 1 + I6.8 code ready
+artifact: Session Handoff — Phase 1 + Phase 2.0 Wave 1 + I6.8 deployed
 audience: Next Claude Code session (fresh Amelia activation)
 purpose: Complete context transfer so the next session can pick up where Phase 1 + 2.0 Wave 1 ended without losing quality or re-litigating decisions
-version: v1.0
+version: v1.1
 date_created: 2026-04-11
-outgoing_head: 05ba69c (local + origin/main)
-outgoing_commits_this_session: 10 (d7b54da..05ba69c, excluding the pre-session baseline)
+date_updated: 2026-04-12
+outgoing_head: see `git log` (latest commit on main)
 repo: https://github.com/aloktiwarigit/sunil_trading_comp
 project_path_on_founder_machine: C:\Alok\Business Projects\Almira-Project
 sprint_0_status: still open — Alok executing outreach on his own clock
 phase_1_status: COMPLETE (all sub-phases 1.1 through 1.9 shipped)
 phase_2_0_wave_1_status: COMPLETE (theme foundation port)
-phase_2_x_i6_8_status: CODE READY, DEPLOY BLOCKED (Cloud Build IAM fix needed)
+phase_2_x_i6_8_status: DEPLOYED + LIVE (asia-south1, audit writes verified clean)
+phase_2_y_region_migration_status: COMPLETE (dev Firestore migrated nam5 → asia-south1)
 phase_2_1_status: NOT STARTED (Sprint-0-gated, deferred per Option C decision)
+---
+
+## §0 — POST-HANDOFF UPDATE (2026-04-12)
+
+**This doc is v1.0 dated 2026-04-11. After it was written, the same session continued and completed two more pieces of work. Read this §0 first; the rest of the doc still describes the original starting state at v1.0.**
+
+### What changed since v1.0
+1. **I6.8 deployed successfully to `yugma-dukaan-dev`.** Cloud Build IAM was fixed via the gcloud CLI (Alok installed gcloud mid-session). After two propagation-race retries (one runtime token-cache stale state required forcing a fresh instance via a source hash bump), `killSwitchOnBudgetAlert` is live in `asia-south1`, subscribed to the `budget-alerts` Pub/Sub topic, and audit writes to `/system/budget_alerts/history` are confirmed working end-to-end.
+2. **Cloud Billing budget → Pub/Sub topic wired** via `gcloud billing budgets update` — the existing $1 cap budget now publishes to `budget-alerts` (not just email). Real Cloud Billing pings observed in function logs.
+3. **dev Firestore region migrated `nam5` → `asia-south1`** to match SAD §1 region requirement and Firestore-region constraint with the function. Database deleted + recreated (tombstone wait honored), rules + indexes redeployed, I6.8 sanity-tested clean against the new database.
+4. **Triple Zero intact at $0.00/mo** — verified cost math: Cloud Functions 2M invocations + 400k GB-s free tier vs. expected 0–5 invocations/mo from this function. Customer pays nothing.
+
+### What is still pending (unchanged from v1.0)
+- **Sprint 0 / I6.11 Hindi-capacity gate** — hard blocker for any UX work in Phase 2.1. Alok's outreach clock.
+- **Phase 1.10** — fix 10 pre-existing `phone_upgrade_coordinator_test.dart` failures (queued, non-blocking).
+- **Cloud Storage enable on `yugma-dukaan-dev`** — 1 console click, needed before B1.6 voice notes can land.
+- **Phase 2.1 Sprint 2/3 widget port** — deferred per Option C until Sprint 0 resolves Hindi-first vs English-first locale direction.
+
+### Where to look
+- `functions/src/kill_switch.ts` header comment has the full deploy history (2026-04-11 fail → rollback → 2026-04-12 redeploy → IAM token refresh → region migration).
+- `docs/runbook/staging-setup.md` already documents the asia-south1 region requirement, the Cloud Build IAM pre-fix steps, and the kill-switch deploy + verify flow. No region drift in any committed file.
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` still shows I6.8 as `ready-for-dev` — **update this on next session start** to `done` once you've verified the deploy is still live (`firebase functions:list --project yugma-dukaan-dev`).
+
 ---
 
 # Session Handoff — Phase 1 complete + Phase 2.0 Wave 1 + I6.8 ready
@@ -128,14 +152,14 @@ Commits local only:           0
 ### Firebase environment state
 
 - **`yugma-dukaan-dev`** (`934939527575`):
-  - **Blaze plan enabled** ✅ (Alok upgraded this session)
-  - **Budget alerts at $0.10 / $0.50 / $1.00** with email to `aloktiwari49@gmail.com` ✅ (Alok set this session)
-  - **Pub/Sub topic `budget-alerts`** NOT created (Firebase Cloud Functions v2 auto-creates it at function deploy time — but the deploy failed before topic creation)
-  - **6 APIs newly enabled** from the failed deploy attempt: `cloudfunctions.googleapis.com`, `cloudbuild.googleapis.com`, `artifactregistry.googleapis.com`, `eventarc.googleapis.com`, `run.googleapis.com`, `firebaseextensions.googleapis.com` — all free to enable, only billed if used
-  - **0 functions deployed** ✅ (zombie `killSwitchOnBudgetAlert` rolled back cleanly)
-  - **Firestore + Auth + both apps** remain in their Sprint 1 state (rules + indexes deployed, anonymous + phone + Google enabled)
+  - **Blaze plan enabled** ✅
+  - **Budget alerts at $0.10 / $0.50 / $1.00** with email + Pub/Sub to `aloktiwari49@gmail.com` ✅
+  - **Pub/Sub topic `budget-alerts`** ✅ created (auto-created by function deploy, wired to Cloud Billing budget via `gcloud billing budgets update`)
+  - **`killSwitchOnBudgetAlert` function** ✅ **deployed and live** in asia-south1 (rev `killswitchonbudgetalert-00002-pos`). Audit writes confirmed working.
+  - **Firestore** ✅ `(default)` database in **asia-south1** (Mumbai) — migrated from nam5 on 2026-04-12. Rules + indexes deployed.
+  - **Auth + both apps** remain in their Sprint 1 state (anonymous + phone + Google enabled)
   - **Cloud Storage** NOT enabled yet (console click — needed for Sprint 3 B1.3 voice notes)
-  - **Cloud Build default service account IAM**: needs 4 roles added before I6.8 deploy retry can succeed (see §4 gotchas + `docs/runbook/staging-setup.md` §6.4)
+  - **Cloud Build IAM** ✅ All required roles granted to compute default SA
 
 - **`yugma-dukaan-staging`** (`939619699554`): unchanged — project exists, no services enabled
 
@@ -143,7 +167,7 @@ Commits local only:           0
 
 - **Firebase CLI logged in as**: `aloktiwari49@gmail.com` (confirmed via `firebase login:list`)
 
-- **gcloud CLI**: **NOT installed** on Alok's machine (confirmed via `which gcloud` + common install path checks). All gcloud-requiring operations need Alok's console clicks OR a one-time gcloud install.
+- **gcloud CLI**: ✅ installed at `C:\Users\alokt\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\` (installed 2026-04-12). Needs `PATH` export in bash: `export PATH="/c/Users/alokt/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin:$PATH"`.
 
 ### Sprint 0 Hindi-capacity gate
 

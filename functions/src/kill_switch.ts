@@ -31,6 +31,13 @@
 // 60-second timeout, honoring the PRD I6.7 AC #7 <5s client-propagation
 // contract transitively via the onSnapshot listeners already shipped in
 // Phase 1.3.
+//
+// Deploy history:
+//   - 2026-04-11 initial deploy: failed at Cloud Build (IAM propagation race)
+//   - 2026-04-11 rollback: clean
+//   - 2026-04-12 redeploy with --force: successful
+//   - 2026-04-12 follow-up redeploy: refresh runtime credentials post datastore.user IAM grant
+//   - 2026-04-12 Firestore region migration: nam5 → asia-south1 (Mumbai). DB deleted + recreated, rules redeployed, I6.8 sanity-tested clean.
 // =============================================================================
 
 import * as admin from 'firebase-admin';

@@ -45,7 +45,7 @@
 # ===== CURRENT STATE SUMMARY =====
 #
 # Epics: 6 total. 0 done. 1 in-progress (E6). 5 backlog (E1/E2/E3/E4/E5).
-# Stories: 67 total. 10 done. 1 ready-for-dev (I6.8). 1 in-progress (I6.11). 55 backlog.
+# Stories: 67 total. 11 done. 0 ready-for-dev. 1 in-progress (I6.11). 55 backlog.
 # Walking Skeleton (19 stories): 6 done. 13 backlog.
 #
 # =================================
@@ -86,22 +86,11 @@ development_status:
   # — shipped Sprint 1.4 stub + Phase 1.3 delta completion (9c04f29)
   i6-7-feature-flag-system: done
 
-  # I6.8 Kill-switch Cloud Function + budget alerts
-  # — READY-FOR-DEV. TypeScript function scaffolded + tested + committed
-  #   in Phase 2.x (commit 5d9f940 on origin/main). Blaze + email budget
-  #   alerts live on yugma-dukaan-dev. Deploy blocked on Cloud Build IAM:
-  #   the default Cloud Build service account needs
-  #     - roles/cloudbuild.builds.builder
-  #     - roles/artifactregistry.writer
-  #     - roles/storage.objectViewer
-  #   permissions granted via Cloud Console IAM UI (or gcloud CLI). First
-  #   deploy attempt 2026-04-11 returned "missing permission on the build
-  #   service account" at the Cloud Build step; rollback via
-  #   `firebase functions:delete killSwitchOnBudgetAlert` executed cleanly.
-  #   Also deploy with `--force` flag to auto-set the Artifact Registry
-  #   cleanup policy (avoids accumulating container images past the 500 MB
-  #   free-tier ceiling). See docs/runbook/staging-setup.md §6.4.
-  i6-8-kill-switch-cloud-function: ready-for-dev
+  # I6.8 Kill-switch Cloud Function + budget alerts — shipped Phase 2.x
+  # (code: 5d9f940, deploy: 2026-04-12). Live in asia-south1 on
+  # yugma-dukaan-dev. Budget → Pub/Sub wired. Audit writes verified.
+  # Firestore region migrated from nam5 → asia-south1 same day.
+  i6-8-kill-switch-cloud-function: done
 
   # I6.9 Hindi locale + Devanagari font subsetting — shipped Phase 1.4 (0ad1d68)
   # — strings_hi.dart + strings_en.dart + LocaleResolver + subset script ready.
