@@ -85,6 +85,8 @@ export 'src/repositories/voice_note_repo.dart';
 
 // ---------- Components (Phase 2.1 — widget library) ----------
 export 'src/components/bharosa_landing/bharosa_landing_barrel.dart';
+export 'src/components/voice_note_player.dart';
+export 'src/components/browse/browse_barrel.dart';
 
 // ---------- Services (orchestration over adapters + repositories) ----------
 export 'src/services/phone_upgrade_coordinator.dart';

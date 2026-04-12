@@ -1,12 +1,14 @@
 // =============================================================================
 // ShopkeeperApp — MaterialApp.router root widget.
 //
-// Sprint 1 scope: minimal shell. Real ops screens (inventory, orders, chat,
-// udhaar, settings, absence/presence) ship in Sprints 3–6 as S4.x stories.
+// Sprint 3 scope: wired with YugmaThemeExtension from ShopThemeTokens.
+// Real ops screens (inventory, orders, chat, udhaar, settings, absence/
+// presence) ship in subsequent sprints as S4.x stories.
 // =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lib_core/lib_core.dart';
 
 import 'routes/router.dart';
 
@@ -18,7 +20,7 @@ class ShopkeeperApp extends ConsumerWidget {
     final router = ref.watch(shopkeeperRouterProvider);
 
     return MaterialApp.router(
-      title: 'सुनील की दुकान — Ops',
+      title: 'Sunil Trading Company — Ops',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
       routerConfig: router,
@@ -26,14 +28,17 @@ class ShopkeeperApp extends ConsumerWidget {
   }
 
   ThemeData _buildTheme() {
-    // Sprint 1 default. Real YugmaThemeExtension integration lands with
-    // S4.12 (Shop branding ops) in Sprint 4–5.
+    // Build the YugmaThemeExtension from the flagship shop's default tokens.
+    final tokens = ShopThemeTokens.sunilTradingCompanyDefault();
+    final yugmaExt = YugmaThemeExtension.fromTokens(tokens);
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFF6B3410), // Workshop Almanac sheesham
         brightness: Brightness.light,
       ),
+      extensions: <ThemeExtension<dynamic>>[yugmaExt],
     );
   }
 }

@@ -73,6 +73,17 @@ class AppStringsEn extends AppStrings {
   @override
   String get metaBarMapLabel => 'Map';
 
+  // ---- §1c Browse widgets ----
+
+  @override
+  String get skuTopPickBadge => "Sunil-bhaiya's pick";
+
+  @override
+  String get skuNegotiableLabel => 'Negotiable';
+
+  @override
+  String get goldenHourToggleBeautiful => 'Beautiful view';
+
   // ---- §2 Curated shortlists ----
 
   @override
@@ -271,6 +282,37 @@ class AppStringsEn extends AppStrings {
 
   @override
   String get udhaarReminderCadencePrompt => 'After how many days should I remind?';
+
+  // ---- §17 S4.1 + S4.13 Ops app foundation ----
+
+  @override
+  String get signInWithGoogle => 'Sign in with Google';
+
+  @override
+  String get todaysTaskTitle => "Today's task";
+
+  @override
+  String get todaysTaskDone => 'Done';
+
+  @override
+  String get todaysTaskDismiss => 'Hide';
+
+  @override
+  String todaysTaskMinutes(int n) => '$n min';
+
+  @override
+  String get signOutLabel => 'Sign out';
+
+  @override
+  String get opsDashboardTitle => 'Shop operations';
+
+  @override
+  String get todaysTaskDay30Celebration =>
+      'Congratulations! 30 days complete. Now show it to the first customer.';
+
+  @override
+  String get opsPermissionRevoked =>
+      'You are no longer authorized. Contact Yugma Labs.';
 
   // ---------------------------------------------------------------------------
   // Internal helpers

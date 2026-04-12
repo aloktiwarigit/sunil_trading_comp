@@ -45,6 +45,11 @@ Map<String, String> _renderAllStrings(AppStrings s) {
     'presenceStatusAvailable': s.presenceStatusAvailable,
     'metaBarMapLabel': s.metaBarMapLabel,
 
+    // ---- §1c Browse widgets ----
+    'skuTopPickBadge': s.skuTopPickBadge,
+    'skuNegotiableLabel': s.skuNegotiableLabel,
+    'goldenHourToggleBeautiful': s.goldenHourToggleBeautiful,
+
     // ---- §2 Curated shortlists ----
     'shortlistTitleShaadi': s.shortlistTitleShaadi,
     'shortlistTitleNayaGhar': s.shortlistTitleNayaGhar,
@@ -125,6 +130,17 @@ Map<String, String> _renderAllStrings(AppStrings s) {
     'udhaarReminderOptInPrompt': s.udhaarReminderOptInPrompt,
     'udhaarReminderCountBadge(2)': s.udhaarReminderCountBadge(2),
     'udhaarReminderCadencePrompt': s.udhaarReminderCadencePrompt,
+
+    // ---- §17 S4.1 + S4.13 Ops app foundation ----
+    'signInWithGoogle': s.signInWithGoogle,
+    'todaysTaskTitle': s.todaysTaskTitle,
+    'todaysTaskDone': s.todaysTaskDone,
+    'todaysTaskDismiss': s.todaysTaskDismiss,
+    'todaysTaskMinutes(10)': s.todaysTaskMinutes(10),
+    'signOutLabel': s.signOutLabel,
+    'opsDashboardTitle': s.opsDashboardTitle,
+    'todaysTaskDay30Celebration': s.todaysTaskDay30Celebration,
+    'opsPermissionRevoked': s.opsPermissionRevoked,
   };
 }
 

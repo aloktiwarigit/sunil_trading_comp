@@ -1,46 +1,104 @@
 // =============================================================================
-// Shopkeeper app router — GoRouter scaffold.
+// Shopkeeper app router — GoRouter with auth-based routing.
 //
-// Sprint 1 scope: boot splash only. Ops screens ship with their S4.x stories.
+// Flow per S4.1:
+//   / (boot splash) → /sign-in (if not authenticated) → /home (dashboard)
+//
+// The router watches the OpsAuthController state and redirects accordingly:
+//   - loading → boot splash
+//   - signedOut / unauthorized / permissionRevoked → sign-in screen
+//   - authorized → home dashboard
 // =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lib_core/lib_core.dart';
+
+import '../features/auth/auth_controller.dart';
+import '../features/auth/sign_in_screen.dart';
+import '../features/dashboard/home_dashboard.dart';
 
 final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
+    redirect: (context, state) {
+      final authAsync = ref.read(opsAuthControllerProvider);
+      final authState = authAsync.value;
+
+      // Still loading — stay on splash.
+      if (authAsync.isLoading || authState == null) {
+        return state.matchedLocation == '/' ? null : '/';
+      }
+
+      final isOnSignIn = state.matchedLocation == '/sign-in';
+      final isOnHome = state.matchedLocation == '/home';
+
+      switch (authState.status) {
+        case OpsAuthStatus.loading:
+          return state.matchedLocation == '/' ? null : '/';
+
+        case OpsAuthStatus.signedOut:
+        case OpsAuthStatus.unauthorized:
+        case OpsAuthStatus.permissionRevoked:
+          return isOnSignIn ? null : '/sign-in';
+
+        case OpsAuthStatus.authorized:
+          return isOnHome ? null : '/home';
+      }
+    },
     routes: <RouteBase>[
       GoRoute(
         path: '/',
         builder: (context, state) => const _OpsBootSplash(),
       ),
+      GoRoute(
+        path: '/sign-in',
+        builder: (context, state) => const OpsSignInScreen(),
+      ),
+      GoRoute(
+        path: '/home',
+        builder: (context, state) => const HomeDashboard(),
+      ),
     ],
   );
 });
 
+/// Boot splash — shown while the auth state is being resolved.
 class _OpsBootSplash extends StatelessWidget {
   const _OpsBootSplash();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: YugmaColors.background,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'सुनील की दुकान',
-              style: Theme.of(context).textTheme.headlineMedium,
+              const AppStringsHi().shopDisplayName,
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaDisplay,
+                fontSize: YugmaTypeScale.display,
+                height: YugmaLineHeights.tight,
+                color: YugmaColors.primary,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: YugmaSpacing.s2),
             Text(
               'Ops',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: TextStyle(
+                fontFamily: YugmaFonts.enDisplay,
+                fontSize: YugmaTypeScale.h3,
+                fontStyle: FontStyle.italic,
+                color: YugmaColors.textSecondary,
+              ),
             ),
-            const SizedBox(height: 16),
-            const CircularProgressIndicator(),
+            const SizedBox(height: YugmaSpacing.s8),
+            CircularProgressIndicator(
+              color: YugmaColors.primary,
+            ),
           ],
         ),
       ),

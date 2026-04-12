@@ -100,6 +100,19 @@ abstract class AppStrings {
   String get metaBarMapLabel;
 
   // =========================================================================
+  // §1c — Browse widgets (Wave 0 mapping — B1.4, B1.5)
+  // =========================================================================
+
+  /// "Sunil-bhaiya's pick" badge on curated shortlist cards.
+  String get skuTopPickBadge;
+
+  /// Negotiable indicator label.
+  String get skuNegotiableLabel;
+
+  /// Golden Hour toggle — switch BACK to beautiful view.
+  String get goldenHourToggleBeautiful;
+
+  // =========================================================================
   // §2 — Curated shortlists (UX Spec §5.5 #3–5)
   // =========================================================================
 
@@ -320,4 +333,35 @@ abstract class AppStrings {
 
   /// Cadence stepper label.
   String get udhaarReminderCadencePrompt;
+
+  // =========================================================================
+  // §17 — S4.1 + S4.13 Ops app foundation (Sprint 3)
+  // =========================================================================
+
+  /// Google sign-in button label.
+  String get signInWithGoogle;
+
+  /// "Today's task" card title.
+  String get todaysTaskTitle;
+
+  /// "Done" button on today's task card.
+  String get todaysTaskDone;
+
+  /// "Hide" dismiss label for today's task card.
+  String get todaysTaskDismiss;
+
+  /// Time estimate with minutes parameter.
+  String todaysTaskMinutes(int n);
+
+  /// Sign-out label in ops app settings.
+  String get signOutLabel;
+
+  /// Ops app dashboard title.
+  String get opsDashboardTitle;
+
+  /// Day 30 celebration message.
+  String get todaysTaskDay30Celebration;
+
+  /// Permission-revoked banner (operator doc deleted while signed in).
+  String get opsPermissionRevoked;
 }
