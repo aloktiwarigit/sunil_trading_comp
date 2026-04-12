@@ -12,10 +12,14 @@
 // =============================================================================
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
+
+import '../auth/auth_controller.dart';
+import '../voice/voice_recorder_widget.dart';
 
 /// Edit SKU screen — opens from inventory list tap.
 class EditSkuScreen extends ConsumerStatefulWidget {
@@ -235,6 +239,30 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
             _descriptionController,
             maxLines: 3,
           ),
+          const SizedBox(height: YugmaSpacing.s4),
+
+          // B1.6 AC #1: Voice note recording button
+          SizedBox(
+            height: YugmaSpacing.s12,
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _showVoiceRecorder(context, sku, strings),
+              icon: const Icon(Icons.mic, size: 20),
+              label: Text('🎤 आवाज़ नोट'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: YugmaColors.accent,
+                side: BorderSide(color: YugmaColors.accent),
+                textStyle: TextStyle(
+                  fontFamily: YugmaFonts.devaBody,
+                  fontSize: YugmaTypeScale.body,
+                  fontWeight: FontWeight.w600,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: YugmaSpacing.s6),
 
           // Save button
@@ -310,6 +338,86 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  /// B1.6 AC #1–6: open voice recorder, upload to Storage, create VoiceNote doc.
+  void _showVoiceRecorder(
+    BuildContext context,
+    InventorySku sku,
+    AppStrings strings,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: YugmaColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(YugmaRadius.lg),
+        ),
+      ),
+      builder: (ctx) => VoiceRecorderWidget(
+        onCancel: () => Navigator.of(ctx).pop(),
+        onSend: (result) async {
+          Navigator.of(ctx).pop();
+
+          final shopId = ref.read(shopIdProviderProvider).shopId;
+          final authState = ref.read(opsAuthControllerProvider).value;
+          final op = authState?.operator;
+          if (op == null) return;
+
+          final voiceNoteId = 'vn_${DateTime.now().millisecondsSinceEpoch}';
+
+          // Step 1: Upload audio via MediaStore adapter.
+          try {
+            // Upload via Firebase Storage directly (MediaStore adapter).
+            // In production this resolves via MediaStoreFactory; for now
+            // we use the Firebase Storage implementation directly.
+            final mediaStore = MediaStoreCloudinaryFirebase(
+              firebaseStorage: FirebaseStorage.instance,
+              cloudinaryCloudName: '', // Voice notes use Firebase Storage, not Cloudinary
+            );
+            await mediaStore.uploadVoiceNote(
+              bytes: result.bytes,
+              shopId: shopId,
+              voiceNoteId: voiceNoteId,
+            );
+
+            // Step 2: Create VoiceNote metadata doc.
+            final repo = VoiceNoteRepo(
+              firestore: FirebaseFirestore.instance,
+              shopIdProvider: ShopIdProvider(shopId),
+            );
+            await repo.create(VoiceNote(
+              voiceNoteId: voiceNoteId,
+              shopId: shopId,
+              authorUid: op.uid,
+              authorRole: op.isBhaiya
+                  ? VoiceNoteAuthorRole.bhaiya
+                  : VoiceNoteAuthorRole.beta,
+              durationSeconds: result.durationSeconds,
+              audioStorageRef:
+                  'shops/$shopId/voice_notes/$voiceNoteId.m4a',
+              audioSizeBytes: result.bytes.length,
+              attachmentType: VoiceNoteAttachment.sku,
+              attachmentRefId: sku.skuId,
+              recordedAt: DateTime.now(),
+            ));
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('आवाज़ नोट जुड़ गया')),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.toString())),
+              );
+            }
+          }
+        },
+      ),
     );
   }
 

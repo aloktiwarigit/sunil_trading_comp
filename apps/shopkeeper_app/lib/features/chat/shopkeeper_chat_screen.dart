@@ -12,13 +12,16 @@
 // =============================================================================
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
+import 'package:shopkeeper_app/features/auth/auth_controller.dart';
 import 'package:shopkeeper_app/features/chat/shopkeeper_chat_controller.dart';
 import 'package:shopkeeper_app/features/orders/project_detail_screen.dart';
+import 'package:shopkeeper_app/features/voice/voice_recorder_widget.dart';
 import 'package:shopkeeper_app/main.dart';
 
 /// Shopkeeper-side chat screen.
@@ -137,27 +140,151 @@ class _ProposePriceBar extends ConsumerWidget {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          height: YugmaSpacing.s12,
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => _showProposePriceSheet(context, ref),
-            icon: const Icon(Icons.local_offer_outlined, size: 20),
-            label: Text(strings.proposePriceButton),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: YugmaColors.accent,
-              side: BorderSide(color: YugmaColors.accent),
-              textStyle: TextStyle(
-                fontFamily: YugmaFonts.devaBody,
-                fontSize: YugmaTypeScale.body,
-                fontWeight: FontWeight.w600,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(YugmaRadius.md),
+        child: Row(
+          children: [
+            // B1.7 AC #1: voice note button, always visible
+            SizedBox(
+              height: YugmaSpacing.s12,
+              child: OutlinedButton.icon(
+                onPressed: () => _showVoiceRecorder(context, ref),
+                icon: const Icon(Icons.mic, size: 20),
+                label: const Text('🎤'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: YugmaColors.primary,
+                  side: BorderSide(color: YugmaColors.primary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  ),
+                ),
               ),
             ),
-          ),
+            const SizedBox(width: YugmaSpacing.s2),
+            // Propose price button
+            Expanded(
+              child: SizedBox(
+                height: YugmaSpacing.s12,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showProposePriceSheet(context, ref),
+                  icon: const Icon(Icons.local_offer_outlined, size: 20),
+                  label: Text(strings.proposePriceButton),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: YugmaColors.accent,
+                    side: BorderSide(color: YugmaColors.accent),
+                    textStyle: TextStyle(
+                      fontFamily: YugmaFonts.devaBody,
+                      fontSize: YugmaTypeScale.body,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(YugmaRadius.md),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  /// B1.7 AC #1–6: open voice recorder, upload, create Message + VoiceNote doc.
+  void _showVoiceRecorder(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: YugmaColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(YugmaRadius.lg),
+        ),
+      ),
+      builder: (ctx) => VoiceRecorderWidget(
+        onCancel: () => Navigator.of(ctx).pop(),
+        onSend: (result) async {
+          Navigator.of(ctx).pop();
+
+          final shopId = ref.read(shopIdProviderProvider).shopId;
+          final authState = ref.read(opsAuthControllerProvider).value;
+          final op = authState?.operator;
+          if (op == null) return;
+
+          final voiceNoteId = 'vn_${DateTime.now().millisecondsSinceEpoch}';
+
+          try {
+            // Step 1: Upload audio via MediaStore.
+            final mediaStore = MediaStoreCloudinaryFirebase(
+              firebaseStorage: FirebaseStorage.instance,
+              cloudinaryCloudName: '',
+            );
+            await mediaStore.uploadVoiceNote(
+              bytes: result.bytes,
+              shopId: shopId,
+              voiceNoteId: voiceNoteId,
+            );
+
+            // Step 2: Create VoiceNote metadata doc.
+            final vnRepo = VoiceNoteRepo(
+              firestore: FirebaseFirestore.instance,
+              shopIdProvider: ShopIdProvider(shopId),
+            );
+            await vnRepo.create(VoiceNote(
+              voiceNoteId: voiceNoteId,
+              shopId: shopId,
+              authorUid: op.uid,
+              authorRole: op.isBhaiya
+                  ? VoiceNoteAuthorRole.bhaiya
+                  : VoiceNoteAuthorRole.beta,
+              durationSeconds: result.durationSeconds,
+              audioStorageRef:
+                  'shops/$shopId/voice_notes/$voiceNoteId.m4a',
+              audioSizeBytes: result.bytes.length,
+              attachmentType: VoiceNoteAttachment.project,
+              attachmentRefId: projectId,
+              recordedAt: DateTime.now(),
+            ));
+
+            // Step 3: Create chat Message with type voiceNote.
+            // B1.7 AC #4: message doc in chat thread.
+            await FirebaseFirestore.instance
+                .collection('shops')
+                .doc(shopId)
+                .collection('chatThreads')
+                .doc(projectId)
+                .collection('messages')
+                .add(<String, dynamic>{
+              'type': 'voice_note',
+              'voiceNoteId': voiceNoteId,
+              'authorUid': op.uid,
+              'authorRole': 'bhaiya',
+              'sentAt': FieldValue.serverTimestamp(),
+            });
+
+            // B1.7 AC #6: update Project lastMessagePreview.
+            await FirebaseFirestore.instance
+                .collection('shops')
+                .doc(shopId)
+                .collection('projects')
+                .doc(projectId)
+                .set(<String, dynamic>{
+              'lastMessagePreview': '🎤 आवाज़ नोट',
+              'lastMessageAt': FieldValue.serverTimestamp(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('आवाज़ नोट भेजा गया')),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.toString())),
+              );
+            }
+          }
+        },
       ),
     );
   }

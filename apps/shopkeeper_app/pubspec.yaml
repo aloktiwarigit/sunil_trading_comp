@@ -34,6 +34,10 @@ dependencies:
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
 
+  # ---- Audio recording (B1.6 + B1.7 voice notes) ----
+  record: ^5.1.2
+  path_provider: ^2.1.5
+
   # ---- Localization ----
   intl: ^0.20.2
 
