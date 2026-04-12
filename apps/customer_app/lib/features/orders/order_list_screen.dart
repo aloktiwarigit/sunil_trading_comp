@@ -65,24 +65,24 @@ class OrderListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = context.yugmaTheme;
     final projectsAsync = ref.watch(customerProjectsProvider);
 
     return Scaffold(
-      backgroundColor: YugmaColors.background,
+      backgroundColor: theme.shopBackground,
       appBar: AppBar(
-        backgroundColor: YugmaColors.primary,
-        foregroundColor: YugmaColors.textOnPrimary,
+        backgroundColor: theme.shopPrimary,
+        foregroundColor: theme.shopTextOnPrimary,
         title: Text(
           strings.ordersTitle,
-          style: TextStyle(
-            fontFamily: YugmaFonts.devaDisplay,
+          style: theme.h2Deva.copyWith(
             fontSize: YugmaTypeScale.h3,
           ),
         ),
       ),
       body: projectsAsync.when(
         loading: () => Center(
-          child: CircularProgressIndicator(color: YugmaColors.primary),
+          child: CircularProgressIndicator(color: theme.shopPrimary),
         ),
         error: (err, _) => YugmaErrorBanner(error: err),
         data: (projects) {
@@ -93,18 +93,16 @@ class OrderListScreen extends ConsumerWidget {
                 child: Text(
                   strings.noOrdersYet,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.devaBody,
-                    fontSize: YugmaTypeScale.body,
-                    color: YugmaColors.textMuted,
+                  style: theme.bodyDeva.copyWith(
+                    color: theme.shopTextMuted,
                   ),
                 ),
               ),
             );
           }
           return RefreshIndicator(
-            color: YugmaColors.accent,
-            backgroundColor: YugmaColors.surface,
+            color: theme.shopAccent,
+            backgroundColor: theme.shopSurface,
             onRefresh: () async {
               ref.invalidate(customerProjectsProvider);
               await Future.delayed(const Duration(milliseconds: 500));
@@ -133,6 +131,7 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.yugmaTheme;
     final stateLabel = _stateToDevanagari(project.state);
     final shortId = project.projectId.length > 6
         ? project.projectId.substring(project.projectId.length - 6)
@@ -144,7 +143,7 @@ class _OrderCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(YugmaSpacing.s4),
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
           boxShadow: YugmaShadows.card,
         ),
@@ -160,26 +159,23 @@ class _OrderCard extends StatelessWidget {
                     vertical: YugmaSpacing.s1,
                   ),
                   decoration: BoxDecoration(
-                    color: YugmaColors.accent.withValues(alpha: 0.15),
+                    color: theme.shopAccent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(YugmaRadius.sm),
                   ),
                   child: Text(
                     stateLabel,
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.devaBody,
-                      fontSize: YugmaTypeScale.caption,
+                    style: theme.captionDeva.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: YugmaColors.accent,
+                      color: theme.shopAccent,
                     ),
                   ),
                 ),
                 const Spacer(),
                 Text(
                   '#$shortId',
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.mono,
+                  style: theme.monoNumeral.copyWith(
                     fontSize: YugmaTypeScale.caption,
-                    color: YugmaColors.textMuted,
+                    color: theme.shopTextMuted,
                   ),
                 ),
               ],
@@ -189,20 +185,19 @@ class _OrderCard extends StatelessWidget {
               children: [
                 Text(
                   '₹${_formatInr(project.totalAmount)}',
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.mono,
+                  style: theme.monoNumeral.copyWith(
                     fontSize: YugmaTypeScale.bodyLarge,
                     fontWeight: FontWeight.w700,
-                    color: YugmaColors.textPrimary,
+                    color: theme.shopTextPrimary,
                   ),
                 ),
                 const SizedBox(width: YugmaSpacing.s2),
                 Text(
                   '${project.lineItems.length} सामान',
                   style: TextStyle(
-                    fontFamily: YugmaFonts.enBody,
+                    fontFamily: theme.fontFamilyEnglishBody,
                     fontSize: YugmaTypeScale.caption,
-                    color: YugmaColors.textSecondary,
+                    color: theme.shopTextSecondary,
                   ),
                 ),
               ],
@@ -213,10 +208,8 @@ class _OrderCard extends StatelessWidget {
                 project.lastMessagePreview!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: YugmaFonts.devaBody,
-                  fontSize: YugmaTypeScale.caption,
-                  color: YugmaColors.textMuted,
+                style: theme.captionDeva.copyWith(
+                  color: theme.shopTextMuted,
                 ),
               ),
             ],

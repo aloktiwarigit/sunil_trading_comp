@@ -90,24 +90,24 @@ class OrderDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = context.yugmaTheme;
     final projectAsync = ref.watch(customerProjectDetailProvider(projectId));
 
     return Scaffold(
-      backgroundColor: YugmaColors.background,
+      backgroundColor: theme.shopBackground,
       appBar: AppBar(
-        backgroundColor: YugmaColors.primary,
-        foregroundColor: YugmaColors.textOnPrimary,
+        backgroundColor: theme.shopPrimary,
+        foregroundColor: theme.shopTextOnPrimary,
         title: Text(
           strings.ordersTitle,
-          style: TextStyle(
-            fontFamily: YugmaFonts.devaDisplay,
+          style: theme.h2Deva.copyWith(
             fontSize: YugmaTypeScale.h3,
           ),
         ),
       ),
       body: projectAsync.when(
         loading: () => Center(
-          child: CircularProgressIndicator(color: YugmaColors.primary),
+          child: CircularProgressIndicator(color: theme.shopPrimary),
         ),
         error: (err, _) => YugmaErrorBanner(error: err),
         data: (project) {
@@ -115,7 +115,7 @@ class OrderDetailScreen extends ConsumerWidget {
             return Center(
               child: Text(
                 strings.emptyOrdersList,
-                style: TextStyle(fontFamily: YugmaFonts.devaBody),
+                style: theme.bodyDeva,
               ),
             );
           }
@@ -126,6 +126,7 @@ class OrderDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDetail(BuildContext context, WidgetRef ref, Project project) {
+    final theme = context.yugmaTheme;
     final shortId = project.projectId.length > 6
         ? project.projectId.substring(project.projectId.length - 6)
         : project.projectId;
@@ -139,7 +140,7 @@ class OrderDetailScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(YugmaSpacing.s4),
             decoration: BoxDecoration(
-              color: YugmaColors.surface,
+              color: theme.shopSurface,
               borderRadius: BorderRadius.circular(YugmaRadius.lg),
               boxShadow: YugmaShadows.card,
             ),
@@ -151,20 +152,19 @@ class OrderDetailScreen extends ConsumerWidget {
                     children: [
                       Text(
                         '₹${_formatInr(project.totalAmount)}',
-                        style: TextStyle(
-                          fontFamily: YugmaFonts.mono,
+                        style: theme.monoNumeral.copyWith(
                           fontSize: YugmaTypeScale.display,
                           fontWeight: FontWeight.w700,
-                          color: YugmaColors.textPrimary,
+                          color: theme.shopTextPrimary,
                         ),
                       ),
                       const SizedBox(height: YugmaSpacing.s1),
                       Text(
                         '${project.lineItems.length} सामान · #$shortId',
                         style: TextStyle(
-                          fontFamily: YugmaFonts.enBody,
+                          fontFamily: theme.fontFamilyEnglishBody,
                           fontSize: YugmaTypeScale.caption,
-                          color: YugmaColors.textSecondary,
+                          color: theme.shopTextSecondary,
                         ),
                       ),
                     ],
@@ -178,15 +178,14 @@ class OrderDetailScreen extends ConsumerWidget {
           // State timeline (AC #3)
           Text(
             'स्थिति',
-            style: TextStyle(
-              fontFamily: YugmaFonts.devaBody,
+            style: theme.bodyDeva.copyWith(
               fontSize: YugmaTypeScale.bodyLarge,
               fontWeight: FontWeight.w700,
-              color: YugmaColors.textPrimary,
+              color: theme.shopTextPrimary,
             ),
           ),
           const SizedBox(height: YugmaSpacing.s2),
-          _buildTimeline(project),
+          _buildTimeline(context, project),
 
           // B-6: Download receipt button — visible only for closed/delivering.
           if (project.state == ProjectState.closed ||
@@ -200,11 +199,9 @@ class OrderDetailScreen extends ConsumerWidget {
                 icon: const Icon(Icons.receipt_long),
                 label: const Text('रसीद डाउनलोड करें'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: YugmaColors.primary,
-                  side: BorderSide(color: YugmaColors.primary),
-                  textStyle: TextStyle(
-                    fontFamily: YugmaFonts.devaBody,
-                    fontSize: YugmaTypeScale.body,
+                  foregroundColor: theme.shopPrimary,
+                  side: BorderSide(color: theme.shopPrimary),
+                  textStyle: theme.bodyDeva.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -216,15 +213,14 @@ class OrderDetailScreen extends ConsumerWidget {
           // Line items
           Text(
             strings.lineItemsHeader,
-            style: TextStyle(
-              fontFamily: YugmaFonts.devaBody,
+            style: theme.bodyDeva.copyWith(
               fontSize: YugmaTypeScale.bodyLarge,
               fontWeight: FontWeight.w700,
-              color: YugmaColors.textPrimary,
+              color: theme.shopTextPrimary,
             ),
           ),
           const SizedBox(height: YugmaSpacing.s2),
-          _buildLineItems(project),
+          _buildLineItems(context, project),
         ],
       ),
     );
@@ -232,13 +228,14 @@ class OrderDetailScreen extends ConsumerWidget {
 
   /// C3.10 AC #3: vertical state timeline.
   /// Only visited states show (edge case #1).
-  Widget _buildTimeline(Project project) {
+  Widget _buildTimeline(BuildContext context, Project project) {
     final entries = _buildTimelineEntries(project);
 
+    final theme = context.yugmaTheme;
     return Container(
       padding: const EdgeInsets.all(YugmaSpacing.s4),
       decoration: BoxDecoration(
-        color: YugmaColors.surface,
+        color: theme.shopSurface,
         borderRadius: BorderRadius.circular(YugmaRadius.lg),
         boxShadow: YugmaShadows.card,
       ),
@@ -353,17 +350,18 @@ class OrderDetailScreen extends ConsumerWidget {
     return entries;
   }
 
-  Widget _buildLineItems(Project project) {
+  Widget _buildLineItems(BuildContext context, Project project) {
+    final theme = context.yugmaTheme;
     return Container(
       decoration: BoxDecoration(
-        color: YugmaColors.surface,
+        color: theme.shopSurface,
         borderRadius: BorderRadius.circular(YugmaRadius.lg),
         boxShadow: YugmaShadows.card,
       ),
       child: Column(
         children: [
           for (var i = 0; i < project.lineItems.length; i++) ...[
-            if (i > 0) Divider(color: YugmaColors.divider, height: 1),
+            if (i > 0) Divider(color: theme.shopDivider, height: 1),
             Padding(
               padding: const EdgeInsets.all(YugmaSpacing.s3),
               child: Row(
@@ -371,29 +369,25 @@ class OrderDetailScreen extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       project.lineItems[i].skuName,
-                      style: TextStyle(
-                        fontFamily: YugmaFonts.devaBody,
-                        fontSize: YugmaTypeScale.body,
-                        color: YugmaColors.textPrimary,
+                      style: theme.bodyDeva.copyWith(
+                        color: theme.shopTextPrimary,
                       ),
                     ),
                   ),
                   Text(
                     '×${project.lineItems[i].quantity}',
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.mono,
+                    style: theme.monoNumeral.copyWith(
                       fontSize: YugmaTypeScale.caption,
-                      color: YugmaColors.textSecondary,
+                      color: theme.shopTextSecondary,
                     ),
                   ),
                   const SizedBox(width: YugmaSpacing.s2),
                   Text(
                     '₹${_formatInr(project.lineItems[i].effectivePrice)}',
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.mono,
+                    style: theme.monoNumeral.copyWith(
                       fontSize: YugmaTypeScale.body,
                       fontWeight: FontWeight.w600,
-                      color: YugmaColors.textPrimary,
+                      color: theme.shopTextPrimary,
                     ),
                   ),
                 ],
@@ -417,7 +411,7 @@ class OrderDetailScreen extends ConsumerWidget {
           SnackBar(
             content: Text(
               'रसीद बन रही है…',
-              style: TextStyle(fontFamily: YugmaFonts.devaBody),
+              style: context.yugmaTheme.bodyDeva,
             ),
             duration: const Duration(seconds: 2),
           ),
@@ -478,7 +472,7 @@ class OrderDetailScreen extends ConsumerWidget {
           SnackBar(
             content: Text(
               'रसीद बनाने में समस्या: $e',
-              style: TextStyle(fontFamily: YugmaFonts.devaBody),
+              style: context.yugmaTheme.bodyDeva,
             ),
             backgroundColor: Colors.red.shade700,
           ),
@@ -518,8 +512,9 @@ class _TimelineRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = entry.isActive ? YugmaColors.primary : YugmaColors.divider;
-    final textColor = entry.isActive ? YugmaColors.textPrimary : YugmaColors.textMuted;
+    final theme = context.yugmaTheme;
+    final activeColor = entry.isActive ? theme.shopPrimary : theme.shopDivider;
+    final textColor = entry.isActive ? theme.shopTextPrimary : theme.shopTextMuted;
 
     return IntrinsicHeight(
       child: Row(
@@ -561,9 +556,7 @@ class _TimelineRow extends StatelessWidget {
                 children: [
                   Text(
                     entry.label,
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.devaBody,
-                      fontSize: YugmaTypeScale.body,
+                    style: theme.bodyDeva.copyWith(
                       fontWeight:
                           entry.isCurrent ? FontWeight.w700 : FontWeight.w500,
                       color: textColor,
@@ -573,10 +566,9 @@ class _TimelineRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       _formatDate(entry.timestamp!),
-                      style: TextStyle(
-                        fontFamily: YugmaFonts.mono,
+                      style: theme.monoNumeral.copyWith(
                         fontSize: YugmaTypeScale.caption,
-                        color: YugmaColors.textMuted,
+                        color: theme.shopTextMuted,
                       ),
                     ),
                   ],
