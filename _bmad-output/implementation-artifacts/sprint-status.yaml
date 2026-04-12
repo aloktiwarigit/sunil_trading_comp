@@ -41,7 +41,7 @@
 # ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 6) =====
 #
 # Epics: 6 total. 1 done (E6). 4 in-progress (E1, E3, E4, E5). 1 backlog (E2).
-# Stories: 67 total. 51 done. 0 ready-for-dev. 0 in-progress. 16 backlog.
+# Stories: 67 total. 53 done. 0 ready-for-dev. 0 in-progress. 14 backlog.
 # Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 #
@@ -53,13 +53,14 @@
 #   Sprint 15 (B1.6+B1.7) — voice note recording + chat voice notes
 #   Sprint 16 (P2.1+P2.2) — Decision Circle + persona toggle
 #   Sprint 17 (B1.8+P2.3) — greeting management + elder UI tier
+#   Sprint 18 (S4.5+B1.12) — golden hour photo + curation UX
 # Also completed B1.11 (foundation for S4.9).
-# 51 stories done total (33→51). Committed at 49cb249 on main.
+# 53 stories done total (33→53). Committed at 842037f on main.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-12  # Session 6 — Sprint 11-17 shipped, 51/67 done
+last_updated: 2026-04-12  # Session 6 — Sprint 11-18 shipped, 53/67 done
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -161,7 +162,8 @@ development_status:
   b1-10-away-voice-note-fallback: backlog
   # B1.11 Customer memory layer — foundation shipped Sprint 11 as part of S4.9
   b1-11-customer-memory-layer-ops-side: done
-  b1-12-remote-control-curation-ux: backlog
+  # B1.12 Curation UX — shipped Sprint 18 (842037f)
+  b1-12-remote-control-curation-ux: done
   # B1.13 Devanagari invoice — shipped Sprint 11 (2c45049)
   b1-13-devanagari-invoice-with-shopkeeper-signature: done
 
@@ -242,7 +244,8 @@ development_status:
   # ActiveProjectsScreen + filter chips + project cards + /orders route
   s4-6-active-projects-list: done
   s4-4-inventory-edit-price-stock: done  # Sprint 8, Session 5
-  s4-5-golden-hour-photo-capture: backlog
+  # S4.5 Golden Hour photo — shipped Sprint 18 (842037f)
+  s4-5-golden-hour-photo-capture: done
   # (moved up — see above)
   s4-7-project-detail-with-memory: done  # Sprint 8, Session 5
   s4-8-chat-reply-text-or-voice: done  # Sprint 8, Session 5
