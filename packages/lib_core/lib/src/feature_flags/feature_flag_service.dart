@@ -105,4 +105,9 @@ class FeatureFlagServiceStub implements FeatureFlagService {
   @override
   String cloudinaryCloudName;
 
+  // Private member required by implements — unused by stub (all getters overridden above).
+  @override
+  // ignore: unused_field
+  FirebaseRemoteConfig get _remoteConfig =>
+      throw UnsupportedError('Stub does not use RemoteConfig');
 }
