@@ -62,6 +62,7 @@ export 'src/models/line_item.dart';
 export 'src/models/project.dart';
 export 'src/models/chat_thread.dart';
 export 'src/models/message.dart';
+export 'src/models/decision_circle.dart';
 export 'src/models/udhaar_ledger.dart';
 export 'src/models/customer_memory.dart';
 export 'src/models/operator.dart';

@@ -19,6 +19,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
 
@@ -279,6 +280,32 @@ class DraftController extends AsyncNotifier<DraftState> {
         .collection('projects')
         .doc(projectId)
         .set(projectData);
+
+    // P2.1 AC #1: auto-create DecisionCircle when feature flag is enabled.
+    // decisionCircleEnabled is a Remote Config flag (default: true).
+    // Check via FirebaseRemoteConfig.instance.
+    final dcEnabled = FirebaseRemoteConfig.instance
+        .getBool(FeatureFlags.decisionCircleEnabled);
+    if (dcEnabled) {
+      await firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('decision_circles')
+          .doc(projectId)
+          .set(<String, dynamic>{
+        'projectId': projectId,
+        'shopId': shopId,
+        'primaryCustomerUid': user.uid,
+        'participants': [
+          {
+            'sessionId': user.uid,
+            'personaLabel': 'मैं',
+            'lastSeenAt': FieldValue.serverTimestamp(),
+          },
+        ],
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
 
     final project = Project(
       projectId: projectId,
