@@ -38,22 +38,23 @@
 # Walking Skeleton: 13/19 done. 6 remaining: C3.1, C3.4, C3.5, P2.4, P2.5, S4.3.
 # All pushed to origin/main. Zero test failures. Triple Zero intact.
 #
-# ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 3) =====
+# ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 4) =====
 #
-# Epics: 6 total. 1 done (E6). 2 in-progress (E1, E4). 3 backlog (E2/E3/E5).
-# Stories: 67 total. 19 done. 0 ready-for-dev. 0 in-progress. 48 backlog.
-# Walking Skeleton (19 stories): 13 done. 6 backlog.
+# Epics: 6 total. 1 done (E6). 3 in-progress (E1, E3, E4). 2 backlog (E2/E5).
+# Stories: 67 total. 21 done. 0 ready-for-dev. 0 in-progress. 46 backlog.
+# Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 # Phase 1.10 test debt: CLEARED (0 test failures remaining).
 #
-# Session 3 shipped: Sprint 2 (B1.1+B1.2) + Sprint 3 (B1.3+B1.4+B1.5+S4.1+S4.13)
-# + Phase 1.10 test debt fix + 2 code reviews (Sprint 2: 2🔴 fixed, Sprint 3: clean)
-# All pushed to origin/main at 23a10b0.
+# Session 4 shipped: Sprint 5 (C3.4+C3.5) — Walking Skeleton 19/19 COMPLETE.
+# Code review: 7 patches applied, 5 deferred, 9 dismissed.
+# Tests: 316 pass (+19 new), 8 pre-existing auth adapter failures.
+# Committed at 32c0e5b on main.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-12
+last_updated: 2026-04-12  # Session 4 — Sprint 5 shipped, WS 19/19 CLOSED
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -165,8 +166,10 @@ development_status:
   p2-1-decision-circle-creation: backlog
   p2-2-guest-mode-persona-toggle: backlog
   p2-3-elder-ui-tier-rendering: backlog
-  p2-4-sunil-bhaiya-ka-kamra-chat-thread: backlog
-  p2-5-customer-sends-text-message: backlog
+  # P2.4 Chat thread — shipped Phase 2.1 Sprint 4 (c9d6aea)
+  p2-4-sunil-bhaiya-ka-kamra-chat-thread: done
+  # P2.5 Customer sends text message — shipped Phase 2.1 Sprint 4 (c9d6aea)
+  p2-5-customer-sends-text-message: done
   p2-6-voice-note-inline-playback-in-chat: backlog
   p2-7-multi-participant-read-tracking: backlog
   p2-8-universal-large-text-fallback: backlog
@@ -177,13 +180,20 @@ development_status:
   # Epic E3 — Commerce & Project Flow (12 stories)
   # Status: backlog. All blocked on I6.11 + commit-flow upstream deps.
   # =========================================================================
-  epic-3: backlog
+  epic-3: in-progress
 
-  c3-1-create-project-draft: backlog
+  # C3.1 Create project draft — shipped Phase 2.1 Sprint 4 (c9d6aea)
+  c3-1-create-project-draft: done
   c3-2-edit-line-items: backlog
   c3-3-negotiate-discount-in-chat: backlog
-  c3-4-commit-project-with-phone-otp: backlog
-  c3-5-upi-payment-intent-flow: backlog
+  # C3.4 Commit project with phone OTP — shipped Phase 2.1 Sprint 5 (32c0e5b)
+  # ProjectCustomerCommitPatch + commit transaction + CommitController/Screen
+  # + 7 tests. Code review: 7 patches applied.
+  c3-4-commit-project-with-phone-otp: done
+  # C3.5 UPI payment intent flow — shipped Phase 2.1 Sprint 5 (32c0e5b)
+  # ProjectCustomerPaymentPatch + UpiIntentBuilder + PaymentController/Screen
+  # + 12 tests. Triple Zero machine-verified.
+  c3-5-upi-payment-intent-flow: done
   c3-6-cash-on-delivery: backlog
   c3-7-bank-transfer: backlog
   c3-8-udhaar-setup-shopkeeper-initiated: backlog
@@ -207,7 +217,8 @@ development_status:
   s4-1-shopkeeper-google-sign-in: done
 
   s4-2-multi-operator-role-based-access: backlog
-  s4-3-inventory-create-new-sku: backlog
+  # S4.3 Inventory create new SKU — shipped Phase 2.1 Sprint 4 (c9d6aea)
+  s4-3-inventory-create-new-sku: done
   s4-4-inventory-edit-price-stock: backlog
   s4-5-golden-hour-photo-capture: backlog
   s4-6-active-projects-list: backlog
