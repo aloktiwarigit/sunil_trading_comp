@@ -65,6 +65,38 @@ abstract class AppStrings {
   String get greetingVoiceNoteLabel;
 
   // =========================================================================
+  // §1b — Bharosa landing (Wave 0 mapping rows 3, 6, 8–11, 13)
+  // =========================================================================
+
+  /// Meta bar "X years · since YYYY" label.
+  /// Example hi: `23 साल · 2003 से`
+  String metaBarYearsInBusiness(int years, int establishedYear);
+
+  /// Greeting card headline.
+  /// Example hi: `नमस्ते जी, स्वागत है`
+  String get greetingCardTitle;
+
+  /// Greeting voice note sublabel with owner name and duration.
+  /// Example hi: `सुनील भैय��� का स्वागत संदेश · 23 सेकंड`
+  String greetingVoiceNoteSublabel(String ownerName, int seconds);
+
+  /// Mute toggle tooltip — turn sound on.
+  String get muteToggleOn;
+
+  /// Mute toggle tooltip — mute.
+  String get muteToggleMute;
+
+  /// Shortlist preview section headline.
+  /// Example hi: `���ुनील भैया की पसंद · आज के लिए`
+  String shortlistPreviewHeadline(String ownerName);
+
+  /// Badge on the first shortlist tile.
+  String get shortlistBadgeCurated;
+
+  /// Presence dock status — at the shop.
+  String get presenceStatusAvailable;
+
+  // =========================================================================
   // §2 — Curated shortlists (UX Spec §5.5 #3–5)
   // =========================================================================
 

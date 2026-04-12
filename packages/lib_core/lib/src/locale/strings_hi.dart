@@ -47,6 +47,35 @@ class AppStringsHi extends AppStrings {
   @override
   String get greetingVoiceNoteLabel => 'सुनील भैया का स्वागत संदेश';
 
+  // ---- §1b Bharosa landing ----
+
+  @override
+  String metaBarYearsInBusiness(int years, int establishedYear) =>
+      '$years साल · $establishedYear से';
+
+  @override
+  String get greetingCardTitle => 'नमस्ते जी, स्वागत है';
+
+  @override
+  String greetingVoiceNoteSublabel(String ownerName, int seconds) =>
+      '$ownerName का स्वागत संदेश · $seconds सेकंड';
+
+  @override
+  String get muteToggleOn => 'आवाज़ चालू कीजिए';
+
+  @override
+  String get muteToggleMute => 'चुप कीजिए';
+
+  @override
+  String shortlistPreviewHeadline(String ownerName) =>
+      '$ownerName की पसंद · आज के लिए';
+
+  @override
+  String get shortlistBadgeCurated => 'चुनी हुई';
+
+  @override
+  String get presenceStatusAvailable => '● दुकान पर हैं';
+
   // ---- §2 Curated shortlists ----
 
   @override

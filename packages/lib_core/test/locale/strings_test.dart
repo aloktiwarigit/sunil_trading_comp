@@ -34,6 +34,16 @@ Map<String, String> _renderAllStrings(AppStrings s) {
     'shopDisplayName': s.shopDisplayName,
     'greetingVoiceNoteLabel': s.greetingVoiceNoteLabel,
 
+    // ---- §1b Bharosa landing ----
+    'metaBarYearsInBusiness(23, 2003)': s.metaBarYearsInBusiness(23, 2003),
+    'greetingCardTitle': s.greetingCardTitle,
+    'greetingVoiceNoteSublabel': s.greetingVoiceNoteSublabel('Test', 23),
+    'muteToggleOn': s.muteToggleOn,
+    'muteToggleMute': s.muteToggleMute,
+    'shortlistPreviewHeadline': s.shortlistPreviewHeadline('Test'),
+    'shortlistBadgeCurated': s.shortlistBadgeCurated,
+    'presenceStatusAvailable': s.presenceStatusAvailable,
+
     // ---- §2 Curated shortlists ----
     'shortlistTitleShaadi': s.shortlistTitleShaadi,
     'shortlistTitleNayaGhar': s.shortlistTitleNayaGhar,

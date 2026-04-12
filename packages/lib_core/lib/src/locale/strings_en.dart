@@ -41,6 +41,35 @@ class AppStringsEn extends AppStrings {
   @override
   String get greetingVoiceNoteLabel => "Sunil-bhaiya's welcome message";
 
+  // ---- §1b Bharosa landing ----
+
+  @override
+  String metaBarYearsInBusiness(int years, int establishedYear) =>
+      '$years years · since $establishedYear';
+
+  @override
+  String get greetingCardTitle => 'Hello, welcome';
+
+  @override
+  String greetingVoiceNoteSublabel(String ownerName, int seconds) =>
+      "$ownerName's welcome message · $seconds sec";
+
+  @override
+  String get muteToggleOn => 'Turn sound on';
+
+  @override
+  String get muteToggleMute => 'Mute';
+
+  @override
+  String shortlistPreviewHeadline(String ownerName) =>
+      "$ownerName's picks · for today";
+
+  @override
+  String get shortlistBadgeCurated => 'Curated';
+
+  @override
+  String get presenceStatusAvailable => '● At the shop';
+
   // ---- §2 Curated shortlists ----
 
   @override
