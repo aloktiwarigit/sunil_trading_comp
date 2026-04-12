@@ -636,6 +636,260 @@ class AppStringsHi extends AppStrings {
   @override
   String get memoryNewCustomerPlaceholder => 'नया ग्राहक — पहली बार';
 
+  // ---- §24 D-2: Order detail timeline labels ----
+
+  @override
+  String orderItemCount(int count) => '$count सामान';
+
+  @override
+  String get orderStatusLabel => 'स्थिति';
+
+  @override
+  String get orderDownloadReceipt => 'रसीद डाउनलोड करें';
+
+  @override
+  String get timelineCommitted => 'पुष्टि की गयी';
+
+  @override
+  String get timelineUdhaarStarted => 'उधार खाता शुरू';
+
+  @override
+  String get timelinePaid => 'भुगतान हुआ';
+
+  @override
+  String get timelineBankTransferPending => 'बैंक ट्रांसफ़र — जाँच बाकी';
+
+  @override
+  String get timelineDelivering => 'डिलीवरी में';
+
+  @override
+  String get timelineDelivered => 'डिलीवर हुआ';
+
+  @override
+  String get timelineClosed => 'बंद हुआ';
+
+  @override
+  String get timelineCancelled => 'रद्द';
+
+  @override
+  String get timelineDraft => 'ड्राफ़्ट';
+
+  @override
+  String get receiptGenerating => 'रसीद बन रही है…';
+
+  @override
+  String receiptShareSubject(String projectId) => 'रसीद — $projectId';
+
+  @override
+  String receiptGenerationError(String detail) =>
+      'रसीद बनाने में समस्या: $detail';
+
+  @override
+  String monthName(int month) => const <int, String>{
+        1: 'जनवरी',
+        2: 'फ़रवरी',
+        3: 'मार्च',
+        4: 'अप्रैल',
+        5: 'मई',
+        6: 'जून',
+        7: 'जुलाई',
+        8: 'अगस्त',
+        9: 'सितंबर',
+        10: 'अक्टूबर',
+        11: 'नवंबर',
+        12: 'दिसंबर',
+      }[month] ?? '';
+
+  // ---- §25 D-2: Order list state badge labels ----
+
+  @override
+  String get stateBadgeDraft => 'ड्राफ़्ट';
+
+  @override
+  String get stateBadgeNegotiating => 'मोल भाव';
+
+  @override
+  String get stateBadgeCommitted => 'पुष्टि की गयी';
+
+  @override
+  String get stateBadgePaid => 'भुगतान हुआ';
+
+  @override
+  String get stateBadgeDelivering => 'डिलीवरी में';
+
+  @override
+  String get stateBadgeAwaitingVerification => 'भुगतान बाकी';
+
+  @override
+  String get stateBadgeClosed => 'बंद';
+
+  @override
+  String get stateBadgeCancelled => 'रद्द';
+
+  // ---- §26 D-2: Analytics dashboard labels ----
+
+  @override
+  String get analyticsOrders => 'ऑर्डर';
+
+  @override
+  String get analyticsRevenue => 'कमाई';
+
+  @override
+  String get analyticsOpenOrders => 'खुले ऑर्डर';
+
+  @override
+  String get analyticsUdhaarPending => 'उधार बाकी';
+
+  @override
+  String get analyticsNewCustomers => 'नए ग्राहक';
+
+  @override
+  String get analyticsLast7Days => 'पिछले 7 दिन';
+
+  @override
+  String get analyticsNoOrdersYet => 'अभी तक कोई ऑर्डर नहीं';
+
+  // ---- §27 D-2: Voice recorder widget labels ----
+
+  @override
+  String get micPermissionNeeded =>
+      'माइक्रोफ़ोन की अनुमति चाहिए — सेटिंग्स में जाकर अनुमति दीजिए';
+
+  @override
+  String get voiceGoBack => 'वापस जाइए';
+
+  @override
+  String get voiceMinDuration => 'कम से कम 5 सेकंड';
+
+  @override
+  String get voiceRecordingInProgress => 'रिकॉर्ड हो रहा है...';
+
+  @override
+  String get voiceCancel => 'रद्द करें';
+
+  @override
+  String get voiceReRecord => 'दुबारा';
+
+  @override
+  String get voiceCancelShort => 'रद्द';
+
+  // ---- §28 D-2: Presence toggle screen labels ----
+
+  @override
+  String get presenceAtShop => 'दुकान पर हैं';
+
+  @override
+  String get presenceAway => 'बाहर हैं';
+
+  @override
+  String get presenceBusyWithCustomer => 'ग्राहक के साथ';
+
+  @override
+  String get presenceAtEvent => 'शादी / कार्यक्रम में';
+
+  @override
+  String get presenceMyAvailability => 'मेरी उपलब्धता';
+
+  @override
+  String get presenceReturnTimePrompt => 'कितने बजे तक वापस?';
+
+  @override
+  String get presenceReturnTimeDefault => '6 बजे';
+
+  @override
+  String get presenceVoicePrompt => 'ग्राहक को आपकी आवाज़ सुनाएँ';
+
+  @override
+  String presenceVoiceRecorded(int seconds) =>
+      'आवाज़ रिकॉर्ड हुई — $seconds सेकंड';
+
+  @override
+  String get presenceRemoveVoice => 'हटाइए';
+
+  @override
+  String get presenceUpdateButton => 'अपडेट कीजिए';
+
+  @override
+  String get presenceUpdated => 'उपलब्धता अपडेट हुई';
+
+  // ---- §29 D-2: Curation screen labels ----
+
+  @override
+  String get curationMyPicks => 'मेरी पसंद';
+
+  @override
+  String get curationEmptyPrompt => 'अभी कुछ नहीं चुना — नीचे से जोड़िए';
+
+  @override
+  String get curationAddButton => '+ जोड़िए';
+
+  // ---- §30 D-2: Home dashboard section labels ----
+
+  @override
+  String get homeSectionMyPicks => 'मेरी पसंद';
+
+  @override
+  String get homeSectionSettings => 'सेटिंग्स';
+
+  @override
+  String get homeSectionUdhaar => 'उधार खाता';
+
+  // ---- §31 D-2: Settings screen labels ----
+
+  @override
+  String get settingsTitle => 'सेटिंग्स';
+
+  @override
+  String get settingsShopInfo => 'दुकान की जानकारी';
+
+  @override
+  String get settingsTaglineHindi => 'Tagline (हिंदी)';
+
+  @override
+  String get settingsGst => 'GST नंबर';
+
+  @override
+  String get settingsWhatsapp => 'WhatsApp नंबर';
+
+  @override
+  String get settingsBranding => 'ब्रांडिंग';
+
+  @override
+  String get settingsChangeGreeting => 'स्वागत संदेश बदलिए';
+
+  @override
+  String get settingsFeatures => 'सुविधाएँ';
+
+  @override
+  String get settingsDecisionCircle => 'Decision Circle (परिवार)';
+
+  @override
+  String get settingsRemoteConfigNote =>
+      'सुविधाएँ Remote Config से नियंत्रित होती हैं — Yugma Labs से संपर्क कीजिए';
+
+  @override
+  String get settingsOperators => 'ऑपरेटर';
+
+  @override
+  String get settingsSave => 'सहेजिए';
+
+  @override
+  String get settingsSaved => 'सेटिंग्स सहेजी गईं';
+
+  // ---- §32 D-10: Settings enhancements ----
+
+  @override
+  String get settingsColorPicker => 'दुकान का रंग बदलिए';
+
+  @override
+  String get settingsFaceUpload => 'अपनी फ़ोटो लगाइए';
+
+  @override
+  String get settingsAddOperator => 'ऑपरेटर जोड़िए';
+
+  @override
+  String get settingsRemoveOperator => 'हटाइए';
+
   // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------

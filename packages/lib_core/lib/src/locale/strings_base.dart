@@ -706,4 +706,259 @@ abstract class AppStrings {
 
   /// "New customer — first time" placeholder (B1.11 edge #2).
   String get memoryNewCustomerPlaceholder;
+
+  // =========================================================================
+  // §24 — D-2: Order detail timeline labels (hardcoded Devanagari migration)
+  // =========================================================================
+
+  /// Items count label for order card/detail. "X सामान"
+  String orderItemCount(int count);
+
+  /// "Status" section header on order detail.
+  String get orderStatusLabel;
+
+  /// "Download receipt" button label.
+  String get orderDownloadReceipt;
+
+  /// Timeline: committed state.
+  String get timelineCommitted;
+
+  /// Timeline: udhaar khaata started.
+  String get timelineUdhaarStarted;
+
+  /// Timeline: paid.
+  String get timelinePaid;
+
+  /// Timeline: bank transfer awaiting verification.
+  String get timelineBankTransferPending;
+
+  /// Timeline: delivering.
+  String get timelineDelivering;
+
+  /// Timeline: delivered.
+  String get timelineDelivered;
+
+  /// Timeline: closed.
+  String get timelineClosed;
+
+  /// Timeline: cancelled.
+  String get timelineCancelled;
+
+  /// Timeline: draft state.
+  String get timelineDraft;
+
+  /// Receipt generating snackbar.
+  String get receiptGenerating;
+
+  /// Receipt share subject with project ID.
+  String receiptShareSubject(String projectId);
+
+  /// Receipt generation error with detail.
+  String receiptGenerationError(String detail);
+
+  /// Month name by number (1–12).
+  String monthName(int month);
+
+  // =========================================================================
+  // §25 — D-2: Order list state badge labels
+  // =========================================================================
+
+  /// State badge: draft.
+  String get stateBadgeDraft;
+
+  /// State badge: negotiating.
+  String get stateBadgeNegotiating;
+
+  /// State badge: committed.
+  String get stateBadgeCommitted;
+
+  /// State badge: paid.
+  String get stateBadgePaid;
+
+  /// State badge: delivering.
+  String get stateBadgeDelivering;
+
+  /// State badge: awaiting verification.
+  String get stateBadgeAwaitingVerification;
+
+  /// State badge: closed.
+  String get stateBadgeClosed;
+
+  /// State badge: cancelled.
+  String get stateBadgeCancelled;
+
+  // =========================================================================
+  // §26 — D-2: Analytics dashboard labels
+  // =========================================================================
+
+  /// "Orders" metric label.
+  String get analyticsOrders;
+
+  /// "Revenue" metric label.
+  String get analyticsRevenue;
+
+  /// "Open orders" metric label.
+  String get analyticsOpenOrders;
+
+  /// "Udhaar pending" metric label.
+  String get analyticsUdhaarPending;
+
+  /// "New customers" metric label.
+  String get analyticsNewCustomers;
+
+  /// "Last 7 days" period label.
+  String get analyticsLast7Days;
+
+  /// "No orders yet" empty state for analytics.
+  String get analyticsNoOrdersYet;
+
+  // =========================================================================
+  // §27 — D-2: Voice recorder widget labels
+  // =========================================================================
+
+  /// Microphone permission needed message.
+  String get micPermissionNeeded;
+
+  /// "Go back" button label.
+  String get voiceGoBack;
+
+  /// "At least 5 seconds" minimum duration warning.
+  String get voiceMinDuration;
+
+  /// "Recording..." in-progress label.
+  String get voiceRecordingInProgress;
+
+  /// "Cancel" button on recorder.
+  String get voiceCancel;
+
+  /// "Re-record" button label.
+  String get voiceReRecord;
+
+  /// Short "Cancel" for compact UI.
+  String get voiceCancelShort;
+
+  // =========================================================================
+  // §28 — D-2: Presence toggle screen labels
+  // =========================================================================
+
+  /// Status: at the shop.
+  String get presenceAtShop;
+
+  /// Status: away.
+  String get presenceAway;
+
+  /// Status: busy with customer.
+  String get presenceBusyWithCustomer;
+
+  /// Status: at wedding/event.
+  String get presenceAtEvent;
+
+  /// "My availability" screen title.
+  String get presenceMyAvailability;
+
+  /// "When will you be back?" prompt.
+  String get presenceReturnTimePrompt;
+
+  /// Default return time "6 PM".
+  String get presenceReturnTimeDefault;
+
+  /// "Let the customer hear your voice" prompt.
+  String get presenceVoicePrompt;
+
+  /// "Voice recorded — X seconds" confirmation.
+  String presenceVoiceRecorded(int seconds);
+
+  /// "Remove" voice note button.
+  String get presenceRemoveVoice;
+
+  /// "Update" button.
+  String get presenceUpdateButton;
+
+  /// "Availability updated" confirmation.
+  String get presenceUpdated;
+
+  // =========================================================================
+  // §29 — D-2: Curation screen labels
+  // =========================================================================
+
+  /// "My picks" curation screen title.
+  String get curationMyPicks;
+
+  /// Empty state: "Nothing selected yet — add from below".
+  String get curationEmptyPrompt;
+
+  /// "+ Add" button.
+  String get curationAddButton;
+
+  // =========================================================================
+  // §30 — D-2: Home dashboard section labels
+  // =========================================================================
+
+  /// "My picks" section label on home dashboard.
+  String get homeSectionMyPicks;
+
+  /// "Settings" section label.
+  String get homeSectionSettings;
+
+  /// "Udhaar khaata" section label.
+  String get homeSectionUdhaar;
+
+  // =========================================================================
+  // §31 — D-2: Settings screen labels
+  // =========================================================================
+
+  /// "Settings" screen title.
+  String get settingsTitle;
+
+  /// "Shop info" section header.
+  String get settingsShopInfo;
+
+  /// "Tagline (Hindi)" field label.
+  String get settingsTaglineHindi;
+
+  /// "GST number" field label.
+  String get settingsGst;
+
+  /// "WhatsApp number" field label.
+  String get settingsWhatsapp;
+
+  /// "Branding" section header.
+  String get settingsBranding;
+
+  /// "Change greeting message" action label.
+  String get settingsChangeGreeting;
+
+  /// "Features" section header.
+  String get settingsFeatures;
+
+  /// "Decision Circle (family)" feature label.
+  String get settingsDecisionCircle;
+
+  /// Remote Config info note.
+  String get settingsRemoteConfigNote;
+
+  /// "Operators" section header.
+  String get settingsOperators;
+
+  /// "Save" button label.
+  String get settingsSave;
+
+  /// "Settings saved" confirmation.
+  String get settingsSaved;
+
+  // =========================================================================
+  // §32 — D-10: Settings enhancements
+  // =========================================================================
+
+  /// "Shop color" picker tile label.
+  String get settingsColorPicker;
+
+  /// "Face photo" upload tile label.
+  String get settingsFaceUpload;
+
+  /// "Add operator" button.
+  String get settingsAddOperator;
+
+  /// "Remove" operator button.
+  String get settingsRemoveOperator;
 }

@@ -37,6 +37,7 @@ class VoiceRecorderWidget extends StatefulWidget {
     super.key,
     required this.onSend,
     required this.onCancel,
+    this.strings = const AppStringsHi(),
   });
 
   /// Called when the user taps "send" with the recorded audio.
@@ -44,6 +45,9 @@ class VoiceRecorderWidget extends StatefulWidget {
 
   /// Called when the user cancels recording.
   final VoidCallback onCancel;
+
+  /// Locale strings for UI labels.
+  final AppStrings strings;
 
   @override
   State<VoiceRecorderWidget> createState() => _VoiceRecorderWidgetState();
@@ -152,7 +156,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
             Icon(Icons.mic_off, color: YugmaColors.commit, size: 40),
             const SizedBox(height: YugmaSpacing.s2),
             Text(
-              'माइक्रोफ़ोन की अनुमति चाहिए — सेटिंग्स में जाकर अनुमति दीजिए',
+              widget.strings.micPermissionNeeded,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: YugmaFonts.devaBody,
@@ -163,7 +167,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
             const SizedBox(height: YugmaSpacing.s3),
             TextButton(
               onPressed: widget.onCancel,
-              child: Text('वापस जाइए'),
+              child: Text(widget.strings.voiceGoBack),
             ),
           ],
         ),
@@ -190,7 +194,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
           // Minimum duration hint
           if (_isRecording && _elapsedSeconds < 5)
             Text(
-              'कम से कम 5 सेकंड',
+              widget.strings.voiceMinDuration,
               style: TextStyle(
                 fontFamily: YugmaFonts.devaBody,
                 fontSize: YugmaTypeScale.caption,
@@ -215,7 +219,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
                   ),
                   const SizedBox(width: YugmaSpacing.s2),
                   Text(
-                    'रिकॉर्ड हो रहा है...',
+                    widget.strings.voiceRecordingInProgress,
                     style: TextStyle(
                       fontFamily: YugmaFonts.devaBody,
                       fontSize: YugmaTypeScale.body,
@@ -247,7 +251,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
             TextButton(
               onPressed: widget.onCancel,
               child: Text(
-                'रद्द करें',
+                widget.strings.voiceCancel,
                 style: TextStyle(
                   fontFamily: YugmaFonts.devaBody,
                   color: YugmaColors.textMuted,
@@ -283,7 +287,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
                       icon: Icon(Icons.refresh, color: YugmaColors.textSecondary, size: 28),
                     ),
                     Text(
-                      'दुबारा',
+                      widget.strings.voiceReRecord,
                       style: TextStyle(
                         fontFamily: YugmaFonts.devaBody,
                         fontSize: YugmaTypeScale.caption,
@@ -313,7 +317,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
                       icon: Icon(Icons.close, color: YugmaColors.textMuted, size: 28),
                     ),
                     Text(
-                      'रद्द',
+                      widget.strings.voiceCancelShort,
                       style: TextStyle(
                         fontFamily: YugmaFonts.devaBody,
                         fontSize: YugmaTypeScale.caption,

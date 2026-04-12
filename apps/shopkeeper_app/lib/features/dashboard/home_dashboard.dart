@@ -254,6 +254,7 @@ class _CurationSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = const AppStringsHi();
     final theme = context.yugmaTheme;
     return GestureDetector(
       onTap: () => context.push('/curation'),
@@ -276,7 +277,7 @@ class _CurationSection extends StatelessWidget {
             Icon(Icons.star_outline, color: theme.shopPrimary, size: 24),
             const SizedBox(width: YugmaSpacing.s3),
             Text(
-              'मेरी पसंद',
+              strings.homeSectionMyPicks,
               style: theme.bodyDeva.copyWith(
                 color: theme.shopTextPrimary,
                 fontWeight: FontWeight.w600,
@@ -297,6 +298,7 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = const AppStringsHi();
     final theme = context.yugmaTheme;
     return GestureDetector(
       onTap: () => context.push('/settings'),
@@ -319,7 +321,7 @@ class _SettingsSection extends StatelessWidget {
             Icon(Icons.settings_outlined, color: theme.shopPrimary, size: 24),
             const SizedBox(width: YugmaSpacing.s3),
             Text(
-              'सेटिंग्स',
+              strings.homeSectionSettings,
               style: theme.bodyDeva.copyWith(
                 color: theme.shopTextPrimary,
                 fontWeight: FontWeight.w600,
@@ -392,6 +394,7 @@ class _UdhaarSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = const AppStringsHi();
     final theme = context.yugmaTheme;
     return GestureDetector(
       onTap: () => context.push('/udhaar'),
@@ -418,7 +421,7 @@ class _UdhaarSection extends StatelessWidget {
             ),
             const SizedBox(width: YugmaSpacing.s3),
             Text(
-              'उधार खाता',
+              strings.homeSectionUdhaar,
               style: theme.bodyDeva.copyWith(
                 color: theme.shopTextPrimary,
                 fontWeight: FontWeight.w600,

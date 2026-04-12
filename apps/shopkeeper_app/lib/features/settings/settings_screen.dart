@@ -9,9 +9,12 @@
 // =============================================================================
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lib_core/lib_core.dart';
 
 import '../auth/auth_controller.dart';
@@ -34,6 +37,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   bool _loaded = false;
   bool _saving = false;
+  final AppStrings _strings = const AppStringsHi();
 
   @override
   void dispose() {
@@ -58,7 +62,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final shopId = ref.read(shopIdProviderProvider).shopId;
-    final strings = const AppStringsHi();
+    final strings = _strings;
 
     return Scaffold(
       backgroundColor: YugmaColors.background,
@@ -66,7 +70,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         backgroundColor: YugmaColors.primary,
         foregroundColor: YugmaColors.textOnPrimary,
         title: Text(
-          'सेटिंग्स',
+          strings.settingsTitle,
           style: TextStyle(
             fontFamily: YugmaFonts.devaDisplay,
             fontSize: YugmaTypeScale.h3,
@@ -112,41 +116,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       padding: const EdgeInsets.all(YugmaSpacing.s4),
       children: [
         // ---- Section 1: Shop Profile ----
-        _sectionHeader('दुकान की जानकारी'),
+        _sectionHeader(strings.settingsShopInfo),
         const SizedBox(height: YugmaSpacing.s2),
-        _buildTextField('Tagline (हिंदी)', _taglineDevaController),
+        _buildTextField(strings.settingsTaglineHindi, _taglineDevaController),
         const SizedBox(height: YugmaSpacing.s2),
         _buildTextField('Tagline (English)', _taglineEnController),
         const SizedBox(height: YugmaSpacing.s2),
-        _buildTextField('GST नंबर', _gstController),
+        _buildTextField(strings.settingsGst, _gstController),
         const SizedBox(height: YugmaSpacing.s2),
-        _buildTextField('WhatsApp नंबर', _whatsappController,
+        _buildTextField(strings.settingsWhatsapp, _whatsappController,
             keyboardType: TextInputType.phone),
         const SizedBox(height: YugmaSpacing.s2),
         _buildTextField('UPI VPA', _upiVpaController),
         const SizedBox(height: YugmaSpacing.s4),
 
         // ---- Section 2: Branding ----
-        _sectionHeader('ब्रांडिंग'),
+        _sectionHeader(strings.settingsBranding),
         const SizedBox(height: YugmaSpacing.s2),
         // Greeting voice note — link to B1.8
         _actionTile(
           icon: Icons.record_voice_over,
-          label: 'स्वागत संदेश बदलिए',
+          label: strings.settingsChangeGreeting,
           onTap: () => context.push('/greeting'),
+        ),
+        const SizedBox(height: YugmaSpacing.s2),
+        // D-10: Color picker tile
+        _actionTile(
+          icon: Icons.palette,
+          label: strings.settingsColorPicker,
+          onTap: () => _showColorPicker(context, tokens, shopId),
+        ),
+        const SizedBox(height: YugmaSpacing.s2),
+        // D-10: Face photo upload tile
+        _actionTile(
+          icon: Icons.face,
+          label: strings.settingsFaceUpload,
+          onTap: () => _pickAndUploadFace(shopId),
         ),
         const SizedBox(height: YugmaSpacing.s4),
 
         // ---- Section 3: Feature Flags ----
-        _sectionHeader('सुविधाएँ'),
+        _sectionHeader(strings.settingsFeatures),
         const SizedBox(height: YugmaSpacing.s2),
-        _featureFlagInfo('Decision Circle (परिवार)', true),
+        _featureFlagInfo(strings.settingsDecisionCircle, true),
         _featureFlagInfo('Guest Mode', true),
         _featureFlagInfo('OTP at Commit', true),
         _featureFlagInfo('In-app Chat', true),
         const SizedBox(height: YugmaSpacing.s1),
         Text(
-          'सुविधाएँ Remote Config से नियंत्रित होती हैं — Yugma Labs से संपर्क कीजिए',
+          strings.settingsRemoteConfigNote,
           style: TextStyle(
             fontFamily: YugmaFonts.devaBody,
             fontSize: YugmaTypeScale.caption,
@@ -157,9 +175,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SizedBox(height: YugmaSpacing.s4),
 
         // ---- Section 4: Operators ----
-        _sectionHeader('ऑपरेटर'),
+        _sectionHeader(strings.settingsOperators),
         const SizedBox(height: YugmaSpacing.s2),
-        _operatorsSection(shopId),
+        _operatorsSection(shopId, strings),
         const SizedBox(height: YugmaSpacing.s4),
 
         // ---- S4.19: Shop closure option ----
@@ -200,7 +218,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: YugmaColors.textOnPrimary,
                     ),
                   )
-                : Text('सहेजिए'),
+                : Text(strings.settingsSave),
           ),
         ),
         const SizedBox(height: YugmaSpacing.s8),
@@ -304,7 +322,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _operatorsSection(String shopId) {
+  Widget _operatorsSection(String shopId, AppStrings strings) {
+    final currentUid = ref.read(opsAuthControllerProvider).valueOrNull?.user?.uid;
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('shops')
@@ -317,58 +336,255 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         }
         final docs = snapshot.data!.docs;
         return Column(
-          children: docs.map((doc) {
-            final data = doc.data();
-            final name = data['displayName'] as String? ?? doc.id;
-            final role = data['role'] as String? ?? 'unknown';
-            return Container(
-              margin: const EdgeInsets.only(bottom: YugmaSpacing.s1),
-              padding: const EdgeInsets.all(YugmaSpacing.s3),
-              decoration: BoxDecoration(
-                color: YugmaColors.surface,
-                borderRadius: BorderRadius.circular(YugmaRadius.md),
-                border: Border.all(color: YugmaColors.divider),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.person_outline,
-                      color: YugmaColors.primary, size: 20),
-                  const SizedBox(width: YugmaSpacing.s2),
-                  Expanded(
-                    child: Text(
-                      name,
-                      style: TextStyle(
-                        fontFamily: YugmaFonts.devaBody,
-                        fontSize: YugmaTypeScale.body,
-                        color: YugmaColors.textPrimary,
+          children: [
+            ...docs.map((doc) {
+              final data = doc.data();
+              final name = data['displayName'] as String? ?? doc.id;
+              final role = data['role'] as String? ?? 'unknown';
+              final isSelf = doc.id == currentUid;
+              return Container(
+                margin: const EdgeInsets.only(bottom: YugmaSpacing.s1),
+                padding: const EdgeInsets.all(YugmaSpacing.s3),
+                decoration: BoxDecoration(
+                  color: YugmaColors.surface,
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  border: Border.all(color: YugmaColors.divider),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.person_outline,
+                        color: YugmaColors.primary, size: 20),
+                    const SizedBox(width: YugmaSpacing.s2),
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          fontFamily: YugmaFonts.devaBody,
+                          fontSize: YugmaTypeScale.body,
+                          color: YugmaColors.textPrimary,
+                        ),
                       ),
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: YugmaSpacing.s2,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: YugmaColors.accent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(YugmaRadius.sm),
-                    ),
-                    child: Text(
-                      role,
-                      style: TextStyle(
-                        fontFamily: YugmaFonts.enBody,
-                        fontSize: YugmaTypeScale.caption,
-                        color: YugmaColors.accent,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: YugmaSpacing.s2,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: YugmaColors.accent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(YugmaRadius.sm),
+                      ),
+                      child: Text(
+                        role,
+                        style: TextStyle(
+                          fontFamily: YugmaFonts.enBody,
+                          fontSize: YugmaTypeScale.caption,
+                          color: YugmaColors.accent,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
+                    // D-10: Remove button (bhaiya-only, hidden for self per
+                    // firestore.rules)
+                    if (!isSelf)
+                      IconButton(
+                        onPressed: () => _removeOperator(shopId, doc.id),
+                        icon: Icon(Icons.close,
+                            color: YugmaColors.textMuted, size: 18),
+                        tooltip: strings.settingsRemoveOperator,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                  ],
+                ),
+              );
+            }),
+            // D-10: Add operator button
+            const SizedBox(height: YugmaSpacing.s2),
+            _actionTile(
+              icon: Icons.person_add,
+              label: strings.settingsAddOperator,
+              onTap: () => _addOperator(shopId),
+            ),
+          ],
         );
       },
     );
+  }
+
+  // ---- D-10: Color picker ----
+  void _showColorPicker(
+    BuildContext context,
+    ShopThemeTokens tokens,
+    String shopId,
+  ) {
+    final currentHex = tokens.primaryColorHex;
+    Color pickerColor = currentHex != null
+        ? Color(int.parse('FF${currentHex.replaceAll('#', '')}', radix: 16))
+        : YugmaColors.primary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          _strings.settingsColorPicker,
+          style: TextStyle(fontFamily: YugmaFonts.devaBody),
+        ),
+        content: SingleChildScrollView(
+          child: BlockPicker(
+            pickerColor: pickerColor,
+            onColorChanged: (color) => pickerColor = color,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(_strings.draftQtyHighCancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final hexString =
+                  '#${pickerColor.value.toRadixString(16).substring(2).toUpperCase()}';
+              await FirebaseFirestore.instance
+                  .collection('shops')
+                  .doc(shopId)
+                  .collection('theme')
+                  .doc('current')
+                  .set(<String, dynamic>{
+                'primaryColorHex': hexString,
+                'updatedAt': FieldValue.serverTimestamp(),
+              }, SetOptions(merge: true));
+              if (ctx.mounted) Navigator.of(ctx).pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: YugmaColors.primary,
+            ),
+            child: Text(
+              _strings.settingsSave,
+              style: TextStyle(color: YugmaColors.textOnPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---- D-10: Face photo upload ----
+  Future<void> _pickAndUploadFace(String shopId) async {
+    final picker = ImagePicker();
+    final xFile = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (xFile == null) return;
+
+    final bytes = await xFile.readAsBytes();
+    final storageRef = FirebaseStorage.instance
+        .ref('shops/$shopId/branding/face.jpg');
+    await storageRef.putData(bytes);
+    final downloadUrl = await storageRef.getDownloadURL();
+
+    await FirebaseFirestore.instance
+        .collection('shops')
+        .doc(shopId)
+        .collection('theme')
+        .doc('current')
+        .set(<String, dynamic>{
+      'shopkeeperFaceUrl': downloadUrl,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_strings.settingsSaved)),
+      );
+    }
+  }
+
+  // ---- D-10: Add operator ----
+  Future<void> _addOperator(String shopId) async {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          _strings.settingsAddOperator,
+          style: TextStyle(fontFamily: YugmaFonts.devaBody),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: 'Name',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+              ),
+            ),
+            const SizedBox(height: YugmaSpacing.s2),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(_strings.draftQtyHighCancel),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: YugmaColors.primary,
+            ),
+            child: Text(
+              _strings.settingsAddOperator,
+              style: TextStyle(color: YugmaColors.textOnPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && nameController.text.trim().isNotEmpty) {
+      final operatorId =
+          emailController.text.trim().isNotEmpty
+              ? emailController.text.trim()
+              : 'op_${DateTime.now().millisecondsSinceEpoch}';
+      await FirebaseFirestore.instance
+          .collection('shops')
+          .doc(shopId)
+          .collection('operators')
+          .doc(operatorId)
+          .set(<String, dynamic>{
+        'displayName': nameController.text.trim(),
+        'role': 'munshi',
+        'addedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    nameController.dispose();
+    emailController.dispose();
+  }
+
+  // ---- D-10: Remove operator ----
+  Future<void> _removeOperator(String shopId, String operatorId) async {
+    await FirebaseFirestore.instance
+        .collection('shops')
+        .doc(shopId)
+        .collection('operators')
+        .doc(operatorId)
+        .delete();
   }
 
   Future<void> _save(ShopThemeTokens current, String shopId) async {
@@ -395,7 +611,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('सेटिंग्स सहेजी गईं')),
+          SnackBar(content: Text(_strings.settingsSaved)),
         );
       }
     } catch (e) {

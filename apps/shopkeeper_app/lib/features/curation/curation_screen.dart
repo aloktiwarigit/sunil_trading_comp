@@ -16,15 +16,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
 
-/// The 6 occasion shortlists per B1.4 + B1.12.
-const _occasions = <String, String>{
-  'shaadi': 'शादी',
-  'naya_ghar': 'नया घर',
-  'dahej': 'दहेज',
-  'purana_badalne': 'बदलने के लिए',
-  'budget': 'बजट',
-  'ladies': 'लेडीज',
-};
+/// The 6 occasion shortlist keys per B1.4 + B1.12.
+const _occasionKeys = <String>[
+  'shaadi',
+  'naya_ghar',
+  'dahej',
+  'purana_badalne',
+  'budget',
+  'ladies',
+];
+
+/// D-2: Resolve occasion label from AppStrings.
+String _occasionLabel(String key, AppStrings strings) => switch (key) {
+      'shaadi' => strings.shortlistTitleShaadi,
+      'naya_ghar' => strings.shortlistTitleNayaGhar,
+      'dahej' => strings.shortlistTitleDahej,
+      'purana_badalne' => strings.shortlistTitlePuranaBadlne,
+      'budget' => strings.shortlistTitleBudget,
+      'ladies' => strings.shortlistTitleLadies,
+      _ => key,
+    };
 
 /// Provider for all shortlists in the shop.
 final shortlistsProvider = StreamProvider.autoDispose<
@@ -93,7 +104,7 @@ class _CurationScreenState extends ConsumerState<CurationScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _occasions.length, vsync: this);
+    _tabController = TabController(length: _occasionKeys.length, vsync: this);
   }
 
   @override
@@ -104,6 +115,7 @@ class _CurationScreenState extends ConsumerState<CurationScreen>
 
   @override
   Widget build(BuildContext context) {
+    final strings = const AppStringsHi();
     final shortlistsAsync = ref.watch(shortlistsProvider);
     final inventoryAsync = ref.watch(allInventoryProvider);
 
@@ -113,7 +125,7 @@ class _CurationScreenState extends ConsumerState<CurationScreen>
         backgroundColor: YugmaColors.primary,
         foregroundColor: YugmaColors.textOnPrimary,
         title: Text(
-          'मेरी पसंद',
+          strings.curationMyPicks,
           style: TextStyle(
             fontFamily: YugmaFonts.devaDisplay,
             fontSize: YugmaTypeScale.h3,
@@ -130,13 +142,13 @@ class _CurationScreenState extends ConsumerState<CurationScreen>
             fontSize: YugmaTypeScale.caption,
             fontWeight: FontWeight.w600,
           ),
-          tabs: _occasions.entries.map((e) {
-            final count = shortlistsAsync.valueOrNull?[e.key]?.length ?? 0;
+          tabs: _occasionKeys.map((key) {
+            final count = shortlistsAsync.valueOrNull?[key]?.length ?? 0;
             return Tab(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(e.value),
+                  Text(_occasionLabel(key, strings)),
                   if (count > 0) ...[
                     const SizedBox(width: 4),
                     // AC #8: badge
@@ -174,12 +186,13 @@ class _CurationScreenState extends ConsumerState<CurationScreen>
           final inventory = inventoryAsync.valueOrNull ?? <InventorySku>[];
           return TabBarView(
             controller: _tabController,
-            children: _occasions.keys.map((occasionTag) {
+            children: _occasionKeys.map((occasionTag) {
               final skuIds = shortlists[occasionTag] ?? <String>[];
               return _OccasionTab(
                 occasionTag: occasionTag,
                 skuIds: skuIds,
                 allInventory: inventory,
+                strings: strings,
               );
             }).toList(),
           );
@@ -195,11 +208,13 @@ class _OccasionTab extends ConsumerWidget {
     required this.occasionTag,
     required this.skuIds,
     required this.allInventory,
+    required this.strings,
   });
 
   final String occasionTag;
   final List<String> skuIds;
   final List<InventorySku> allInventory;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -215,7 +230,7 @@ class _OccasionTab extends ConsumerWidget {
           child: skuIds.isEmpty
               ? Center(
                   child: Text(
-                    'अभी कुछ नहीं चुना — नीचे से जोड़िए',
+                    strings.curationEmptyPrompt,
                     style: TextStyle(
                       fontFamily: YugmaFonts.devaBody,
                       fontSize: YugmaTypeScale.body,
@@ -342,7 +357,7 @@ class _OccasionTab extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          '+ जोड़िए',
+                          strings.curationAddButton,
                           style: TextStyle(
                             fontFamily: YugmaFonts.devaBody,
                             fontSize: 10,

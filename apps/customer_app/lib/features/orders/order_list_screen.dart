@@ -132,7 +132,7 @@ class _OrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.yugmaTheme;
-    final stateLabel = _stateToDevanagari(project.state);
+    final stateLabel = _stateLabel(project.state, strings);
     final shortId = project.projectId.length > 6
         ? project.projectId.substring(project.projectId.length - 6)
         : project.projectId;
@@ -193,7 +193,7 @@ class _OrderCard extends StatelessWidget {
                 ),
                 const SizedBox(width: YugmaSpacing.s2),
                 Text(
-                  '${project.lineItems.length} सामान',
+                  strings.orderItemCount(project.lineItems.length),
                   style: TextStyle(
                     fontFamily: theme.fontFamilyEnglishBody,
                     fontSize: YugmaTypeScale.caption,
@@ -219,16 +219,18 @@ class _OrderCard extends StatelessWidget {
     );
   }
 
-  /// C3.10 AC #2: state badge in Devanagari.
-  static String _stateToDevanagari(ProjectState state) => switch (state) {
-        ProjectState.draft => 'ड्राफ़्ट',
-        ProjectState.negotiating => 'मोल भाव',
-        ProjectState.committed => 'पुष्टि की गयी',
-        ProjectState.paid => 'भुगतान हुआ',
-        ProjectState.delivering => 'डिलीवरी में',
-        ProjectState.awaitingVerification => 'भुगतान बाकी',
-        ProjectState.closed => 'बंद',
-        ProjectState.cancelled => 'रद्द',
+  /// C3.10 AC #2: state badge — locale-aware via AppStrings.
+  static String _stateLabel(ProjectState state, AppStrings strings) =>
+      switch (state) {
+        ProjectState.draft => strings.stateBadgeDraft,
+        ProjectState.negotiating => strings.stateBadgeNegotiating,
+        ProjectState.committed => strings.stateBadgeCommitted,
+        ProjectState.paid => strings.stateBadgePaid,
+        ProjectState.delivering => strings.stateBadgeDelivering,
+        ProjectState.awaitingVerification =>
+          strings.stateBadgeAwaitingVerification,
+        ProjectState.closed => strings.stateBadgeClosed,
+        ProjectState.cancelled => strings.stateBadgeCancelled,
       };
 
   static String _formatInr(int amount) {

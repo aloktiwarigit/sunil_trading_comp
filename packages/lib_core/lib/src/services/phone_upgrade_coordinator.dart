@@ -28,9 +28,12 @@
 // can pass a fake implementation.
 // =============================================================================
 
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:logging/logging.dart';
 
 import '../adapters/auth_provider.dart';
+import '../feature_flags/feature_flags.dart';
 import '../observability/analytics_events.dart';
 import '../repositories/customer_repo.dart';
 
@@ -72,6 +75,65 @@ class NoopStateMigrationCaller implements StateMigrationCaller {
       'performed. sourceUid=$sourceUid destUid=$destUid. This is expected '
       'during Sprint 2–4; replace with real HttpsCallable in Sprint 5+.',
     );
+  }
+}
+
+/// C-6: Real HTTPS Callable implementation that calls the `joinDecisionCircle`
+/// Cloud Function (SAD §7 Fn 6) to atomically migrate Decision Circle
+/// memberships, ChatThread participants, and Project drafts from sourceUid
+/// to destUid.
+class HttpsCallableStateMigrationCaller implements StateMigrationCaller {
+  HttpsCallableStateMigrationCaller({
+    required String shopId,
+    FirebaseFunctions? functions,
+  })  : _shopId = shopId,
+        _functions = functions ?? FirebaseFunctions.instance;
+
+  final String _shopId;
+  final FirebaseFunctions _functions;
+  static final Logger _log = Logger('HttpsCallableStateMigrationCaller');
+
+  @override
+  Future<void> migrateState({
+    required String sourceUid,
+    required String destUid,
+  }) async {
+    _log.info(
+      'Calling joinDecisionCircle: sourceUid=$sourceUid destUid=$destUid '
+      'shopId=$_shopId',
+    );
+
+    final callable = _functions.httpsCallable('joinDecisionCircle');
+    final result = await callable.call<Map<String, dynamic>>(<String, dynamic>{
+      'sourceUid': sourceUid,
+      'destUid': destUid,
+      'shopId': _shopId,
+    });
+
+    _log.info(
+      'joinDecisionCircle returned: ${result.data}',
+    );
+  }
+}
+
+/// C-6: Factory that selects NoopStateMigrationCaller or
+/// HttpsCallableStateMigrationCaller based on feature flag.
+///
+/// Gate: `joinDecisionCircle_enabled` Remote Config flag. Returns Noop
+/// when the flag is false (function not deployed), real caller when true.
+class StateMigrationCallerFactory {
+  StateMigrationCallerFactory._();
+
+  static StateMigrationCaller create({
+    required String shopId,
+    required FirebaseRemoteConfig remoteConfig,
+  }) {
+    final enabled =
+        remoteConfig.getBool(FeatureFlags.joinDecisionCircleEnabled);
+    if (!enabled) {
+      return const NoopStateMigrationCaller();
+    }
+    return HttpsCallableStateMigrationCaller(shopId: shopId);
   }
 }
 

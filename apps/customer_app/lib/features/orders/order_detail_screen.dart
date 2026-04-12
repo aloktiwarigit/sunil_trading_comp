@@ -160,7 +160,7 @@ class OrderDetailScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: YugmaSpacing.s1),
                       Text(
-                        '${project.lineItems.length} सामान · #$shortId',
+                        '${strings.orderItemCount(project.lineItems.length)} · #$shortId',
                         style: TextStyle(
                           fontFamily: theme.fontFamilyEnglishBody,
                           fontSize: YugmaTypeScale.caption,
@@ -177,7 +177,7 @@ class OrderDetailScreen extends ConsumerWidget {
 
           // State timeline (AC #3)
           Text(
-            'स्थिति',
+            strings.orderStatusLabel,
             style: theme.bodyDeva.copyWith(
               fontSize: YugmaTypeScale.bodyLarge,
               fontWeight: FontWeight.w700,
@@ -197,7 +197,7 @@ class OrderDetailScreen extends ConsumerWidget {
               child: OutlinedButton.icon(
                 onPressed: () => _generateAndShareInvoice(context, project),
                 icon: const Icon(Icons.receipt_long),
-                label: const Text('रसीद डाउनलोड करें'),
+                label: Text(strings.orderDownloadReceipt),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.shopPrimary,
                   side: BorderSide(color: theme.shopPrimary),
@@ -246,6 +246,7 @@ class OrderDetailScreen extends ConsumerWidget {
               entry: entries[i],
               isFirst: i == 0,
               isLast: i == entries.length - 1,
+              strings: strings,
             ),
           ],
         ],
@@ -262,7 +263,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // Committed
     if (project.committedAt != null) {
       entries.add(_TimelineEntry(
-        label: 'पुष्टि की गयी',
+        label: strings.timelineCommitted,
         timestamp: project.committedAt,
         isActive: true,
         isCurrent: currentState == ProjectState.committed,
@@ -272,8 +273,8 @@ class OrderDetailScreen extends ConsumerWidget {
     // Paid or Udhaar started
     if (project.paidAt != null) {
       final label = project.udhaarLedgerId != null
-          ? 'उधार खाता शुरू'
-          : 'भुगतान हुआ';
+          ? strings.timelineUdhaarStarted
+          : strings.timelinePaid;
       entries.add(_TimelineEntry(
         label: label,
         timestamp: project.paidAt,
@@ -286,7 +287,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // CR F4: handle awaitingVerification state in timeline.
     if (currentState == ProjectState.awaitingVerification) {
       entries.add(_TimelineEntry(
-        label: 'बैंक ट्रांसफ़र — जाँच बाकी',
+        label: strings.timelineBankTransferPending,
         timestamp: null,
         isActive: true,
         isCurrent: true,
@@ -298,7 +299,7 @@ class OrderDetailScreen extends ConsumerWidget {
         project.deliveredAt != null ||
         currentState == ProjectState.closed) {
       entries.add(_TimelineEntry(
-        label: 'डिलीवरी में',
+        label: strings.timelineDelivering,
         timestamp: null,
         isActive: project.deliveredAt != null ||
             currentState == ProjectState.closed,
@@ -309,7 +310,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // Delivered
     if (project.deliveredAt != null) {
       entries.add(_TimelineEntry(
-        label: 'डिलीवर हुआ',
+        label: strings.timelineDelivered,
         timestamp: project.deliveredAt,
         isActive: true,
         isCurrent: currentState == ProjectState.closed &&
@@ -320,7 +321,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // Closed
     if (project.closedAt != null) {
       entries.add(_TimelineEntry(
-        label: 'बंद हुआ',
+        label: strings.timelineClosed,
         timestamp: project.closedAt,
         isActive: true,
         isCurrent: currentState == ProjectState.closed,
@@ -330,7 +331,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // Cancelled (edge case #2)
     if (currentState == ProjectState.cancelled) {
       entries.add(_TimelineEntry(
-        label: 'रद्द',
+        label: strings.timelineCancelled,
         timestamp: project.closedAt ?? project.updatedAt,
         isActive: true,
         isCurrent: true,
@@ -340,7 +341,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // If no entries (draft only), show the draft state
     if (entries.isEmpty) {
       entries.add(_TimelineEntry(
-        label: 'ड्राफ़्ट',
+        label: strings.timelineDraft,
         timestamp: project.createdAt,
         isActive: true,
         isCurrent: true,
@@ -410,7 +411,7 @@ class OrderDetailScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'रसीद बन रही है…',
+              strings.receiptGenerating,
               style: context.yugmaTheme.bodyDeva,
             ),
             duration: const Duration(seconds: 2),
@@ -441,7 +442,7 @@ class OrderDetailScreen extends ConsumerWidget {
       if (onboardingState == null) return;
 
       final customerName =
-          onboardingState.user.displayName ?? 'ग्राहक';
+          onboardingState.user.displayName ?? strings.receiptCustomerFallback;
 
       final payload = InvoicePayload(
         project: project,
@@ -463,7 +464,7 @@ class OrderDetailScreen extends ConsumerWidget {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          subject: 'रसीद — ${project.projectId}',
+          subject: strings.receiptShareSubject(project.projectId),
         ),
       );
     } catch (e) {
@@ -471,7 +472,7 @@ class OrderDetailScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'रसीद बनाने में समस्या: $e',
+              strings.receiptGenerationError('$e'),
               style: context.yugmaTheme.bodyDeva,
             ),
             backgroundColor: Colors.red.shade700,
@@ -504,11 +505,13 @@ class _TimelineRow extends StatelessWidget {
     required this.entry,
     required this.isFirst,
     required this.isLast,
+    required this.strings,
   });
 
   final _TimelineEntry entry;
   final bool isFirst;
   final bool isLast;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -565,7 +568,7 @@ class _TimelineRow extends StatelessWidget {
                   if (entry.timestamp != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      _formatDate(entry.timestamp!),
+                      _formatDate(entry.timestamp!, strings),
                       style: theme.monoNumeral.copyWith(
                         fontSize: YugmaTypeScale.caption,
                         color: theme.shopTextMuted,
@@ -581,25 +584,11 @@ class _TimelineRow extends StatelessWidget {
     );
   }
 
-  /// Format date in Devanagari: "11 अप्रैल 2026, 2:30 PM"
-  static String _formatDate(DateTime date) {
-    const months = <int, String>{
-      1: 'जनवरी',
-      2: 'फ़रवरी',
-      3: 'मार्च',
-      4: 'अप्रैल',
-      5: 'मई',
-      6: 'जून',
-      7: 'जुलाई',
-      8: 'अगस्त',
-      9: 'सितंबर',
-      10: 'अक्टूबर',
-      11: 'नवंबर',
-      12: 'दिसंबर',
-    };
+  /// Format date locale-aware: "11 अप्रैल 2026, 2:30 PM" / "11 April 2026, 2:30 PM"
+  static String _formatDate(DateTime date, AppStrings strings) {
     final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
     final amPm = date.hour >= 12 ? 'PM' : 'AM';
     final min = date.minute.toString().padLeft(2, '0');
-    return '${date.day} ${months[date.month]} ${date.year}, $hour:$min $amPm';
+    return '${date.day} ${strings.monthName(date.month)} ${date.year}, $hour:$min $amPm';
   }
 }

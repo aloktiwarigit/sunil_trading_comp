@@ -111,13 +111,13 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
               ),
             );
           }
-          return _buildDashboard(context, projects);
+          return _buildDashboard(context, projects, strings);
         },
       ),
     );
   }
 
-  Widget _buildDashboard(BuildContext context, List<Project> projects) {
+  Widget _buildDashboard(BuildContext context, List<Project> projects, AppStrings strings) {
     final theme = context.yugmaTheme;
     final now = DateTime.now();
     final thisMonth = DateTime(now.year, now.month);
@@ -140,7 +140,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
             children: [
               Expanded(
                 child: _MetricTile(
-                  label: 'ऑर्डर',
+                  label: strings.analyticsOrders,
                   value: current.committedCount,
                   delta: current.committedCount - previous.committedCount,
                   onTap: () => context.push('/orders'),
@@ -149,7 +149,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
               const SizedBox(width: YugmaSpacing.s2),
               Expanded(
                 child: _MetricTile(
-                  label: 'कमाई',
+                  label: strings.analyticsRevenue,
                   value: current.revenue,
                   delta: current.revenue - previous.revenue,
                   isRupee: true,
@@ -163,7 +163,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
             children: [
               Expanded(
                 child: _MetricTile(
-                  label: 'खुले ऑर्डर',
+                  label: strings.analyticsOpenOrders,
                   value: current.openOrders,
                   delta: current.openOrders - previous.openOrders,
                   onTap: () => context.push('/orders'),
@@ -172,7 +172,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
               const SizedBox(width: YugmaSpacing.s2),
               Expanded(
                 child: _MetricTile(
-                  label: 'उधार बाकी',
+                  label: strings.analyticsUdhaarPending,
                   value: current.openUdhaarTotal,
                   delta: current.openUdhaarTotal - previous.openUdhaarTotal,
                   isRupee: true,
@@ -183,7 +183,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
           ),
           const SizedBox(height: YugmaSpacing.s2),
           _MetricTile(
-            label: 'नए ग्राहक',
+            label: strings.analyticsNewCustomers,
             value: current.newCustomers,
             delta: current.newCustomers - previous.newCustomers,
           ),
@@ -191,7 +191,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
 
           // AC #3: Bar chart — last 7 days
           Text(
-            'पिछले 7 दिन',
+            strings.analyticsLast7Days,
             style: theme.bodyDeva.copyWith(
               fontSize: YugmaTypeScale.bodyLarge,
               fontWeight: FontWeight.w700,
@@ -199,7 +199,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: YugmaSpacing.s2),
-          _SimpleBarChart(data: barData),
+          _SimpleBarChart(data: barData, strings: strings),
         ],
       ),
     );
@@ -367,9 +367,10 @@ class _MetricTile extends StatelessWidget {
 /// Simple horizontal bar chart using basic Flutter widgets.
 /// No external chart package needed — just proportional containers.
 class _SimpleBarChart extends StatelessWidget {
-  const _SimpleBarChart({required this.data});
+  const _SimpleBarChart({required this.data, required this.strings});
 
   final List<int> data;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -384,7 +385,7 @@ class _SimpleBarChart extends StatelessWidget {
         ),
         child: Center(
           child: Text(
-            'अभी तक कोई ऑर्डर नहीं',
+            strings.analyticsNoOrdersYet,
             style: theme.captionDeva.copyWith(
               color: theme.shopTextMuted,
             ),

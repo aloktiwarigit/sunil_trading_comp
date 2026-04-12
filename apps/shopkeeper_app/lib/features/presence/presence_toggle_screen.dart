@@ -18,14 +18,21 @@ import '../voice/voice_recorder_widget.dart';
 
 /// Presence status options per B1.9 AC #1.
 enum PresenceStatus {
-  available('दुकान पर हैं', Icons.storefront),
-  away('बाहर हैं', Icons.directions_walk),
-  busyWithCustomer('ग्राहक के साथ', Icons.people),
-  atEvent('शादी / कार्यक्रम में', Icons.celebration);
+  available(Icons.storefront),
+  away(Icons.directions_walk),
+  busyWithCustomer(Icons.people),
+  atEvent(Icons.celebration);
 
-  const PresenceStatus(this.label, this.icon);
-  final String label;
+  const PresenceStatus(this.icon);
   final IconData icon;
+
+  /// Resolve the display label from AppStrings (D-2 locale-aware).
+  String label(AppStrings strings) => switch (this) {
+        available => strings.presenceAtShop,
+        away => strings.presenceAway,
+        busyWithCustomer => strings.presenceBusyWithCustomer,
+        atEvent => strings.presenceAtEvent,
+      };
 }
 
 /// B1.9 — Presence status toggle screen.
@@ -54,13 +61,14 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = const AppStringsHi();
     return Scaffold(
       backgroundColor: YugmaColors.background,
       appBar: AppBar(
         backgroundColor: YugmaColors.primary,
         foregroundColor: YugmaColors.textOnPrimary,
         title: Text(
-          'मेरी उपलब्धता',
+          strings.presenceMyAvailability,
           style: TextStyle(
             fontFamily: YugmaFonts.devaDisplay,
             fontSize: YugmaTypeScale.h3,
@@ -99,7 +107,7 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
                         Icon(status.icon, color: YugmaColors.primary, size: 24),
                         const SizedBox(width: YugmaSpacing.s3),
                         Text(
-                          status.label,
+                          status.label(strings),
                           style: TextStyle(
                             fontFamily: YugmaFonts.devaBody,
                             fontSize: YugmaTypeScale.body,
@@ -122,9 +130,9 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
               TextField(
                 controller: _returnTimeController,
                 decoration: InputDecoration(
-                  labelText: 'कितने बजे तक वापस?',
+                  labelText: strings.presenceReturnTimePrompt,
                   labelStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
-                  hintText: '6 बजे',
+                  hintText: strings.presenceReturnTimeDefault,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(YugmaRadius.md),
                   ),
@@ -141,7 +149,7 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
                 _selected == PresenceStatus.atEvent) ...[
               const SizedBox(height: YugmaSpacing.s3),
               Text(
-                'ग्राहक को आपकी आवाज़ सुनाएँ',
+                strings.presenceVoicePrompt,
                 style: TextStyle(
                   fontFamily: YugmaFonts.devaBody,
                   fontSize: YugmaTypeScale.body,
@@ -164,7 +172,7 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
                       const SizedBox(width: YugmaSpacing.s2),
                       Expanded(
                         child: Text(
-                          'आवाज़ रिकॉर्ड हुई — $_absenceVoiceNoteDuration सेकंड',
+                          strings.presenceVoiceRecorded(_absenceVoiceNoteDuration),
                           style: TextStyle(
                             fontFamily: YugmaFonts.devaBody,
                             fontSize: YugmaTypeScale.caption,
@@ -178,7 +186,7 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
                           _absenceVoiceNoteDuration = 0;
                         }),
                         icon: Icon(Icons.close, color: YugmaColors.textMuted, size: 20),
-                        tooltip: 'हटाइए',
+                        tooltip: strings.presenceRemoveVoice,
                       ),
                     ],
                   ),
@@ -225,7 +233,7 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
                           color: YugmaColors.textOnPrimary,
                         ),
                       )
-                    : const Text('अपडेट कीजिए'),
+                    : Text(strings.presenceUpdateButton),
               ),
             ),
           ],
@@ -259,7 +267,7 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
           .doc(shopId)
           .set(<String, dynamic>{
         'presenceStatus': _selected.name,
-        'presenceMessage': _selected.label,
+        'presenceMessage': _selected.label(const AppStringsHi()),
         'presenceReturnTime': _returnTimeController.text.trim(),
         'presenceUpdatedAt': FieldValue.serverTimestamp(),
         if (absenceVoiceStorageRef != null)
@@ -270,7 +278,7 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('उपलब्धता अपडेट हुई')),
+          SnackBar(content: Text(const AppStringsHi().presenceUpdated)),
         );
         Navigator.of(context).pop();
       }

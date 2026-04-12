@@ -44,6 +44,13 @@ class FeatureFlags {
   /// Golden Hour photo capture flow (S4.5). Default: true.
   static const String goldenHourPhotoEnabled = 'golden_hour_photo_enabled';
 
+  // ---------- Cloud Function feature gates ----------
+
+  /// C-6: joinDecisionCircle Cloud Function — gates the real UID merger.
+  /// Default: false. Flipped on once the function is deployed to dev.
+  static const String joinDecisionCircleEnabled =
+      'join_decision_circle_enabled';
+
   // ---------- Cost / quota guardrails ----------
 
   /// Master kill-switch (set by `killSwitchOnBudgetAlert` Cloud Function).
