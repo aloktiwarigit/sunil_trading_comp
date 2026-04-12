@@ -38,24 +38,23 @@
 # Walking Skeleton: 13/19 done. 6 remaining: C3.1, C3.4, C3.5, P2.4, P2.5, S4.3.
 # All pushed to origin/main. Zero test failures. Triple Zero intact.
 #
-# ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 5) =====
+# ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 6) =====
 #
 # Epics: 6 total. 1 done (E6). 4 in-progress (E1, E3, E4, E5). 1 backlog (E2).
-# Stories: 67 total. 33 done. 0 ready-for-dev. 0 in-progress. 34 backlog.
+# Stories: 67 total. 39 done. 0 ready-for-dev. 0 in-progress. 28 backlog.
 # Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 #
-# Session 5 shipped 4 sprints:
-#   Sprint 7 (C3.2+C3.3) — draft editing + negotiation
-#   Sprint 8 (S4.7+S4.8+S4.4) — shopkeeper order management
-#   Sprint 9 (C3.8+C3.9) — udhaar khaata
-#   Sprint 10 (M5.1+M5.4) — marketing site
-# 33 stories done total. Committed at d80b870 on main.
+# Session 6 shipped 2 sprints:
+#   Sprint 11 (S4.9+B1.13) — customer memory editing + Devanagari receipt
+#   Sprint 12 (C3.10+C3.11+C3.12) — order tracking + delivery + deactivation
+# Also completed B1.11 (foundation for S4.9).
+# 39 stories done total (33→39). Committed at 708152a on main.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-12  # Session 5 — Sprint 7-10 shipped, 33/67 done
+last_updated: 2026-04-12  # Session 6 — Sprint 11-12 shipped, 39/67 done
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -152,9 +151,11 @@ development_status:
   b1-8-shop-landing-voice-note-management: backlog
   b1-9-absence-presence-status-banner: backlog
   b1-10-away-voice-note-fallback: backlog
-  b1-11-customer-memory-layer-ops-side: backlog
+  # B1.11 Customer memory layer — foundation shipped Sprint 11 as part of S4.9
+  b1-11-customer-memory-layer-ops-side: done
   b1-12-remote-control-curation-ux: backlog
-  b1-13-devanagari-invoice-with-shopkeeper-signature: backlog
+  # B1.13 Devanagari invoice — shipped Sprint 11 (2c45049)
+  b1-13-devanagari-invoice-with-shopkeeper-signature: done
 
   epic-1-retrospective: optional
 
@@ -201,9 +202,12 @@ development_status:
   c3-7-bank-transfer: done
   c3-8-udhaar-setup-shopkeeper-initiated: done  # Sprint 9, Session 5
   c3-9-udhaar-payment-record: done  # Sprint 9, Session 5
-  c3-10-order-state-tracking: backlog
-  c3-11-delivery-confirmation-with-photo: backlog
-  c3-12-shop-deactivation-customer-notification: backlog
+  # C3.10 Order tracking — shipped Sprint 12 (708152a)
+  c3-10-order-state-tracking: done
+  # C3.11 Delivery confirmation — shipped Sprint 12 (708152a)
+  c3-11-delivery-confirmation-with-photo: done
+  # C3.12 Shop deactivation banner — shipped Sprint 12 (708152a)
+  c3-12-shop-deactivation-customer-notification: done
 
   epic-3-retrospective: optional
 
@@ -230,7 +234,8 @@ development_status:
   # (moved up — see above)
   s4-7-project-detail-with-memory: done  # Sprint 8, Session 5
   s4-8-chat-reply-text-or-voice: done  # Sprint 8, Session 5
-  s4-9-customer-memory-inline-edit: backlog
+  # S4.9 Customer memory editing — shipped Sprint 11 (2c45049)
+  s4-9-customer-memory-inline-edit: done
   s4-10-udhaar-ledger-with-rbi-guardrails: backlog
   s4-11-analytics-dashboard: backlog
   s4-12-shop-settings-theme-operators-flags: backlog
