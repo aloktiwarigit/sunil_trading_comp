@@ -7,18 +7,16 @@
 // updating the Pub/Sub topic subscribers + Cloud Scheduler jobs that
 // reference them.
 //
-// Initial exports (Phase 2.x I6.8):
+// Exports (SAD §7 inventory — all 9 functions implemented):
 //   - killSwitchOnBudgetAlert (PRD I6.8 + SAD §7 Function 1)
-//
-// Future exports (SAD §7 inventory — implemented as stories land):
 //   - triggerMarketingRebuild (M5.5, marketing site rebuild on theme update)
-//   - generateWaMeLink (I6.5 companion)
-//   - sendUdhaarReminder (Sprint 5, RBI guardrails)
-//   - multiTenantAuditJob (Sprint 5, R9 sentinel)
-//   - firebasePhoneAuthQuotaMonitor (Sprint 5, R8)
-//   - joinDecisionCircle (Sprint 4, multi-device)
-//   - mediaCostMonitor (Sprint 5, S4.16)
-//   - shopDeactivationSweep (Sprint 6, ADR-013 DPDP)
+//   - sendUdhaarReminder (Sprint 5, RBI guardrails — scheduled daily 09:00 IST)
+//   - shopDeactivationSweep (Sprint 6, ADR-013 DPDP — scheduled daily 02:00 IST)
+//   - phoneAuthQuotaMonitor (Sprint 5, R8 — scheduled daily 10:00 IST)
+//   - multiTenantAudit (Sprint 5, R9 sentinel — scheduled weekly Sun 03:00 IST)
+//   - joinDecisionCircle (Sprint 4, multi-device — HTTPS Callable)
+//   - mediaCostMonitor (Sprint 5, S4.16 — scheduled daily 11:00 IST)
+//   - generateWaMeLink (I6.5 companion — HTTPS Callable)
 // =============================================================================
 
 import * as admin from 'firebase-admin';
@@ -33,3 +31,10 @@ if (!admin.apps.length) {
 
 export { killSwitchOnBudgetAlert } from './kill_switch';
 export { triggerMarketingRebuild } from './trigger_marketing_rebuild';
+export { sendUdhaarReminder } from './send_udhaar_reminder';
+export { shopDeactivationSweep } from './shop_deactivation_sweep';
+export { phoneAuthQuotaMonitor } from './phone_auth_quota_monitor';
+export { multiTenantAudit } from './multi_tenant_audit';
+export { joinDecisionCircle } from './join_decision_circle';
+export { mediaCostMonitor } from './media_cost_monitor';
+export { generateWaMeLink } from './generate_wa_me_link';

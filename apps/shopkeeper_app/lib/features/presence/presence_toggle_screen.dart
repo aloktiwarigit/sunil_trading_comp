@@ -6,10 +6,15 @@
 // B1.10 AC #4: record away voice note from here.
 // =============================================================================
 
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
+
+import '../../main.dart';
+import '../voice/voice_recorder_widget.dart';
 
 /// Presence status options per B1.9 AC #1.
 enum PresenceStatus {
@@ -36,6 +41,10 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
   PresenceStatus _selected = PresenceStatus.available;
   final _returnTimeController = TextEditingController();
   bool _saving = false;
+
+  /// B-10: absence voice note bytes + duration, populated by VoiceRecorderWidget.
+  Uint8List? _absenceVoiceNoteBytes;
+  int _absenceVoiceNoteDuration = 0;
 
   @override
   void dispose() {
@@ -127,6 +136,67 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
               ),
             ],
 
+            // B-10: absence voice note (away / atEvent only)
+            if (_selected == PresenceStatus.away ||
+                _selected == PresenceStatus.atEvent) ...[
+              const SizedBox(height: YugmaSpacing.s3),
+              Text(
+                'ग्राहक को आपकी आवाज़ सुनाएँ',
+                style: TextStyle(
+                  fontFamily: YugmaFonts.devaBody,
+                  fontSize: YugmaTypeScale.body,
+                  fontWeight: FontWeight.w600,
+                  color: YugmaColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: YugmaSpacing.s2),
+              if (_absenceVoiceNoteBytes != null)
+                Container(
+                  padding: const EdgeInsets.all(YugmaSpacing.s3),
+                  decoration: BoxDecoration(
+                    color: YugmaColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                    border: Border.all(color: YugmaColors.primary),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: YugmaColors.primary, size: 20),
+                      const SizedBox(width: YugmaSpacing.s2),
+                      Expanded(
+                        child: Text(
+                          'आवाज़ रिकॉर्ड हुई — $_absenceVoiceNoteDuration सेकंड',
+                          style: TextStyle(
+                            fontFamily: YugmaFonts.devaBody,
+                            fontSize: YugmaTypeScale.caption,
+                            color: YugmaColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => setState(() {
+                          _absenceVoiceNoteBytes = null;
+                          _absenceVoiceNoteDuration = 0;
+                        }),
+                        icon: Icon(Icons.close, color: YugmaColors.textMuted, size: 20),
+                        tooltip: 'हटाइए',
+                      ),
+                    ],
+                  ),
+                )
+              else
+                VoiceRecorderWidget(
+                  onSend: (result) {
+                    setState(() {
+                      _absenceVoiceNoteBytes = Uint8List.fromList(result.bytes);
+                      _absenceVoiceNoteDuration = result.durationSeconds;
+                    });
+                  },
+                  onCancel: () {
+                    // Nothing to do — widget stays in place
+                  },
+                ),
+            ],
+
             const Spacer(),
 
             // Save button
@@ -169,6 +239,21 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
     final shopId = ref.read(shopIdProviderProvider).shopId;
 
     try {
+      // B-10: upload absence voice note if recorded
+      String? absenceVoiceStorageRef;
+      if (_absenceVoiceNoteBytes != null) {
+        final voiceNoteId =
+            'vn_absence_${DateTime.now().millisecondsSinceEpoch}';
+        final mediaStore = ref.read(mediaStoreProvider);
+        await mediaStore.uploadVoiceNote(
+          bytes: _absenceVoiceNoteBytes!.toList(),
+          shopId: shopId,
+          voiceNoteId: voiceNoteId,
+        );
+        absenceVoiceStorageRef =
+            'shops/$shopId/voice_notes/$voiceNoteId.m4a';
+      }
+
       await FirebaseFirestore.instance
           .collection('shops')
           .doc(shopId)
@@ -177,6 +262,10 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
         'presenceMessage': _selected.label,
         'presenceReturnTime': _returnTimeController.text.trim(),
         'presenceUpdatedAt': FieldValue.serverTimestamp(),
+        if (absenceVoiceStorageRef != null)
+          'absenceVoiceNoteRef': absenceVoiceStorageRef,
+        if (absenceVoiceStorageRef != null)
+          'absenceVoiceNoteDuration': _absenceVoiceNoteDuration,
       }, SetOptions(merge: true));
 
       if (mounted) {

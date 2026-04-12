@@ -1,7 +1,7 @@
 # =============================================================================
-# deploy-staging.yml — deploy everything to yugma-dukaan-staging.
+# deploy-production.yml — deploy everything to yugma-dukaan production.
 #
-# Triggers: manual `workflow_dispatch` + post-merge to main.
+# Trigger: manual `workflow_dispatch` ONLY (requires DEPLOY confirmation).
 # Deploys:
 #   - Firestore rules + indexes
 #   - Cloud Functions (TS)
@@ -11,31 +11,34 @@
 # (free Flutter tier) per SAD §1 — NOT from this workflow.
 # =============================================================================
 
-name: Deploy — staging
+name: Deploy — production
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'firestore.rules'
-      - 'firestore.indexes.json'
-      - 'storage.rules'
-      - 'functions/**'
-      - 'apps/marketing_site/**'
+    inputs:
+      confirm:
+        description: 'Type DEPLOY to confirm production deployment'
+        required: true
+        type: string
 
 concurrency:
-  group: staging-deploy
+  group: production-deploy
   cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Deploy to yugma-dukaan-staging
+    name: Deploy to yugma-dukaan production
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: staging
+    environment: production
 
     steps:
+      - name: Validate confirmation
+        if: ${{ github.event.inputs.confirm != 'DEPLOY' }}
+        run: |
+          echo "::error::Confirmation input must be 'DEPLOY' to proceed"
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -49,7 +52,7 @@ jobs:
 
       - name: Authenticate to Firebase
         env:
-          GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.FIREBASE_STAGING_SA_KEY }}
+          GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.FIREBASE_PRODUCTION_SA_KEY }}
         run: |
           echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" > /tmp/sa-key.json
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json" >> $GITHUB_ENV
@@ -65,14 +68,14 @@ jobs:
         run: npm run build
 
       - name: Deploy Firestore rules + indexes
-        run: firebase deploy --only firestore:rules,firestore:indexes --project staging
+        run: firebase deploy --only firestore:rules,firestore:indexes --project production
 
       - name: Deploy Storage rules
-        run: firebase deploy --only storage --project staging
+        run: firebase deploy --only storage --project production
 
       - name: Deploy Cloud Functions
         if: ${{ hashFiles('functions/package.json') != '' }}
-        run: firebase deploy --only functions --project staging
+        run: firebase deploy --only functions --project production
 
       - name: Build marketing site
         if: ${{ hashFiles('apps/marketing_site/package.json') != '' }}
@@ -83,7 +86,7 @@ jobs:
 
       - name: Deploy marketing hosting target
         if: ${{ hashFiles('apps/marketing_site/package.json') != '' }}
-        run: firebase deploy --only hosting:marketing --project staging
+        run: firebase deploy --only hosting:marketing --project production
 
       - name: Cleanup credentials
         if: always()

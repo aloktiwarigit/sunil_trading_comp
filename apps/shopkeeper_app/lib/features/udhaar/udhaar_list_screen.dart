@@ -113,14 +113,22 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(YugmaSpacing.s4),
-            itemCount: filtered.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(height: YugmaSpacing.s2),
-            itemBuilder: (ctx, i) => _UdhaarCard(
-              ledger: filtered[i],
-              strings: strings,
+          return RefreshIndicator(
+            color: YugmaColors.accent,
+            backgroundColor: YugmaColors.surface,
+            onRefresh: () async {
+              ref.invalidate(udhaarLedgersProvider);
+              await Future.delayed(const Duration(milliseconds: 500));
+            },
+            child: ListView.separated(
+              padding: const EdgeInsets.all(YugmaSpacing.s4),
+              itemCount: filtered.length,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: YugmaSpacing.s2),
+              itemBuilder: (ctx, i) => _UdhaarCard(
+                ledger: filtered[i],
+                strings: strings,
+              ),
             ),
           );
         },

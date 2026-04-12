@@ -6,12 +6,18 @@
 // Cancelled projects show रद्द with reason (edge case #2).
 // =============================================================================
 
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:share_plus/share_plus.dart';
 
 import '../../main.dart' show authProviderInstanceProvider;
+import '../onboarding/onboarding_controller.dart';
 
 /// Normalize Firestore Timestamp → ISO8601 for Freezed JSON parsing.
 Object? _normalizeTimestamp(Object? value) {
@@ -103,10 +109,7 @@ class OrderDetailScreen extends ConsumerWidget {
         loading: () => Center(
           child: CircularProgressIndicator(color: YugmaColors.primary),
         ),
-        error: (err, _) => Center(
-          child: Text(err.toString(),
-              style: TextStyle(fontFamily: YugmaFonts.devaBody)),
-        ),
+        error: (err, _) => YugmaErrorBanner(error: err),
         data: (project) {
           if (project == null) {
             return Center(
@@ -116,13 +119,13 @@ class OrderDetailScreen extends ConsumerWidget {
               ),
             );
           }
-          return _buildDetail(project);
+          return _buildDetail(context, ref, project);
         },
       ),
     );
   }
 
-  Widget _buildDetail(Project project) {
+  Widget _buildDetail(BuildContext context, WidgetRef ref, Project project) {
     final shortId = project.projectId.length > 6
         ? project.projectId.substring(project.projectId.length - 6)
         : project.projectId;
@@ -184,6 +187,30 @@ class OrderDetailScreen extends ConsumerWidget {
           ),
           const SizedBox(height: YugmaSpacing.s2),
           _buildTimeline(project),
+
+          // B-6: Download receipt button — visible only for closed/delivering.
+          if (project.state == ProjectState.closed ||
+              project.state == ProjectState.delivering) ...[
+            const SizedBox(height: YugmaSpacing.s3),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: () => _generateAndShareInvoice(context, project),
+                icon: const Icon(Icons.receipt_long),
+                label: const Text('रसीद डाउनलोड करें'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: YugmaColors.primary,
+                  side: BorderSide(color: YugmaColors.primary),
+                  textStyle: TextStyle(
+                    fontFamily: YugmaFonts.devaBody,
+                    fontSize: YugmaTypeScale.body,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: YugmaSpacing.s4),
 
           // Line items
@@ -376,6 +403,88 @@ class OrderDetailScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// B-6: Generate invoice PDF and share via platform sheet.
+  Future<void> _generateAndShareInvoice(
+    BuildContext context,
+    Project project,
+  ) async {
+    try {
+      // Show loading indicator.
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'रसीद बन रही है…',
+              style: TextStyle(fontFamily: YugmaFonts.devaBody),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Load fonts for the PDF.
+      // NOTE: When font TTF assets are bundled, load them via rootBundle.
+      // For now, use the pdf package's built-in Helvetica as a fallback.
+      final devaDisplay = pw.Font.helvetica();
+      final devaBody = pw.Font.helvetica();
+      final devaBodyItalic = pw.Font.helveticaOblique();
+      final mono = pw.Font.courier();
+
+      final template = InvoiceTemplate(
+        devaDisplayFont: devaDisplay,
+        devaBodyFont: devaBody,
+        devaBodyFontItalic: devaBodyItalic,
+        monoFont: mono,
+      );
+
+      // Assemble the payload. Read shop tokens from onboarding state.
+      // The onboardingControllerProvider is available via ProviderScope.
+      final container = ProviderScope.containerOf(context);
+      final onboardingState =
+          container.read(onboardingControllerProvider).valueOrNull;
+      if (onboardingState == null) return;
+
+      final customerName =
+          onboardingState.user.displayName ?? 'ग्राहक';
+
+      final payload = InvoicePayload(
+        project: project,
+        shopTokens: onboardingState.themeTokens,
+        customerDisplayName: customerName,
+      );
+
+      // Generate PDF bytes.
+      final pdfBytes = await template.generate(payload);
+
+      // Save to temp directory.
+      final tempDir = await getTemporaryDirectory();
+      final date = project.committedAt ?? project.createdAt;
+      final fileName = InvoiceTemplate.fileName(project.projectId, date);
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(pdfBytes);
+
+      // Share via platform sheet.
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          subject: 'रसीद — ${project.projectId}',
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'रसीद बनाने में समस्या: $e',
+              style: TextStyle(fontFamily: YugmaFonts.devaBody),
+            ),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
   }
 
   static String _formatInr(int amount) {

@@ -14,6 +14,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -219,6 +220,7 @@ class PersonaToggleButton extends ConsumerWidget {
                       selectedColor:
                           YugmaColors.primary.withValues(alpha: 0.15),
                       onSelected: (_) {
+                        HapticFeedback.selectionClick();
                         if (p == Persona.other) {
                           // Edge #2: show custom label input
                           setSheetState(() {});

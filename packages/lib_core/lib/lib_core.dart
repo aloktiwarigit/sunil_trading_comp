@@ -91,9 +91,14 @@ export 'src/components/bharosa_landing/bharosa_landing_barrel.dart';
 export 'src/components/voice_note_player.dart';
 export 'src/components/browse/browse_barrel.dart';
 export 'src/components/chat/chat_barrel.dart';
+export 'src/components/yugma_skeleton_card.dart';
+export 'src/components/yugma_error_banner.dart';
 
 // ---------- Invoice (B1.13 Devanagari receipt — client-side PDF) ----------
 export 'src/invoice/invoice_template.dart';
+
+// ---------- Routing (shared page transitions) ----------
+export 'src/routing/yugma_page_transition.dart';
 
 // ---------- Services (orchestration over adapters + repositories) ----------
 export 'src/services/phone_upgrade_coordinator.dart';

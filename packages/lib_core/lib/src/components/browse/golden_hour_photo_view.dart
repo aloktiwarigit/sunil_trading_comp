@@ -76,13 +76,18 @@ class _GoldenHourPhotoViewState extends State<GoldenHourPhotoView> {
       ),
       child: Stack(
         children: [
-          // Image (or fallback gradient)
+          // Image (or fallback gradient) — pinch-to-zoom via InteractiveViewer (D-6)
           if (imageUrl.isNotEmpty)
             Positioned.fill(
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              child: InteractiveViewer(
+                minScale: 1.0,
+                maxScale: 4.0,
+                clipBehavior: Clip.none,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
               ),
             ),
 

@@ -142,15 +142,7 @@ class _ActiveProjectsScreenState extends ConsumerState<ActiveProjectsScreen> {
               loading: () => Center(
                 child: CircularProgressIndicator(color: YugmaColors.primary),
               ),
-              error: (err, _) => Center(
-                child: Text(
-                  err.toString(),
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.devaBody,
-                    color: YugmaColors.textPrimary,
-                  ),
-                ),
-              ),
+              error: (err, _) => YugmaErrorBanner(error: err),
               data: (projects) {
                 if (projects.isEmpty) {
                   return Center(

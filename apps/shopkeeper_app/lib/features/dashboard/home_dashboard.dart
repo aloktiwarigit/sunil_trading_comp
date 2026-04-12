@@ -30,19 +30,19 @@ class HomeDashboard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = context.yugmaTheme;
     final authState = ref.watch(opsAuthControllerProvider);
     final strings = const AppStringsHi();
     final operator = authState.value?.operator;
 
     return Scaffold(
-      backgroundColor: YugmaColors.background,
+      backgroundColor: theme.shopBackground,
       appBar: AppBar(
-        backgroundColor: YugmaColors.primary,
-        foregroundColor: YugmaColors.textOnPrimary,
+        backgroundColor: theme.shopPrimary,
+        foregroundColor: theme.shopTextOnPrimary,
         title: Text(
           strings.opsDashboardTitle,
-          style: TextStyle(
-            fontFamily: YugmaFonts.devaDisplay,
+          style: theme.h2Deva.copyWith(
             fontSize: YugmaTypeScale.h3,
           ),
         ),
@@ -51,9 +51,9 @@ class HomeDashboard extends ConsumerWidget {
           PopupMenuButton<String>(
             icon: Icon(
               Icons.more_vert,
-              color: YugmaColors.textOnPrimary,
+              color: theme.shopTextOnPrimary,
             ),
-            color: YugmaColors.surface,
+            color: theme.shopSurface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(YugmaRadius.md),
             ),
@@ -67,10 +67,8 @@ class HomeDashboard extends ConsumerWidget {
                 value: 'sign_out',
                 child: Text(
                   strings.signOutLabel,
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.devaBody,
-                    fontSize: YugmaTypeScale.body,
-                    color: YugmaColors.textPrimary,
+                  style: theme.bodyDeva.copyWith(
+                    color: theme.shopTextPrimary,
                   ),
                 ),
               ),
@@ -91,11 +89,9 @@ class HomeDashboard extends ConsumerWidget {
                 ),
                 child: Text(
                   '${operator.displayName} (${operator.role.name})',
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.devaBody,
+                  style: theme.bodyDeva.copyWith(
                     fontSize: YugmaTypeScale.bodyLarge,
-                    height: YugmaLineHeights.normal,
-                    color: YugmaColors.textSecondary,
+                    color: theme.shopTextSecondary,
                   ),
                 ),
               ),
@@ -154,6 +150,7 @@ class _InventorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.yugmaTheme;
     final strings = const AppStringsHi();
 
     return GestureDetector(
@@ -165,10 +162,10 @@ class _InventorySection extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(YugmaSpacing.s5),
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
           border: Border.all(
-            color: YugmaColors.primary.withValues(alpha: 0.2),
+            color: theme.shopPrimary.withValues(alpha: 0.2),
           ),
           boxShadow: YugmaShadows.card,
         ),
@@ -176,23 +173,21 @@ class _InventorySection extends StatelessWidget {
           children: [
             Icon(
               Icons.inventory_2_outlined,
-              color: YugmaColors.primary,
+              color: theme.shopPrimary,
               size: 24,
             ),
             const SizedBox(width: YugmaSpacing.s3),
             Text(
               strings.inventoryTitle,
-              style: TextStyle(
-                fontFamily: YugmaFonts.devaBody,
-                fontSize: YugmaTypeScale.body,
-                color: YugmaColors.textPrimary,
+              style: theme.bodyDeva.copyWith(
+                color: theme.shopTextPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const Spacer(),
             Icon(
               Icons.chevron_right,
-              color: YugmaColors.textMuted,
+              color: theme.shopTextMuted,
             ),
           ],
         ),
@@ -207,6 +202,7 @@ class _OrdersSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.yugmaTheme;
     final strings = const AppStringsHi();
 
     return GestureDetector(
@@ -218,10 +214,10 @@ class _OrdersSection extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(YugmaSpacing.s5),
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
           border: Border.all(
-            color: YugmaColors.primary.withValues(alpha: 0.2),
+            color: theme.shopPrimary.withValues(alpha: 0.2),
           ),
           boxShadow: YugmaShadows.card,
         ),
@@ -229,23 +225,21 @@ class _OrdersSection extends StatelessWidget {
           children: [
             Icon(
               Icons.receipt_long_outlined,
-              color: YugmaColors.primary,
+              color: theme.shopPrimary,
               size: 24,
             ),
             const SizedBox(width: YugmaSpacing.s3),
             Text(
               strings.ordersTitle,
-              style: TextStyle(
-                fontFamily: YugmaFonts.devaBody,
-                fontSize: YugmaTypeScale.body,
-                color: YugmaColors.textPrimary,
+              style: theme.bodyDeva.copyWith(
+                color: theme.shopTextPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const Spacer(),
             Icon(
               Icons.chevron_right,
-              color: YugmaColors.textMuted,
+              color: theme.shopTextMuted,
             ),
           ],
         ),
@@ -260,6 +254,7 @@ class _CurationSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.yugmaTheme;
     return GestureDetector(
       onTap: () => context.push('/curation'),
       child: Container(
@@ -269,28 +264,26 @@ class _CurationSection extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(YugmaSpacing.s5),
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
           border: Border.all(
-            color: YugmaColors.primary.withValues(alpha: 0.2),
+            color: theme.shopPrimary.withValues(alpha: 0.2),
           ),
           boxShadow: YugmaShadows.card,
         ),
         child: Row(
           children: [
-            Icon(Icons.star_outline, color: YugmaColors.primary, size: 24),
+            Icon(Icons.star_outline, color: theme.shopPrimary, size: 24),
             const SizedBox(width: YugmaSpacing.s3),
             Text(
               'मेरी पसंद',
-              style: TextStyle(
-                fontFamily: YugmaFonts.devaBody,
-                fontSize: YugmaTypeScale.body,
-                color: YugmaColors.textPrimary,
+              style: theme.bodyDeva.copyWith(
+                color: theme.shopTextPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const Spacer(),
-            Icon(Icons.chevron_right, color: YugmaColors.textMuted),
+            Icon(Icons.chevron_right, color: theme.shopTextMuted),
           ],
         ),
       ),
@@ -304,6 +297,7 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.yugmaTheme;
     return GestureDetector(
       onTap: () => context.push('/settings'),
       child: Container(
@@ -313,28 +307,26 @@ class _SettingsSection extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(YugmaSpacing.s5),
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
           border: Border.all(
-            color: YugmaColors.primary.withValues(alpha: 0.2),
+            color: theme.shopPrimary.withValues(alpha: 0.2),
           ),
           boxShadow: YugmaShadows.card,
         ),
         child: Row(
           children: [
-            Icon(Icons.settings_outlined, color: YugmaColors.primary, size: 24),
+            Icon(Icons.settings_outlined, color: theme.shopPrimary, size: 24),
             const SizedBox(width: YugmaSpacing.s3),
             Text(
               'सेटिंग्स',
-              style: TextStyle(
-                fontFamily: YugmaFonts.devaBody,
-                fontSize: YugmaTypeScale.body,
-                color: YugmaColors.textPrimary,
+              style: theme.bodyDeva.copyWith(
+                color: theme.shopTextPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const Spacer(),
-            Icon(Icons.chevron_right, color: YugmaColors.textMuted),
+            Icon(Icons.chevron_right, color: theme.shopTextMuted),
           ],
         ),
       ),
@@ -348,6 +340,7 @@ class _DashboardSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.yugmaTheme;
     return GestureDetector(
       onTap: () => context.push('/dashboard'),
       child: Container(
@@ -357,10 +350,10 @@ class _DashboardSection extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(YugmaSpacing.s5),
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
           border: Border.all(
-            color: YugmaColors.primary.withValues(alpha: 0.2),
+            color: theme.shopPrimary.withValues(alpha: 0.2),
           ),
           boxShadow: YugmaShadows.card,
         ),
@@ -368,23 +361,23 @@ class _DashboardSection extends StatelessWidget {
           children: [
             Icon(
               Icons.bar_chart_outlined,
-              color: YugmaColors.primary,
+              color: theme.shopPrimary,
               size: 24,
             ),
             const SizedBox(width: YugmaSpacing.s3),
             Text(
               'Dashboard',
               style: TextStyle(
-                fontFamily: YugmaFonts.enBody,
+                fontFamily: theme.fontFamilyEnglishBody,
                 fontSize: YugmaTypeScale.body,
-                color: YugmaColors.textPrimary,
+                color: theme.shopTextPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const Spacer(),
             Icon(
               Icons.chevron_right,
-              color: YugmaColors.textMuted,
+              color: theme.shopTextMuted,
             ),
           ],
         ),

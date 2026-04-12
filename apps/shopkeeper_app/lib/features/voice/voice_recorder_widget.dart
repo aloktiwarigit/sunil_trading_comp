@@ -15,6 +15,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lib_core/lib_core.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -69,6 +70,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
   }
 
   Future<void> _startRecording() async {
+    HapticFeedback.lightImpact();
     final hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
       setState(() => _permissionDenied = true);

@@ -29,6 +29,7 @@ import 'package:customer_app/features/orders/order_list_screen.dart';
 import 'package:customer_app/features/shop/deactivation_banner.dart';
 import 'package:customer_app/features/project/commit_screen.dart';
 import 'package:customer_app/features/browse/shortlist_providers.dart';
+import 'package:customer_app/features/udhaar/customer_udhaar_screen.dart';
 import 'package:customer_app/features/project/draft_controller.dart';
 import 'package:customer_app/features/project/draft_list_screen.dart';
 import 'package:customer_app/features/project/payment_screen.dart';
@@ -261,6 +262,24 @@ final routerProvider = Provider<GoRouter>((ref) {
               strings: data.strings,
               retentionDays: retentionDays,
             ),
+          );
+        },
+      ),
+      // B-5 — Customer udhaar balance view (read-only)
+      GoRoute(
+        path: '/udhaar',
+        builder: (context, state) {
+          final data = onboarding.valueOrNull;
+          if (data == null) return const SplashScreen();
+
+          final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
+
+          return Theme(
+            data: ThemeData(
+              useMaterial3: true,
+              extensions: [theme],
+            ),
+            child: CustomerUdhaarScreen(strings: data.strings),
           );
         },
       ),

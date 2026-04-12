@@ -14,6 +14,7 @@
 // =============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
 
@@ -221,6 +222,7 @@ class PaymentScreen extends ConsumerWidget {
             height: theme.tapTargetMin,
             child: ElevatedButton(
               onPressed: () {
+                HapticFeedback.mediumImpact();
                 ref
                     .read(paymentControllerProvider(projectId).notifier)
                     .confirmPayment();

@@ -84,10 +84,7 @@ class OrderListScreen extends ConsumerWidget {
         loading: () => Center(
           child: CircularProgressIndicator(color: YugmaColors.primary),
         ),
-        error: (err, _) => Center(
-          child: Text(err.toString(),
-              style: TextStyle(fontFamily: YugmaFonts.devaBody)),
-        ),
+        error: (err, _) => YugmaErrorBanner(error: err),
         data: (projects) {
           if (projects.isEmpty) {
             return Center(
@@ -105,13 +102,21 @@ class OrderListScreen extends ConsumerWidget {
               ),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(YugmaSpacing.s4),
-            itemCount: projects.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(height: YugmaSpacing.s2),
-            itemBuilder: (ctx, i) =>
-                _OrderCard(project: projects[i], strings: strings),
+          return RefreshIndicator(
+            color: YugmaColors.accent,
+            backgroundColor: YugmaColors.surface,
+            onRefresh: () async {
+              ref.invalidate(customerProjectsProvider);
+              await Future.delayed(const Duration(milliseconds: 500));
+            },
+            child: ListView.separated(
+              padding: const EdgeInsets.all(YugmaSpacing.s4),
+              itemCount: projects.length,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: YugmaSpacing.s2),
+              itemBuilder: (ctx, i) =>
+                  _OrderCard(project: projects[i], strings: strings),
+            ),
           );
         },
       ),

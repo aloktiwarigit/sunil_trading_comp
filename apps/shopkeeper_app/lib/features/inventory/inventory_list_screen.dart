@@ -130,25 +130,33 @@ class InventoryListScreen extends ConsumerWidget {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.only(
-              top: YugmaSpacing.s4,
-              bottom: YugmaSpacing.s16, // space for FAB
-            ),
-            itemCount: skus.length,
-            separatorBuilder: (_, __) => Divider(
-              height: 1,
-              color: YugmaColors.divider,
-              indent: YugmaSpacing.s4,
-              endIndent: YugmaSpacing.s4,
-            ),
-            itemBuilder: (context, index) {
-              final sku = skus[index];
-              return GestureDetector(
-                onTap: () => context.push('/inventory/${sku.skuId}'),
-                child: _SkuListTile(sku: sku),
-              );
+          return RefreshIndicator(
+            color: YugmaColors.accent,
+            backgroundColor: YugmaColors.surface,
+            onRefresh: () async {
+              ref.invalidate(inventoryListProvider);
+              await Future.delayed(const Duration(milliseconds: 500));
             },
+            child: ListView.separated(
+              padding: const EdgeInsets.only(
+                top: YugmaSpacing.s4,
+                bottom: YugmaSpacing.s16, // space for FAB
+              ),
+              itemCount: skus.length,
+              separatorBuilder: (_, __) => Divider(
+                height: 1,
+                color: YugmaColors.divider,
+                indent: YugmaSpacing.s4,
+                endIndent: YugmaSpacing.s4,
+              ),
+              itemBuilder: (context, index) {
+                final sku = skus[index];
+                return GestureDetector(
+                  onTap: () => context.push('/inventory/${sku.skuId}'),
+                  child: _SkuListTile(sku: sku),
+                );
+              },
+            ),
           );
         },
       ),
