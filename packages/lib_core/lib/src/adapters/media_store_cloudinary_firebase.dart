@@ -114,7 +114,7 @@ class MediaStoreCloudinaryFirebase implements MediaStore {
 
       return CatalogUploadResult(
         publicId: path,
-        secureUrl: downloadUrl,
+        url: downloadUrl,
         width: 0, // Not available without image decoding
         height: 0,
       );
