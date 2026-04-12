@@ -5,3 +5,4 @@
 
 export 'chat_bubble.dart';
 export 'chat_screen.dart';
+export 'price_proposal_bubble.dart';

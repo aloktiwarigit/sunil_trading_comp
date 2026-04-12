@@ -153,6 +153,52 @@ class AppStringsHi extends AppStrings {
   @override
   String get chatMessagePending => 'भेज रहे हैं...';
 
+  // ---- §4c C3.2 Draft line item editing ----
+
+  @override
+  String draftItemRemoved(String skuName) => '$skuName हटाई गई';
+
+  @override
+  String get draftUndoRemove => 'वापस लाइए';
+
+  @override
+  String get draftQtyHighTitle => '10 से ज़्यादा?';
+
+  @override
+  String draftQtyHighBody(int qty, String skuName) =>
+      '$skuName $qty चाहिए — पक्का?';
+
+  @override
+  String get draftQtyHighConfirm => 'हाँ, जोड़िए';
+
+  @override
+  String get draftQtyHighCancel => 'नहीं';
+
+  @override
+  String get draftTotalLabel => 'कुल';
+
+  // ---- §4d C3.3 Negotiation flow ----
+
+  @override
+  String proposalBubbleLabel(String skuName) =>
+      'सुनील भैया की पेशकश — $skuName';
+
+  @override
+  String proposalPriceLine(int amount) => '₹${_formatInr(amount)}';
+
+  @override
+  String get proposalAcceptButton => 'मंज़ूर है';
+
+  @override
+  String get proposalAcceptedBadge => 'मंज़ूर';
+
+  @override
+  String proposalAcceptedSystemMessage(int amount, String skuName) =>
+      '₹${_formatInr(amount)} पर $skuName पक्का हुआ';
+
+  @override
+  String get proposalOriginalPriceLabel => 'पहले का दाम';
+
   // ---- §5 Commit + OTP + payment ----
 
   @override

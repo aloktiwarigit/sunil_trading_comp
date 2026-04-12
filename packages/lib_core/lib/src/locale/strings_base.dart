@@ -187,6 +187,56 @@ abstract class AppStrings {
   String get chatMessagePending;
 
   // =========================================================================
+  // §4c — C3.2 Draft line item editing (Sprint 7)
+  // =========================================================================
+
+  /// Snackbar after swiping to remove a line item. Parameter: SKU name.
+  /// Example hi: `रमेश-बहन हटाई गई`
+  String draftItemRemoved(String skuName);
+
+  /// Undo button on the remove snackbar.
+  String get draftUndoRemove;
+
+  /// Qty > 10 confirmation dialog title.
+  String get draftQtyHighTitle;
+
+  /// Qty > 10 confirmation dialog body. Parameters: quantity, SKU name.
+  /// Example hi: `{name} {qty} चाहिए — पक्का?`
+  String draftQtyHighBody(int qty, String skuName);
+
+  /// Qty > 10 confirm button.
+  String get draftQtyHighConfirm;
+
+  /// Qty > 10 cancel button.
+  String get draftQtyHighCancel;
+
+  /// Total amount label shown at bottom of draft list.
+  String get draftTotalLabel;
+
+  // =========================================================================
+  // §4d — C3.3 Negotiation flow (Sprint 7)
+  // =========================================================================
+
+  /// Price proposal bubble label — "Bhaiya's offer for {skuName}".
+  String proposalBubbleLabel(String skuName);
+
+  /// Proposed price line — "₹{amount}".
+  String proposalPriceLine(int amount);
+
+  /// "Accept" button on price proposal bubble.
+  String get proposalAcceptButton;
+
+  /// "Accepted" badge shown on an already-accepted proposal.
+  String get proposalAcceptedBadge;
+
+  /// System message when customer accepts a proposal.
+  /// Example hi: `₹{amount} पर {skuName} पक्का ह���आ`
+  String proposalAcceptedSystemMessage(int amount, String skuName);
+
+  /// Original price strikethrough label on proposal bubble.
+  String get proposalOriginalPriceLabel;
+
+  // =========================================================================
   // §5 — Commit + OTP + payment (UX Spec §5.5 #11–14)
   // =========================================================================
 

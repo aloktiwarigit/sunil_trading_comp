@@ -25,6 +25,7 @@ import 'package:lib_core/src/models/message.dart';
 import 'package:lib_core/src/theme/tokens.dart';
 import 'package:lib_core/src/theme/yugma_theme_extension.dart';
 import 'package:lib_core/src/components/voice_note_player.dart';
+import 'package:lib_core/src/components/chat/price_proposal_bubble.dart';
 
 /// The delivery status of a message for UI rendering.
 enum MessageDeliveryStatus {
@@ -53,6 +54,11 @@ class ChatBubble extends StatelessWidget {
     this.onVoiceNotePlayPause,
     this.voiceNoteProgress,
     this.imageUrl,
+    // C3.3 price proposal fields
+    this.proposalSkuName,
+    this.proposalOriginalPrice,
+    this.isProposalAccepted = false,
+    this.onAcceptProposal,
   });
 
   /// The message to render.
@@ -75,6 +81,21 @@ class ChatBubble extends StatelessWidget {
 
   /// Image URL loader — called to resolve image URLs for image messages.
   final String? imageUrl;
+
+  // ---- C3.3 price proposal parameters ----
+
+  /// SKU name for price proposal rendering. Resolved by the consuming app
+  /// from the Project's line items using message.lineItemId.
+  final String? proposalSkuName;
+
+  /// Original catalog price for strikethrough display on proposals.
+  final int? proposalOriginalPrice;
+
+  /// True if this price proposal has been accepted by the customer.
+  final bool isProposalAccepted;
+
+  /// Called when the customer taps "Accept" on a price proposal.
+  final VoidCallback? onAcceptProposal;
 
   /// True if this message was sent by the current customer.
   bool get _isCustomerMessage => message.authorUid == currentUserUid;
@@ -267,6 +288,18 @@ class ChatBubble extends StatelessWidget {
         return Text(
           message.textBody ?? '',
           style: theme.captionDeva,
+        );
+
+      case MessageType.priceProposal:
+        // C3.3: delegate to PriceProposalBubble.
+        return PriceProposalBubble(
+          message: message,
+          strings: strings,
+          skuName: proposalSkuName ?? '',
+          originalPrice: proposalOriginalPrice,
+          isAccepted: isProposalAccepted,
+          isCustomerSide: _isCustomerMessage == false, // proposals come FROM shopkeeper, shown TO customer
+          onAccept: onAcceptProposal,
         );
     }
   }

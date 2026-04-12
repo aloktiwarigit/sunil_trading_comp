@@ -231,6 +231,107 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
     }
   }
 
+  /// C3.3: Accept a price proposal.
+  ///
+  /// 1. Reads the proposal message to get proposedPrice + lineItemId
+  /// 2. Updates the target LineItem's finalPrice in the Project document
+  /// 3. Recomputes totalAmount atomically
+  /// 4. Sends a system message confirming acceptance
+  ///
+  /// The write to lineItems + totalAmount is a direct Firestore update
+  /// (same pattern as DraftController._updateDraftLineItems) — security rules
+  /// allow customer writes to these fields when state in ['draft', 'negotiating'].
+  Future<void> acceptPriceProposal(String messageId) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    // Find the proposal message.
+    final proposalMsg = current.messages
+        .where((m) => m.messageId == messageId && m.isPriceProposal)
+        .firstOrNull;
+    if (proposalMsg == null) return;
+
+    final proposedPrice = proposalMsg.proposedPrice!;
+    final targetLineItemId = proposalMsg.lineItemId!;
+
+    final shopId = ref.read(shopIdProviderProvider).shopId;
+    final firestore = FirebaseFirestore.instance;
+    final authProvider = ref.read(authProviderInstanceProvider);
+    final user = authProvider.currentUser;
+    if (user == null) return;
+
+    final projectRef = firestore
+        .collection('shops')
+        .doc(shopId)
+        .collection('projects')
+        .doc(_projectId);
+
+    // Atomic update: read line items, set finalPrice, recompute total.
+    await firestore.runTransaction((txn) async {
+      final snap = await txn.get(projectRef);
+      if (!snap.exists) return;
+
+      final data = snap.data()!;
+      final currentState = data['state'] as String?;
+
+      // Only allow acceptance in draft or negotiating state.
+      if (currentState != 'draft' && currentState != 'negotiating') return;
+
+      final rawItems = data['lineItems'] as List<dynamic>? ?? <dynamic>[];
+      final updatedItems = <Map<String, dynamic>>[];
+      String? skuName;
+      var totalAmount = 0;
+
+      for (final raw in rawItems) {
+        final item = Map<String, dynamic>.from(raw as Map);
+        if (item['lineItemId'] == targetLineItemId) {
+          item['finalPrice'] = proposedPrice;
+          skuName = item['skuName'] as String?;
+        }
+        // Recompute using finalPrice if set, otherwise unitPriceInr.
+        final effectivePrice =
+            (item['finalPrice'] as num?)?.toInt() ??
+            (item['unitPriceInr'] as num?)?.toInt() ??
+            0;
+        final qty = (item['quantity'] as num?)?.toInt() ?? 1;
+        totalAmount += effectivePrice * qty;
+        updatedItems.add(item);
+      }
+
+      txn.update(projectRef, {
+        'lineItems': updatedItems,
+        'totalAmount': totalAmount,
+        'state': 'negotiating', // C3.3: draft → negotiating on first proposal acceptance
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Send a system message confirming the acceptance (AC #6).
+      if (skuName != null) {
+        final sysMsgRef = firestore
+            .collection('shops')
+            .doc(shopId)
+            .collection('chatThreads')
+            .doc(_projectId)
+            .collection('messages')
+            .doc();
+
+        txn.set(sysMsgRef, {
+          'messageId': sysMsgRef.id,
+          'shopId': shopId,
+          'threadId': _projectId,
+          'projectId': _projectId,
+          'authorUid': user.uid,
+          'authorRole': 'system',
+          'type': 'system',
+          'sentAt': FieldValue.serverTimestamp(),
+          'textBody':
+              '₹$proposedPrice पर $skuName पक्का हुआ',
+          'readByUids': <String>[],
+        });
+      }
+    });
+  }
+
   /// Load older messages (pagination — infinite scroll upward).
   Future<void> loadOlderMessages() async {
     final current = state.valueOrNull;

@@ -75,6 +75,28 @@ class DraftListScreen extends ConsumerWidget {
     );
   }
 
+  static int _computeTotal(DraftState draftState) {
+    return draftState.lineItems.fold<int>(
+      0,
+      (sum, item) => sum + item.lineTotalInr,
+    );
+  }
+
+  static String _formatInr(int amount) {
+    final s = amount.toString();
+    if (s.length <= 3) return s;
+    final lastThree = s.substring(s.length - 3);
+    final rest = s.substring(0, s.length - 3);
+    final buffer = StringBuffer();
+    for (var i = 0; i < rest.length; i++) {
+      if (i != 0 && (rest.length - i) % 2 == 0) {
+        buffer.write(',');
+      }
+      buffer.write(rest[i]);
+    }
+    return '$buffer,$lastThree';
+  }
+
   Widget _buildEmptyState(BuildContext context, YugmaThemeExtension theme) {
     return Center(
       child: Padding(
@@ -141,20 +163,102 @@ class DraftListScreen extends ConsumerWidget {
                 Divider(color: theme.shopDivider, height: 1),
             itemBuilder: (context, index) {
               final item = items[index];
-              return _DraftLineItemTile(
-                item: item,
-                theme: theme,
-                strings: strings,
-                onRemove: () {
+              // C3.2 AC #2: swipe-to-dismiss with undo snackbar.
+              return Dismissible(
+                key: ValueKey(item.lineItemId),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding:
+                      const EdgeInsets.only(right: YugmaSpacing.s4),
+                  color: theme.shopCommit.withValues(alpha: 0.15),
+                  child: Icon(
+                    Icons.delete_outline,
+                    color: theme.shopCommit,
+                  ),
+                ),
+                onDismissed: (_) {
+                  final removedItem = item;
                   ref
                       .read(draftControllerProvider.notifier)
-                      .removeLineItem(item.lineItemId);
+                      .removeLineItem(removedItem.lineItemId);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        strings.draftItemRemoved(removedItem.skuName),
+                      ),
+                      action: SnackBarAction(
+                        label: strings.draftUndoRemove,
+                        onPressed: () {
+                          // Re-add the removed item via addSku is not
+                          // perfect (generates new lineItemId), but
+                          // preserves the undo UX. A full undo would
+                          // require caching the old state.
+                          ref
+                              .read(draftControllerProvider.notifier)
+                              .undoRemoveLineItem(removedItem);
+                        },
+                      ),
+                    ),
+                  );
                 },
-                onQuantityChanged: (qty) {
-                  ref
-                      .read(draftControllerProvider.notifier)
-                      .updateQuantity(item.lineItemId, qty);
-                },
+                child: _DraftLineItemTile(
+                  item: item,
+                  theme: theme,
+                  strings: strings,
+                  onRemove: () {
+                    ref
+                        .read(draftControllerProvider.notifier)
+                        .removeLineItem(item.lineItemId);
+                  },
+                  onQuantityChanged: (qty) async {
+                    // C3.2 Edge #3: qty > 10 confirmation prompt.
+                    if (qty > 10) {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: Text(
+                            strings.draftQtyHighTitle,
+                            style: theme.h2Deva,
+                          ),
+                          content: Text(
+                            strings.draftQtyHighBody(qty, item.skuName),
+                            style: theme.bodyDeva,
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.of(context).pop(false),
+                              child: Text(
+                                strings.draftQtyHighCancel,
+                                style: TextStyle(
+                                  fontFamily:
+                                      theme.fontFamilyDevanagariBody,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () =>
+                                  Navigator.of(context).pop(true),
+                              child: Text(
+                                strings.draftQtyHighConfirm,
+                                style: TextStyle(
+                                  fontFamily:
+                                      theme.fontFamilyDevanagariBody,
+                                  color: theme.shopPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed != true) return;
+                    }
+                    ref
+                        .read(draftControllerProvider.notifier)
+                        .updateQuantity(item.lineItemId, qty);
+                  },
+                ),
               );
             },
           ),
@@ -183,6 +287,29 @@ class DraftListScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // C3.2 AC #3: show recomputed total.
+            Padding(
+              padding:
+                  const EdgeInsets.only(bottom: YugmaSpacing.s3),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    strings.draftTotalLabel,
+                    style: theme.bodyDeva.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '\u20B9${_formatInr(_computeTotal(draftState))}',
+                    style: theme.monoNumeral.copyWith(
+                      fontSize: theme.isElderTier ? 20.0 : 17.0,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             // C3.4 — Oxblood commit button (first legitimate use of shopCommit)
             if (onCommit != null)
               SizedBox(

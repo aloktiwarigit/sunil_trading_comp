@@ -76,6 +76,23 @@ Map<String, String> _renderAllStrings(AppStrings s) {
     'chatSendButton': s.chatSendButton,
     'chatMessagePending': s.chatMessagePending,
 
+    // ---- §4c C3.2 Draft line item editing ----
+    'draftItemRemoved': s.draftItemRemoved('Test'),
+    'draftUndoRemove': s.draftUndoRemove,
+    'draftQtyHighTitle': s.draftQtyHighTitle,
+    'draftQtyHighBody(12, Test)': s.draftQtyHighBody(12, 'Test'),
+    'draftQtyHighConfirm': s.draftQtyHighConfirm,
+    'draftQtyHighCancel': s.draftQtyHighCancel,
+    'draftTotalLabel': s.draftTotalLabel,
+
+    // ---- §4d C3.3 Negotiation flow ----
+    'proposalBubbleLabel': s.proposalBubbleLabel('Test'),
+    'proposalPriceLine(15000)': s.proposalPriceLine(15000),
+    'proposalAcceptButton': s.proposalAcceptButton,
+    'proposalAcceptedBadge': s.proposalAcceptedBadge,
+    'proposalAcceptedSystemMessage': s.proposalAcceptedSystemMessage(15000, 'Test'),
+    'proposalOriginalPriceLabel': s.proposalOriginalPriceLabel,
+
     // ---- §5 Commit + OTP + payment ----
     'commitButtonPakka': s.commitButtonPakka,
     'otpPromptBhaiyaNeedsIt': s.otpPromptBhaiyaNeedsIt,
@@ -246,7 +263,11 @@ void main() {
       // Allow the receiptCancelledWatermark (UPPERCASE English vs Devanagari
       // "रद्द") and cloudinaryExhaustedR2Active (same two loanwords in both
       // locales — Cloudinary/R2 are product names) as legitimate overlaps.
-      const allowedIdenticals = <String>{};
+      // proposalPriceLine is legitimately identical — ₹ format with Western
+      // numerals per UX Spec §5.4, same in both locales.
+      const allowedIdenticals = <String>{
+        'proposalPriceLine',
+      };
 
       final unexpected = identical
           .where(

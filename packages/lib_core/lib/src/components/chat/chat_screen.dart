@@ -26,6 +26,19 @@ import 'package:lib_core/src/theme/tokens.dart';
 import 'package:lib_core/src/theme/yugma_theme_extension.dart';
 import 'package:lib_core/src/components/chat/chat_bubble.dart';
 
+/// C3.3: Display metadata for rendering a price proposal bubble.
+class ProposalDisplayMetadata {
+  const ProposalDisplayMetadata({
+    required this.skuName,
+    this.originalPrice,
+    this.isAccepted = false,
+  });
+
+  final String skuName;
+  final int? originalPrice;
+  final bool isAccepted;
+}
+
 /// The full chat screen with message list + input bar.
 ///
 /// This widget is app-agnostic — it receives messages and callbacks,
@@ -44,6 +57,9 @@ class ChatScreen extends StatefulWidget {
     this.onLoadOlder,
     this.isLoadingOlder = false,
     this.onBack,
+    // C3.3 negotiation support
+    this.onAcceptProposal,
+    this.proposalMetadata = const {},
   });
 
   /// Thread title — e.g., "सुनील भैया का कमरा — आपका ऑर्डर #A3F".
@@ -72,6 +88,14 @@ class ChatScreen extends StatefulWidget {
 
   /// Called when back navigation is requested.
   final VoidCallback? onBack;
+
+  /// C3.3: Called when the customer accepts a price proposal.
+  /// Parameter is the messageId of the proposal being accepted.
+  final ValueChanged<String>? onAcceptProposal;
+
+  /// C3.3: Metadata for price proposal rendering, keyed by messageId.
+  /// Each entry contains { 'skuName', 'originalPrice', 'isAccepted' }.
+  final Map<String, ProposalDisplayMetadata> proposalMetadata;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -224,11 +248,23 @@ class _ChatScreenState extends State<ChatScreen> {
         final status = widget.deliveryStatuses[message.messageId] ??
             MessageDeliveryStatus.delivered;
 
+        // C3.3: resolve proposal metadata if this is a price_proposal message.
+        final proposalMeta =
+            widget.proposalMetadata[message.messageId];
+
         return ChatBubble(
           message: message,
           strings: widget.strings,
           currentUserUid: widget.currentUserUid,
           deliveryStatus: status,
+          proposalSkuName: proposalMeta?.skuName,
+          proposalOriginalPrice: proposalMeta?.originalPrice,
+          isProposalAccepted: proposalMeta?.isAccepted ?? false,
+          onAcceptProposal: proposalMeta != null &&
+                  !proposalMeta.isAccepted &&
+                  widget.onAcceptProposal != null
+              ? () => widget.onAcceptProposal!(message.messageId)
+              : null,
         );
       },
     );

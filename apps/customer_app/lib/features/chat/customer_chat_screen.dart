@@ -13,6 +13,7 @@
 // =============================================================================
 
 import 'package:customer_app/features/chat/chat_controller.dart';
+import 'package:customer_app/features/project/draft_controller.dart';
 import 'package:customer_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,6 +96,24 @@ class CustomerChatScreen extends ConsumerWidget {
           }
         }
 
+        // C3.3: Build proposal metadata from draft line items.
+        final draftState = ref.watch(draftControllerProvider).valueOrNull;
+        final proposalMetadata = <String, ProposalDisplayMetadata>{};
+
+        for (final msg in chatState.messages) {
+          if (msg.isPriceProposal) {
+            final lineItem = draftState?.lineItems
+                .where((li) => li.lineItemId == msg.lineItemId)
+                .firstOrNull;
+            final isAccepted = lineItem?.finalPrice == msg.proposedPrice;
+            proposalMetadata[msg.messageId] = ProposalDisplayMetadata(
+              skuName: lineItem?.skuName ?? '',
+              originalPrice: lineItem?.unitPriceInr,
+              isAccepted: isAccepted,
+            );
+          }
+        }
+
         return ChatScreen(
           threadTitle: threadTitle,
           strings: strings,
@@ -111,6 +130,13 @@ class CustomerChatScreen extends ConsumerWidget {
                 .loadOlderMessages();
           },
           onBack: () => context.pop(),
+          // C3.3: wire proposal acceptance.
+          onAcceptProposal: (messageId) {
+            ref
+                .read(chatControllerProvider(projectId).notifier)
+                .acceptPriceProposal(messageId);
+          },
+          proposalMetadata: proposalMetadata,
         );
       },
     );

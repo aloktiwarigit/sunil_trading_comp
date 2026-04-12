@@ -35,6 +35,13 @@ enum MessageType {
   /// Devanagari sentence.
   @JsonValue('system')
   system,
+
+  /// C3.3: Price proposal from shopkeeper for a specific line item.
+  /// `proposedPrice` and `lineItemId` are set. Customer-side renders
+  /// an "Accept" button. Multiple proposals for the same lineItem are
+  /// allowed; only the most recently accepted one applies.
+  @JsonValue('price_proposal')
+  priceProposal,
 }
 
 /// Who sent the message. Mapped to PRD S4.1 / SAD §5 operator roles — these
@@ -112,6 +119,16 @@ class Message with _$Message {
     /// `MediaStore.getCatalogUrl(publicId)` instead.
     String? imageUrl,
 
+    // ---- C3.3 price proposal fields ----
+
+    /// Proposed price in INR for a specific line item (price_proposal type).
+    /// Set by shopkeeper when sending a counter-offer.
+    int? proposedPrice,
+
+    /// Target line item ID for a price proposal. References
+    /// `Project.lineItems[].lineItemId`.
+    String? lineItemId,
+
     /// UIDs that have marked this message as read. Updated via a system
     /// patch, not by client code directly. Sprint 4 P2.7 wires this up.
     @Default(<String>[]) List<String> readByUids,
@@ -128,4 +145,10 @@ class Message with _$Message {
 
   /// True iff this message has an inline voice note for playback.
   bool get hasVoiceNote => type == MessageType.voiceNote && voiceNoteId != null;
+
+  /// True iff this is a price proposal with valid fields (C3.3).
+  bool get isPriceProposal =>
+      type == MessageType.priceProposal &&
+      proposedPrice != null &&
+      lineItemId != null;
 }

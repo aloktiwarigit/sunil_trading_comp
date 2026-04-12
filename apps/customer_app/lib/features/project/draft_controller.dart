@@ -103,6 +103,8 @@ class DraftController extends AsyncNotifier<DraftState> {
 
   /// Add a SKU to the draft. Creates the Project document if it doesn't
   /// exist yet. Returns true if the item was added (false if already present).
+  ///
+  /// C3.2 Edge #1: optimistic UI — state updates before Firestore write.
   Future<bool> addSku(InventorySku sku) async {
     final current = state.valueOrNull;
     if (current == null) return false;
@@ -122,6 +124,9 @@ class DraftController extends AsyncNotifier<DraftState> {
 
     final updatedItems = [...current.lineItems, newItem];
 
+    // Optimistic update: show the new item immediately.
+    state = AsyncData(current.copyWith(lineItems: updatedItems));
+
     if (current.project == null) {
       // Create a new draft project.
       await _createDraftProject(updatedItems);
@@ -134,12 +139,22 @@ class DraftController extends AsyncNotifier<DraftState> {
   }
 
   /// Remove a line item from the draft by lineItemId.
+  ///
+  /// C3.2 AC #5: removing the last line item deletes the entire Project
+  /// document and resets draft state.
   Future<void> removeLineItem(String lineItemId) async {
     final current = state.valueOrNull;
     if (current == null || current.project == null) return;
 
     final updatedItems =
         current.lineItems.where((i) => i.lineItemId != lineItemId).toList();
+
+    if (updatedItems.isEmpty) {
+      // AC #5 — last item removed: delete entire Project document.
+      state = const AsyncData(DraftState(project: null, lineItems: []));
+      await _deleteProject(current.project!.projectId);
+      return;
+    }
 
     // Optimistic update.
     state = AsyncData(current.copyWith(lineItems: updatedItems));
@@ -171,6 +186,27 @@ class DraftController extends AsyncNotifier<DraftState> {
     state = AsyncData(current.copyWith(lineItems: updatedItems));
 
     await _updateDraftLineItems(current.project!.projectId, updatedItems);
+  }
+
+  /// Re-insert a previously removed line item (undo action from swipe dismiss).
+  ///
+  /// C3.2 AC #2: supports the undo snackbar. If the project was deleted
+  /// (last-item removal), this re-creates the draft project.
+  Future<void> undoRemoveLineItem(LineItem item) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    final updatedItems = [...current.lineItems, item];
+
+    // Optimistic update.
+    state = AsyncData(current.copyWith(lineItems: updatedItems));
+
+    if (current.project == null) {
+      // The project was deleted (AC #5 triggered) — re-create it.
+      await _createDraftProject(updatedItems);
+    } else {
+      await _updateDraftLineItems(current.project!.projectId, updatedItems);
+    }
   }
 
   /// Cancel the draft project entirely (draft -> cancelled).
@@ -208,14 +244,20 @@ class DraftController extends AsyncNotifier<DraftState> {
     final projectId = _generateId();
     final now = DateTime.now();
 
+    // C3.2 AC #3: denormalize lineItemsCount + totalAmount at creation.
+    final totalAmount = items.fold<int>(
+      0,
+      (sum, item) => sum + item.lineTotalInr,
+    );
     final projectData = <String, dynamic>{
       'projectId': projectId,
       'shopId': shopId,
       'customerId': user.uid,
       'customerUid': user.uid,
       'state': 'draft',
-      'totalAmount': 0,
+      'totalAmount': totalAmount,
       'amountReceivedByShop': 0,
+      'lineItemsCount': items.length,
       'lineItems': items.map((e) => e.toJson()).toList(),
       'unreadCountForCustomer': 0,
       'unreadCountForShopkeeper': 0,
@@ -255,6 +297,12 @@ class DraftController extends AsyncNotifier<DraftState> {
     // allow customer writes to lineItems when state == 'draft'. We write
     // directly because ProjectCustomerPatch does not include lineItems
     // (correct partition discipline). The security rule gates this.
+    //
+    // C3.2 AC #3: recompute lineItemsCount + totalAmount on every edit.
+    final totalAmount = items.fold<int>(
+      0,
+      (sum, item) => sum + item.lineTotalInr,
+    );
     await firestore
         .collection('shops')
         .doc(shopId)
@@ -262,6 +310,8 @@ class DraftController extends AsyncNotifier<DraftState> {
         .doc(projectId)
         .update({
       'lineItems': items.map((e) => e.toJson()).toList(),
+      'lineItemsCount': items.length,
+      'totalAmount': totalAmount,
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
@@ -269,6 +319,20 @@ class DraftController extends AsyncNotifier<DraftState> {
     if (current != null && current.project != null) {
       state = AsyncData(current.copyWith(lineItems: items));
     }
+  }
+
+  /// C3.2 AC #5: delete the Project document when the last line item is
+  /// removed. The security rule allows customer delete when state == 'draft'.
+  Future<void> _deleteProject(String projectId) async {
+    final shopId = ref.read(shopIdProviderProvider).shopId;
+    final firestore = FirebaseFirestore.instance;
+
+    await firestore
+        .collection('shops')
+        .doc(shopId)
+        .collection('projects')
+        .doc(projectId)
+        .delete();
   }
 
   /// Generate a Firestore-friendly unique ID.

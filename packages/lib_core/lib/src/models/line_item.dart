@@ -16,6 +16,12 @@ class LineItem with _$LineItem {
     required int quantity,
     required int unitPriceInr,
     String? notes,
+
+    /// C3.3: negotiated price accepted by the customer via price_proposal
+    /// in the chat thread. When set, this overrides [unitPriceInr] for
+    /// total computation. Null means no negotiation occurred — original
+    /// catalog price applies.
+    int? finalPrice,
   }) = _LineItem;
 
   factory LineItem.fromJson(Map<String, dynamic> json) =>
@@ -23,5 +29,10 @@ class LineItem with _$LineItem {
 
   const LineItem._();
 
-  int get lineTotalInr => quantity * unitPriceInr;
+  /// The effective per-unit price: negotiated [finalPrice] if accepted,
+  /// otherwise the original [unitPriceInr].
+  int get effectivePrice => finalPrice ?? unitPriceInr;
+
+  /// Line total uses the effective (possibly negotiated) price.
+  int get lineTotalInr => quantity * effectivePrice;
 }
