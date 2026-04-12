@@ -19,6 +19,8 @@ import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
 import '../auth/auth_controller.dart';
+import '../auth/role_gate.dart';
+import 'nps_card.dart';
 import 'todays_task_card.dart';
 
 /// The ops app home dashboard — the primary screen after successful auth.
@@ -103,19 +105,26 @@ class HomeDashboard extends ConsumerWidget {
                 operatorJoinedAt: operator.joinedAt,
               ),
 
+            // ── S4.17: NPS survey card (non-intrusive, bi-weekly) ──
+            const NpsCard(),
+
             const SizedBox(height: YugmaSpacing.s4),
 
-            // ── S4.3: Inventory section (live) ──
-            _InventorySection(),
-            // ── S4.6: Orders section (live) ──
-            _OrdersSection(),
-            _PlaceholderSection(
-              title: 'Chat',
-              icon: Icons.chat_outlined,
+            // ── S4.3: Inventory section — bhaiya + beta only ──
+            // S4.2 AC #2: munshi cannot see inventory
+            RoleSetGate(
+              allowedRoles: const {OperatorRole.bhaiya, OperatorRole.beta},
+              child: const _InventorySection(),
             ),
-            _PlaceholderSection(
-              title: 'Udhaar',
-              icon: Icons.account_balance_wallet_outlined,
+            // ── S4.6: Orders section — all roles ──
+            const _OrdersSection(),
+            // ── S4.11: Dashboard section — all roles ──
+            const _DashboardSection(),
+            // ── S4.10: Udhaar section — bhaiya + munshi only ──
+            // S4.2 AC #2: beta cannot access udhaar
+            RoleSetGate(
+              allowedRoles: const {OperatorRole.bhaiya, OperatorRole.munshi},
+              child: const _UdhaarSection(),
             ),
           ],
         ),
@@ -231,59 +240,103 @@ class _OrdersSection extends StatelessWidget {
   }
 }
 
-/// Placeholder section for future sprint stories. Shows a muted card
-/// with an icon and label to indicate what will be built here.
-class _PlaceholderSection extends StatelessWidget {
-  const _PlaceholderSection({
-    required this.title,
-    required this.icon,
-  });
-
-  final String title;
-  final IconData icon;
+/// S4.11 — Dashboard section (analytics).
+class _DashboardSection extends StatelessWidget {
+  const _DashboardSection();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: YugmaSpacing.s4,
-        vertical: YugmaSpacing.s2,
-      ),
-      padding: const EdgeInsets.all(YugmaSpacing.s5),
-      decoration: BoxDecoration(
-        color: YugmaColors.surface,
-        borderRadius: BorderRadius.circular(YugmaRadius.lg),
-        border: Border.all(
-          color: YugmaColors.divider,
+    return GestureDetector(
+      onTap: () => context.push('/dashboard'),
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: YugmaSpacing.s4,
+          vertical: YugmaSpacing.s2,
+        ),
+        padding: const EdgeInsets.all(YugmaSpacing.s5),
+        decoration: BoxDecoration(
+          color: YugmaColors.surface,
+          borderRadius: BorderRadius.circular(YugmaRadius.lg),
+          border: Border.all(
+            color: YugmaColors.primary.withValues(alpha: 0.2),
+          ),
+          boxShadow: YugmaShadows.card,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.bar_chart_outlined,
+              color: YugmaColors.primary,
+              size: 24,
+            ),
+            const SizedBox(width: YugmaSpacing.s3),
+            Text(
+              'Dashboard',
+              style: TextStyle(
+                fontFamily: YugmaFonts.enBody,
+                fontSize: YugmaTypeScale.body,
+                color: YugmaColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.chevron_right,
+              color: YugmaColors.textMuted,
+            ),
+          ],
         ),
       ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: YugmaColors.textMuted,
-            size: 24,
+    );
+  }
+}
+
+/// S4.10 — Udhaar section (ledger management).
+class _UdhaarSection extends StatelessWidget {
+  const _UdhaarSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/udhaar'),
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: YugmaSpacing.s4,
+          vertical: YugmaSpacing.s2,
+        ),
+        padding: const EdgeInsets.all(YugmaSpacing.s5),
+        decoration: BoxDecoration(
+          color: YugmaColors.surface,
+          borderRadius: BorderRadius.circular(YugmaRadius.lg),
+          border: Border.all(
+            color: YugmaColors.primary.withValues(alpha: 0.2),
           ),
-          const SizedBox(width: YugmaSpacing.s3),
-          Text(
-            title,
-            style: TextStyle(
-              fontFamily: YugmaFonts.enBody,
-              fontSize: YugmaTypeScale.body,
+          boxShadow: YugmaShadows.card,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.account_balance_wallet_outlined,
+              color: YugmaColors.primary,
+              size: 24,
+            ),
+            const SizedBox(width: YugmaSpacing.s3),
+            Text(
+              'उधार खाता',
+              style: TextStyle(
+                fontFamily: YugmaFonts.devaBody,
+                fontSize: YugmaTypeScale.body,
+                color: YugmaColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.chevron_right,
               color: YugmaColors.textMuted,
             ),
-          ),
-          const Spacer(),
-          Text(
-            'Coming soon',
-            style: TextStyle(
-              fontFamily: YugmaFonts.enBody,
-              fontSize: YugmaTypeScale.caption,
-              fontStyle: FontStyle.italic,
-              color: YugmaColors.textMuted,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
