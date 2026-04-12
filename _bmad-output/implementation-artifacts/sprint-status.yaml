@@ -41,7 +41,7 @@
 # ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 6) =====
 #
 # Epics: 6 total. 1 done (E6). 4 in-progress (E1, E3, E4, E5). 1 backlog (E2).
-# Stories: 67 total. 49 done. 0 ready-for-dev. 0 in-progress. 18 backlog.
+# Stories: 67 total. 51 done. 0 ready-for-dev. 0 in-progress. 16 backlog.
 # Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 #
@@ -52,13 +52,14 @@
 #   Sprint 14 (S4.2+S4.17) — multi-operator role gating + NPS survey
 #   Sprint 15 (B1.6+B1.7) — voice note recording + chat voice notes
 #   Sprint 16 (P2.1+P2.2) — Decision Circle + persona toggle
+#   Sprint 17 (B1.8+P2.3) — greeting management + elder UI tier
 # Also completed B1.11 (foundation for S4.9).
-# 49 stories done total (33→49). Committed at ccd83a3 on main.
+# 51 stories done total (33→51). Committed at 49cb249 on main.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-12  # Session 6 — Sprint 11-16 shipped, 49/67 done
+last_updated: 2026-04-12  # Session 6 — Sprint 11-17 shipped, 51/67 done
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -154,7 +155,8 @@ development_status:
   b1-6-voice-note-recording-shopkeeper: done
   # B1.7 Voice note in project chat — shipped Sprint 15 (22bd80e)
   b1-7-voice-note-in-project-chat: done
-  b1-8-shop-landing-voice-note-management: backlog
+  # B1.8 Greeting voice management — shipped Sprint 17 (49cb249)
+  b1-8-shop-landing-voice-note-management: done
   b1-9-absence-presence-status-banner: backlog
   b1-10-away-voice-note-fallback: backlog
   # B1.11 Customer memory layer — foundation shipped Sprint 11 as part of S4.9
@@ -175,7 +177,8 @@ development_status:
   p2-1-decision-circle-creation: done
   # P2.2 Guest Mode persona toggle — shipped Sprint 16 (ccd83a3)
   p2-2-guest-mode-persona-toggle: done
-  p2-3-elder-ui-tier-rendering: backlog
+  # P2.3 Elder UI tier — shipped Sprint 17 (49cb249)
+  p2-3-elder-ui-tier-rendering: done
   # P2.4 Chat thread — shipped Phase 2.1 Sprint 4 (c9d6aea)
   p2-4-sunil-bhaiya-ka-kamra-chat-thread: done
   # P2.5 Customer sends text message — shipped Phase 2.1 Sprint 4 (c9d6aea)
