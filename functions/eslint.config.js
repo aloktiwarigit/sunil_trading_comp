@@ -32,6 +32,8 @@ module.exports = [
         Buffer: 'readonly',
         process: 'readonly',
         console: 'readonly',
+        fetch: 'readonly',
+        global: 'readonly',
         // Jest globals
         describe: 'readonly',
         test: 'readonly',

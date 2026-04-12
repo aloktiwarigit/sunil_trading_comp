@@ -1,326 +1,595 @@
 ---
-// M5.1 + M5.3 — Marketing site landing page with build-time Firestore fetch.
+// =============================================================================
+// Sunil Trading Company — Full Marketing Site
 //
-// M5.1 ACs (unchanged):
-//   AC #1: Astro + pure static HTML+CSS from Firebase Hosting
-//   AC #2: <100KB bundle including subset Devanagari font
-//   AC #3: <1s first paint on 3G (Lighthouse verified post-deploy)
-//   AC #4: Hero: bhaiya face + shop name + tagline + GST + established year
-//   AC #5: Primary CTA → wa.me with prefilled greeting
-//   AC #6: Secondary CTA → deep link to customer app (Play Store fallback)
-//   AC #8: Footer: address, hours, map link
+// Design: Workshop Almanac v1.1 / Artisan Industrial
+// "A digital bazaar shopfront — warm, honest, Devanagari-first."
 //
-// M5.3 ACs:
-//   AC #1: Top 6 SKUs from most recent curated shortlist baked at build time
-//   AC #2: Each preview: Golden Hour photo, Devanagari name, price
-//   AC #3: Tapping preview opens modal with full details (read-only)
-//   AC #4: "पूरा कैटलॉग देखिए" CTA links into customer app
+// Sections:
+//   1. Hero — bhaiya's face, name, tagline, voice, trust badges
+//   2. भरोसा (Trust) — 23 years, GST, market presence
+//   3. Catalog — occasion-tabbed product grid with WhatsApp CTAs
+//   4. About — Sunil-bhaiya's story
+//   5. CTA band — WhatsApp + app
+//   6. Footer — address, hours, links
 //
-// Edge cases:
-//   M5.1 #1: Desktop — responsive layout
-//   M5.1 #2: JS disabled — pure static renders fully
-//   M5.1 #3: Font fail — system Devanagari fallback
-//   M5.3 #1: No curated shortlist → "जल्द ही" placeholder
-//   M5.3 #2: SKUs change between builds → rebuilt on theme update (M5.5)
-//   M5.3 #3: Photo CDN slow → skeleton placeholders
+// Constraints: <100KB HTML+CSS, 5 Google Fonts, mobile-first 3G,
+//              pure static Astro, no JS framework.
+// =============================================================================
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { fetchShopContent } from '../lib/fetch_shop_content';
 import type { SkuPreview } from '../lib/fetch_shop_content';
 
-// Build-time fetch — runs during `astro build`, NOT in browser.
 const shopId = import.meta.env.SHOP_ID ?? process.env.SHOP_ID ?? 'sunil-trading-company';
 const shop = await fetchShopContent(shopId);
 
 const yearsInBusiness = new Date().getFullYear() - shop.establishedYear;
-const whatsappUrl = `https://wa.me/${shop.whatsappNumberE164.replace('+', '')}?text=${encodeURIComponent(`नमस्ते ${shop.ownerName}, मुझे अलमारी देखनी है`)}`;
+const whatsappBase = `https://wa.me/${shop.whatsappNumberE164.replace('+', '')}`;
+const whatsappUrl = `${whatsappBase}?text=${encodeURIComponent(`नमस्ते ${shop.ownerName}, मुझे अलमारी देखनी है`)}`;
 const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.suniltrading';
 const hasVoiceNote = shop.greetingVoiceNoteUrl.length > 0;
-const hasCatalog = shop.curatedPreview.length > 0;
 const hasFacePhoto = shop.shopkeeperFaceUrl.length > 0;
+const hasCatalog = shop.curatedPreview.length > 0;
+
+// Build WhatsApp URL per SKU
+function skuWhatsApp(skuName: string): string {
+  return `${whatsappBase}?text=${encodeURIComponent(`नमस्ते ${shop.ownerName}, मुझे ${skuName} के बारे में जानना है`)}`;
+}
+
+// Group SKUs by occasion for tabbed display
+const occasions = [
+  { id: 'shaadi', label: 'शादी के लिए', labelEn: 'Wedding' },
+  { id: 'naya-ghar', label: 'नए घर के लिए', labelEn: 'New Home' },
+  { id: 'budget', label: 'बजट में', labelEn: 'Budget-Friendly' },
+];
 ---
 
 <BaseLayout title={`${shop.brandName} — ${shop.brandNameEnglish}`}>
-  <!-- Hero Section -->
+
+  <!-- ═══════════════════════════════════════════════════════
+       §1 HERO — The digital shopfront entrance
+       ═══════════════════════════════════════════════════════ -->
   <header class="hero">
+    <div class="hero-bg-pattern"></div>
     <div class="hero-content">
-      <!-- Bhaiya face photo (AC #4) -->
-      <div class="hero-photo">
+      <!-- Bhaiya's face -->
+      <div class="hero-photo-wrap">
         {hasFacePhoto ? (
           <img
             src={shop.shopkeeperFaceUrl}
             alt={shop.ownerName}
-            class="photo-face"
-            width="120"
-            height="120"
+            class="hero-photo"
+            width="140"
+            height="140"
             loading="eager"
           />
         ) : (
-          <div class="photo-placeholder">
-            <span class="photo-initials">{shop.brandName.charAt(0)}</span>
+          <div class="hero-photo-fallback">
+            <span class="hero-initials">{shop.brandName.charAt(0)}</span>
           </div>
         )}
+        <div class="hero-photo-ring"></div>
       </div>
 
-      <h1 class="shop-name">{shop.brandName}</h1>
-      <p class="shop-name-en">{shop.brandNameEnglish}</p>
+      <h1 class="hero-name">{shop.brandName}</h1>
+      <p class="hero-name-en">{shop.brandNameEnglish}</p>
 
-      <p class="tagline">{shop.taglineDevanagari}</p>
+      <p class="hero-tagline">{shop.taglineDevanagari}</p>
 
-      <div class="meta-bar">
-        <span class="meta-years">
-          {yearsInBusiness} साल · {shop.establishedYear} से
+      <!-- Trust badges inline -->
+      <div class="hero-badges">
+        <span class="badge">
+          <span class="badge-icon">🏪</span>
+          {yearsInBusiness} साल
         </span>
+        <span class="badge-dot">·</span>
+        <span class="badge">{shop.marketArea}</span>
         {shop.gstNumber && (
           <>
-            <span class="meta-divider">·</span>
-            <span class="meta-gst">{shop.gstNumber}</span>
+            <span class="badge-dot">·</span>
+            <span class="badge badge-gst">GST पंजीकृत</span>
           </>
         )}
       </div>
 
-      <!-- M5.2: Greeting voice note -->
+      <!-- Voice greeting -->
       {hasVoiceNote && (
-        <div class="greeting-audio">
+        <div class="hero-voice">
           <audio id="greetingAudio" preload="auto">
             <source src={shop.greetingVoiceNoteUrl} type="audio/mp4" />
           </audio>
           <button class="btn-voice" id="voiceBtn" onclick="toggleVoice()">
-            🎤 {shop.ownerName} की आवाज़ सुनिए
+            <span class="voice-wave">🎤</span> {shop.ownerName} की आवाज़ सुनिए
           </button>
         </div>
       )}
 
-      <!-- CTAs -->
-      <div class="cta-group">
-        <a href={whatsappUrl} class="btn btn-primary cta-whatsapp" target="_blank" rel="noopener">
-          {shop.ownerName} से अभी बात कीजिए
+      <!-- Primary CTA -->
+      <div class="hero-ctas">
+        <a href={whatsappUrl} class="btn btn-whatsapp hero-cta" target="_blank" rel="noopener">
+          <svg class="wa-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          {shop.ownerName} से बात कीजिए
         </a>
-        <a href={appUrl} class="btn btn-outline cta-app" target="_blank" rel="noopener">
-          दुकान खोलिए
+        <a href={appUrl} class="btn btn-outline hero-cta hero-cta-app" target="_blank" rel="noopener">
+          दुकान ऐप खोलिए
         </a>
       </div>
     </div>
   </header>
 
-  <!-- SKU Preview Section (M5.3) -->
-  <section class="sku-preview">
-    <h2 class="section-title">भैया की पसंद</h2>
+  <!-- ═══════════════════════════════════════════════════════
+       §2 भरोसा (TRUST) — Why this shop, why 23 years
+       ═══════════════════════════════════════════════════════ -->
+  <section class="section trust-section">
+    <div class="section-inner">
+      <h2 class="section-title">भरोसे की दुकान</h2>
+      <p class="section-subtitle">A shop built on trust, not advertising</p>
+      <hr class="brass-divider" />
 
-    {hasCatalog ? (
-      <div class="sku-grid">
-        {shop.curatedPreview.map((sku: SkuPreview) => (
-          <button class="sku-card" data-sku-id={sku.skuId} onclick={`openSkuModal('${sku.skuId}')`}>
-            {sku.thumbnailUrl ? (
-              <img
-                src={sku.thumbnailUrl}
-                alt={sku.nameDevanagari}
-                class="sku-photo"
-                width="300"
-                height="225"
-                loading="lazy"
-              />
-            ) : (
-              <div class="sku-photo-placeholder"></div>
-            )}
-            <p class="sku-name">{sku.nameDevanagari}</p>
-            <p class="sku-price">₹{sku.priceInr.toLocaleString('en-IN')}</p>
-          </button>
-        ))}
+      <div class="trust-grid">
+        <div class="trust-card">
+          <span class="trust-icon">🏛️</span>
+          <h3 class="trust-title">{yearsInBusiness} साल का अनुभव</h3>
+          <p class="trust-desc">{shop.establishedYear} से हैरिंगटनगंज बाज़ार में — पिता जी के ज़माने से आपकी सेवा में</p>
+        </div>
+        <div class="trust-card">
+          <span class="trust-icon">🤝</span>
+          <h3 class="trust-title">पूरे परिवार की पसंद</h3>
+          <p class="trust-desc">शादी हो, नया घर हो, या पुरानी अलमारी बदलनी हो — हर ज़रूरत के लिए सही सलाह</p>
+        </div>
+        <div class="trust-card">
+          <span class="trust-icon">💬</span>
+          <h3 class="trust-title">सीधी बात, सही दाम</h3>
+          <p class="trust-desc">कोई छुपी बात नहीं — जो दाम बताएँगे, वही अंतिम। WhatsApp पर भी पूछ सकते हैं</p>
+        </div>
       </div>
-    ) : (
-      /* M5.3 Edge #1: No curated shortlist */
-      <div class="sku-coming-soon">
-        <p class="coming-soon-text">जल्द ही</p>
-      </div>
-    )}
-
-    <!-- M5.3 AC #4: Full catalog CTA -->
-    <div class="catalog-cta">
-      <a href={appUrl} class="btn btn-accent" target="_blank" rel="noopener">
-        पूरा कैटलॉग देखिए
-      </a>
     </div>
   </section>
 
-  <!-- M5.3 AC #3: SKU detail modal (read-only) -->
-  <div id="skuModal" class="modal" onclick="closeSkuModal(event)">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeSkuModal()">&times;</button>
-      <div id="modalBody"></div>
-    </div>
-  </div>
+  <!-- ═══════════════════════════════════════════════════════
+       §3 CATALOG — Products by occasion
+       ═══════════════════════════════════════════════════════ -->
+  <section class="section catalog-section" id="catalog">
+    <div class="section-inner">
+      <h2 class="section-title">भैया की पसंद</h2>
+      <p class="section-subtitle">Hand-picked by Sunil-bhaiya for every occasion</p>
+      <hr class="brass-divider" />
 
-  <!-- Footer (M5.1 AC #8) -->
-  <footer class="site-footer">
-    <div class="footer-content">
-      <p class="footer-address">{shop.marketArea}, {shop.city}</p>
-      <p class="footer-address-en">{shop.taglineEnglish}</p>
-      <div class="footer-links">
-        <a href="https://maps.google.com/?q=Harringtonganj+Ayodhya" target="_blank" rel="noopener" class="footer-link">
-          नक्शा देखिए
+      {hasCatalog ? (
+        <div class="catalog-grid">
+          {shop.curatedPreview.map((sku: SkuPreview) => (
+            <div class="sku-card">
+              <div class="sku-photo-wrap">
+                {sku.thumbnailUrl ? (
+                  <img
+                    src={sku.thumbnailUrl}
+                    alt={sku.nameDevanagari}
+                    class="sku-photo"
+                    width="400"
+                    height="300"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="sku-photo-placeholder">
+                    <span class="sku-placeholder-icon">🗄️</span>
+                  </div>
+                )}
+              </div>
+              <div class="sku-body">
+                <h3 class="sku-name">{sku.nameDevanagari}</h3>
+                <p class="sku-name-en">{sku.nameEnglish}</p>
+                <p class="sku-price">₹{sku.priceInr.toLocaleString('en-IN')}</p>
+                <a
+                  href={skuWhatsApp(sku.nameDevanagari)}
+                  class="btn btn-whatsapp sku-cta"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  भैया से पूछिए
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class="catalog-empty">
+          <span class="catalog-empty-icon">🗄️</span>
+          <p class="catalog-empty-text">जल्द ही — भैया अपनी पसंद चुन रहे हैं</p>
+        </div>
+      )}
+
+      <!-- Full catalog CTA -->
+      <div class="catalog-cta-wrap">
+        <a href={appUrl} class="btn btn-accent catalog-cta" target="_blank" rel="noopener">
+          पूरा कैटलॉग देखिए →
         </a>
-        <span class="footer-divider">·</span>
-        <a href={`tel:${shop.whatsappNumberE164}`} class="footer-link">
-          फ़ोन कीजिए
+        <p class="catalog-cta-note">ऐप में 50+ अलमारियाँ, सभी की फ़ोटो और दाम</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §4 ABOUT — Sunil-bhaiya's story
+       ═══════════════════════════════════════════════════════ -->
+  <section class="section about-section">
+    <div class="section-inner">
+      <h2 class="section-title">हमारी दुकान की कहानी</h2>
+      <p class="section-subtitle">The story of our shop</p>
+      <hr class="brass-divider" />
+
+      <div class="about-content">
+        <div class="about-text">
+          <p class="about-para">
+            {shop.ownerName} {shop.establishedYear} से {shop.marketArea} में अलमारी बेच रहे हैं।
+            पहले पिता जी के साथ शुरू किया, अब अपने बेटे के साथ मिलकर दुकान चलाते हैं।
+          </p>
+          <p class="about-para">
+            गोदरेज, त्रिवेणी, और लोकल — हर बजट और ज़रूरत के हिसाब से अलमारी मिलेगी।
+            भैया की खासियत: सही सलाह और इमानदार दाम। कोई ज़बरदस्ती नहीं, कोई झूठा वादा नहीं।
+          </p>
+          <p class="about-para about-highlight">
+            "जो ग्राहक एक बार आता है, वो अगली बार भी यहीं आता है" — यही हमारा भरोसा है।
+          </p>
+        </div>
+        <div class="about-stats">
+          <div class="stat">
+            <span class="stat-number">{yearsInBusiness}+</span>
+            <span class="stat-label">साल का अनुभव</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">3</span>
+            <span class="stat-label">ब्रांड उपलब्ध</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">{shop.marketArea}</span>
+            <span class="stat-label">बाज़ार, {shop.city}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §5 CTA BAND — Final conversion strip
+       ═══════════════════════════════════════════════════════ -->
+  <section class="cta-band">
+    <div class="section-inner cta-band-inner">
+      <h2 class="cta-band-title">अलमारी चाहिए? अभी बात कीजिए</h2>
+      <p class="cta-band-sub">WhatsApp पर मैसेज कीजिए या फ़ोन कीजिए — भैया तुरंत जवाब देंगे</p>
+      <div class="cta-band-buttons">
+        <a href={whatsappUrl} class="btn btn-whatsapp cta-band-btn" target="_blank" rel="noopener">
+          <svg class="wa-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp पर मैसेज कीजिए
         </a>
-        <span class="footer-divider">·</span>
-        <a href="/visit" class="footer-link">
-          दुकान आइए
+        <a href={`tel:${shop.whatsappNumberE164}`} class="btn btn-outline cta-band-btn cta-band-phone" target="_blank" rel="noopener">
+          📞 फ़ोन कीजिए
         </a>
       </div>
-      <p class="footer-brand">Yugma Labs</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       §6 FOOTER
+       ═══════════════════════════════════════════════════════ -->
+  <footer class="site-footer">
+    <div class="section-inner footer-inner">
+      <div class="footer-brand">
+        <h3 class="footer-shop-name">{shop.brandName}</h3>
+        <p class="footer-shop-name-en">{shop.brandNameEnglish}</p>
+      </div>
+
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4 class="footer-col-title">पता</h4>
+          <p class="footer-text">{shop.marketArea}, {shop.city}</p>
+          <a href="https://maps.google.com/?q=Harringtonganj+Ayodhya" target="_blank" rel="noopener" class="footer-link">
+            📍 नक्शा देखिए
+          </a>
+        </div>
+        <div class="footer-col">
+          <h4 class="footer-col-title">समय</h4>
+          <p class="footer-text">सोमवार–शनिवार</p>
+          <p class="footer-text">सुबह 10 बजे – शाम 8 बजे</p>
+          <p class="footer-text footer-sunday">रविवार बंद</p>
+        </div>
+        <div class="footer-col">
+          <h4 class="footer-col-title">संपर्क</h4>
+          <a href={`tel:${shop.whatsappNumberE164}`} class="footer-link">📞 फ़ोन कीजिए</a>
+          <a href={whatsappUrl} target="_blank" rel="noopener" class="footer-link">💬 WhatsApp</a>
+          <a href="/visit" class="footer-link">🏪 दुकान आइए</a>
+        </div>
+      </div>
+
+      <hr class="brass-divider" />
+      <p class="footer-credit">
+        <span class="footer-credit-text">Powered by</span>
+        <span class="footer-credit-brand">Yugma Labs</span>
+      </p>
     </div>
   </footer>
 </BaseLayout>
 
 <style>
   /* ================================================================
-   * Landing Page Styles
+   * §1 HERO
    * ================================================================ */
-
   .hero {
+    position: relative;
     background: linear-gradient(
-      135deg,
+      160deg,
       var(--color-primary) 0%,
-      var(--color-primary-deep) 100%
+      var(--color-primary-deep) 60%,
+      #2A1005 100%
     );
     color: var(--color-text-on-primary);
-    padding: var(--s16) var(--s4) var(--s12);
+    padding: var(--s12) var(--s4) var(--s10);
     text-align: center;
+    overflow: hidden;
+  }
+
+  /* Subtle diagonal pattern overlay */
+  .hero-bg-pattern {
+    position: absolute;
+    inset: 0;
+    opacity: 0.04;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 20px,
+      rgba(255,255,255,0.1) 20px,
+      rgba(255,255,255,0.1) 21px
+    );
+    pointer-events: none;
   }
 
   .hero-content {
+    position: relative;
     max-width: 600px;
     margin: 0 auto;
   }
 
-  .hero-photo {
+  /* Face photo with brass ring */
+  .hero-photo-wrap {
+    position: relative;
+    display: inline-block;
     margin-bottom: var(--s6);
   }
 
-  .photo-face {
-    width: 120px;
-    height: 120px;
+  .hero-photo {
+    width: 140px;
+    height: 140px;
     border-radius: 50%;
     object-fit: cover;
-    border: 4px solid rgba(255, 255, 255, 0.3);
+    border: 4px solid var(--color-accent);
+    box-shadow: var(--shadow-hero);
   }
 
-  .photo-placeholder {
-    width: 120px;
-    height: 120px;
+  .hero-photo-fallback {
+    width: 140px;
+    height: 140px;
     border-radius: 50%;
-    background: var(--color-accent);
+    background: linear-gradient(135deg, var(--color-secondary), var(--color-primary));
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 4px solid rgba(255, 255, 255, 0.3);
+    border: 4px solid var(--color-accent);
+    box-shadow: var(--shadow-hero);
   }
 
-  .photo-initials {
+  .hero-initials {
     font-family: var(--font-deva-display);
-    font-size: 3rem;
+    font-size: 3.5rem;
     color: var(--color-text-on-primary);
   }
 
-  .shop-name {
+  .hero-photo-ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid var(--color-accent-glow);
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .hero-name {
     font-family: var(--font-deva-display);
-    font-size: 2.25rem;
+    font-size: 2.5rem;
     font-weight: 400;
-    line-height: 1.2;
+    line-height: 1.15;
     margin-bottom: var(--s1);
   }
 
-  .shop-name-en {
+  .hero-name-en {
     font-family: var(--font-en-display);
     font-size: 1rem;
     font-weight: 400;
     font-style: italic;
-    opacity: 0.8;
-    margin-bottom: var(--s4);
-  }
-
-  .tagline {
-    font-family: var(--font-deva-body);
-    font-size: 1.1rem;
-    opacity: 0.9;
-    margin-bottom: var(--s4);
-  }
-
-  .meta-bar {
-    font-family: var(--font-en-body);
-    font-size: 0.85rem;
     opacity: 0.7;
-    margin-bottom: var(--s8);
+    margin-bottom: var(--s4);
   }
 
-  .meta-divider {
-    margin: 0 var(--s2);
+  .hero-tagline {
+    font-family: var(--font-deva-body);
+    font-size: 1.15rem;
+    opacity: 0.85;
+    margin-bottom: var(--s5);
+    line-height: 1.5;
   }
 
-  .cta-group {
+  /* Trust badges */
+  .hero-badges {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--s1);
+    font-family: var(--font-deva-body);
+    font-size: 0.85rem;
+    opacity: 0.75;
+    margin-bottom: var(--s6);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s1);
+  }
+
+  .badge-gst {
+    background: rgba(184, 134, 11, 0.25);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+
+  .badge-dot {
+    opacity: 0.5;
+    margin: 0 var(--s1);
+  }
+
+  /* Voice greeting */
+  .hero-voice {
+    margin-bottom: var(--s6);
+  }
+
+  .btn-voice {
+    font-family: var(--font-deva-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: var(--color-text-on-primary);
+    padding: var(--s2) var(--s5);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s2);
+  }
+
+  .btn-voice:hover {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .btn-voice.playing {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  /* Hero CTAs */
+  .hero-ctas {
     display: flex;
     flex-direction: column;
     gap: var(--s3);
     align-items: center;
   }
 
-  .cta-whatsapp {
+  .hero-cta {
     width: 100%;
     max-width: 320px;
     font-size: 1rem;
   }
 
-  .cta-app {
-    width: 100%;
-    max-width: 320px;
-    border-color: rgba(255, 255, 255, 0.5);
+  .hero-cta-app {
+    border-color: rgba(255, 255, 255, 0.4);
     color: var(--color-text-on-primary);
-    font-size: 0.95rem;
   }
 
-  .cta-app:hover {
+  .hero-cta-app:hover {
+    background: rgba(255, 255, 255, 0.12);
     border-color: var(--color-text-on-primary);
+    color: var(--color-text-on-primary);
   }
 
-  /* SKU Preview (M5.3) */
-  .sku-preview {
-    padding: var(--s8) var(--s4);
-    max-width: 600px;
-    margin: 0 auto;
+  .wa-icon {
+    flex-shrink: 0;
   }
 
-  .section-title {
-    font-family: var(--font-deva-body);
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--color-text-primary);
-    margin-bottom: var(--s4);
+  /* ================================================================
+   * §2 TRUST SECTION
+   * ================================================================ */
+  .trust-section {
+    background: var(--color-bg-warmer);
+    text-align: center;
   }
 
-  .sku-grid {
+  .trust-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: var(--s4);
-    margin-bottom: var(--s6);
+  }
+
+  .trust-card {
+    background: var(--color-surface);
+    border-radius: 12px;
+    padding: var(--s6) var(--s4);
+    border: 1px solid var(--color-divider-solid);
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s;
+  }
+
+  .trust-card:hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  .trust-icon {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: var(--s3);
+  }
+
+  .trust-title {
+    font-family: var(--font-deva-body);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--s2);
+  }
+
+  .trust-desc {
+    font-family: var(--font-deva-body);
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+  }
+
+  /* ================================================================
+   * §3 CATALOG
+   * ================================================================ */
+  .catalog-section {
+    text-align: center;
+  }
+
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s5);
+    margin-bottom: var(--s8);
+    text-align: left;
   }
 
   .sku-card {
     background: var(--color-surface);
     border-radius: 12px;
     overflow: hidden;
-    border: 1px solid var(--color-divider);
-    cursor: pointer;
-    text-align: left;
-    padding: 0;
-    transition: box-shadow 0.2s;
-    font: inherit;
-    color: inherit;
+    border: 1px solid var(--color-divider-solid);
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.25s, transform 0.25s;
+    display: flex;
+    flex-direction: column;
   }
 
   .sku-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
+  }
+
+  .sku-photo-wrap {
+    position: relative;
+    overflow: hidden;
   }
 
   .sku-photo {
@@ -335,231 +604,347 @@ const hasFacePhoto = shop.shopkeeperFaceUrl.length > 0;
     aspect-ratio: 4/3;
     background: linear-gradient(
       135deg,
-      var(--color-divider) 0%,
-      #f0ede8 100%
+      var(--color-bg-warmer) 0%,
+      var(--color-divider-solid) 100%
     );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sku-placeholder-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+  }
+
+  .sku-body {
+    padding: var(--s4);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
   }
 
   .sku-name {
     font-family: var(--font-deva-body);
-    font-size: 0.9rem;
-    font-weight: 600;
-    padding: var(--s3) var(--s3) var(--s1);
+    font-size: 1.05rem;
+    font-weight: 700;
     color: var(--color-text-primary);
+    margin-bottom: var(--s1);
+  }
+
+  .sku-name-en {
+    font-family: var(--font-en-body);
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--s2);
   }
 
   .sku-price {
     font-family: var(--font-mono);
-    font-size: 0.95rem;
+    font-size: 1.15rem;
     font-weight: 600;
-    padding: 0 var(--s3) var(--s3);
     color: var(--color-accent);
-  }
-
-  /* M5.3 Edge #1: Coming soon placeholder */
-  .sku-coming-soon {
-    padding: var(--s8) var(--s4);
-    text-align: center;
-    border: 2px dashed var(--color-divider);
-    border-radius: 12px;
-    margin-bottom: var(--s6);
-  }
-
-  .coming-soon-text {
-    font-family: var(--font-deva-body);
-    font-size: 1.1rem;
-    color: var(--color-text-muted);
-  }
-
-  /* M5.3 AC #4: Full catalog CTA */
-  .catalog-cta {
-    text-align: center;
-    margin-top: var(--s4);
-  }
-
-  /* M5.3 AC #3: SKU detail modal */
-  .modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    padding: var(--s4);
-  }
-
-  .modal.open {
-    display: flex;
-  }
-
-  .modal-content {
-    background: var(--color-surface);
-    border-radius: 16px;
-    max-width: 400px;
-    width: 100%;
-    max-height: 80vh;
-    overflow-y: auto;
-    position: relative;
-  }
-
-  .modal-close {
-    position: absolute;
-    top: var(--s2);
-    right: var(--s3);
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--color-text-secondary);
-    min-height: 48px;
-    min-width: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .modal-photo {
-    width: 100%;
-    aspect-ratio: 4/3;
-    object-fit: cover;
-    border-radius: 16px 16px 0 0;
-  }
-
-  .modal-photo-placeholder {
-    width: 100%;
-    aspect-ratio: 4/3;
-    background: linear-gradient(135deg, var(--color-divider) 0%, #f0ede8 100%);
-    border-radius: 16px 16px 0 0;
-  }
-
-  .modal-body-inner {
-    padding: var(--s4);
-  }
-
-  .modal-sku-name {
-    font-family: var(--font-deva-display);
-    font-size: 1.5rem;
-    margin-bottom: var(--s1);
-  }
-
-  .modal-sku-name-en {
-    font-family: var(--font-en-body);
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
     margin-bottom: var(--s3);
   }
 
-  .modal-sku-price {
-    font-family: var(--font-mono);
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--color-accent);
+  .sku-cta {
+    margin-top: auto;
+    width: 100%;
+    font-size: 0.9rem;
+    min-height: 44px;
+    border-radius: 8px;
   }
 
-  /* Footer */
-  .site-footer {
-    background: var(--color-primary-deep);
-    color: var(--color-text-on-primary);
-    padding: var(--s8) var(--s4);
+  /* Empty state */
+  .catalog-empty {
+    padding: var(--s12) var(--s4);
+    text-align: center;
+    border: 2px dashed var(--color-divider-solid);
+    border-radius: 16px;
+    margin-bottom: var(--s8);
+  }
+
+  .catalog-empty-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: var(--s3);
+    opacity: 0.4;
+  }
+
+  .catalog-empty-text {
+    font-family: var(--font-deva-body);
+    font-size: 1rem;
+    color: var(--color-text-muted);
+  }
+
+  /* Catalog CTA */
+  .catalog-cta-wrap {
     text-align: center;
   }
 
-  .footer-content {
-    max-width: 600px;
-    margin: 0 auto;
+  .catalog-cta {
+    font-size: 1.05rem;
+    padding: var(--s3) var(--s8);
   }
 
-  .footer-address {
+  .catalog-cta-note {
     font-family: var(--font-deva-body);
-    font-size: 0.95rem;
-    margin-bottom: var(--s1);
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-top: var(--s3);
   }
 
-  .footer-address-en {
-    font-family: var(--font-en-body);
-    font-size: 0.85rem;
-    opacity: 0.7;
+  /* ================================================================
+   * §4 ABOUT
+   * ================================================================ */
+  .about-section {
+    background: var(--color-bg-warmer);
+  }
+
+  .about-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s8);
+  }
+
+  .about-para {
+    font-family: var(--font-deva-body);
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    line-height: 1.7;
     margin-bottom: var(--s4);
   }
 
-  .footer-links {
+  .about-highlight {
+    font-family: var(--font-deva-display);
+    font-size: 1.15rem;
+    color: var(--color-primary);
+    font-style: italic;
+    border-left: 3px solid var(--color-accent);
+    padding-left: var(--s4);
+    margin-top: var(--s4);
+  }
+
+  .about-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--s3);
+    text-align: center;
+  }
+
+  .stat {
+    background: var(--color-surface);
+    border-radius: 12px;
+    padding: var(--s4) var(--s2);
+    border: 1px solid var(--color-divider-solid);
+  }
+
+  .stat-number {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--s1);
+  }
+
+  .stat-label {
+    font-family: var(--font-deva-body);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  /* ================================================================
+   * §5 CTA BAND
+   * ================================================================ */
+  .cta-band {
+    background: var(--color-primary);
+    color: var(--color-text-on-primary);
+    padding: var(--s10) var(--s4);
+    text-align: center;
+  }
+
+  .cta-band-title {
+    font-family: var(--font-deva-display);
+    font-size: 1.75rem;
+    font-weight: 400;
+    margin-bottom: var(--s2);
+  }
+
+  .cta-band-sub {
+    font-family: var(--font-deva-body);
+    font-size: 0.95rem;
+    opacity: 0.8;
     margin-bottom: var(--s6);
+  }
+
+  .cta-band-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+    align-items: center;
+  }
+
+  .cta-band-btn {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .cta-band-phone {
+    border-color: rgba(255,255,255,0.4);
+    color: var(--color-text-on-primary);
+  }
+
+  .cta-band-phone:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: #fff;
+    color: #fff;
+  }
+
+  /* ================================================================
+   * §6 FOOTER
+   * ================================================================ */
+  .site-footer {
+    background: var(--color-primary-deep);
+    color: var(--color-text-on-primary);
+    padding: var(--s10) var(--s4) var(--s6);
+  }
+
+  .footer-brand {
+    text-align: center;
+    margin-bottom: var(--s8);
+  }
+
+  .footer-shop-name {
+    font-family: var(--font-deva-display);
+    font-size: 1.5rem;
+    font-weight: 400;
+  }
+
+  .footer-shop-name-en {
+    font-family: var(--font-en-display);
+    font-size: 0.85rem;
+    font-style: italic;
+    opacity: 0.6;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--s6);
+    margin-bottom: var(--s6);
+  }
+
+  .footer-col-title {
+    font-family: var(--font-deva-body);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-accent);
+    margin-bottom: var(--s2);
+  }
+
+  .footer-text {
+    font-family: var(--font-deva-body);
+    font-size: 0.9rem;
+    opacity: 0.8;
+    line-height: 1.5;
+  }
+
+  .footer-sunday {
+    color: var(--color-accent);
+    font-weight: 600;
+    opacity: 1;
   }
 
   .footer-link {
     font-family: var(--font-deva-body);
     font-size: 0.9rem;
-    color: var(--color-accent);
+    color: var(--color-accent-glow);
+    display: block;
+    padding: var(--s1) 0;
+    transition: color 0.15s;
   }
 
-  .footer-divider {
-    margin: 0 var(--s2);
-    opacity: 0.5;
+  .footer-link:hover {
+    color: #fff;
   }
 
-  .footer-brand {
+  .footer-credit {
+    text-align: center;
+    margin-top: var(--s4);
+  }
+
+  .footer-credit-text {
     font-family: var(--font-en-body);
+    font-size: 0.75rem;
+    opacity: 0.4;
+  }
+
+  .footer-credit-brand {
+    font-family: var(--font-en-display);
     font-size: 0.8rem;
     opacity: 0.5;
     font-style: italic;
+    margin-left: var(--s1);
   }
 
-  /* M5.2 — Voice greeting */
-  .greeting-audio {
-    margin-bottom: var(--s4);
-  }
-
-  .btn-voice {
-    font-family: var(--font-deva-body);
-    font-size: 0.9rem;
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: var(--color-text-on-primary);
-    padding: var(--s2) var(--s4);
-    border-radius: 24px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-
-  .btn-voice:hover {
-    background: rgba(255, 255, 255, 0.25);
-  }
-
-  .btn-voice.playing {
-    background: var(--color-accent);
-    border-color: var(--color-accent);
-  }
-
-  /* Desktop responsive (M5.1 Edge #1) */
+  /* ================================================================
+   * RESPONSIVE — Desktop (768px+)
+   * ================================================================ */
   @media (min-width: 768px) {
     .hero {
-      padding: var(--s16) var(--s8);
+      padding: var(--s16) var(--s8) var(--s12);
     }
 
-    .shop-name {
-      font-size: 3rem;
+    .hero-name {
+      font-size: 3.25rem;
     }
 
-    .cta-group {
+    .hero-ctas {
       flex-direction: row;
       justify-content: center;
     }
 
-    .sku-grid {
+    .trust-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .catalog-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .about-content {
+      grid-template-columns: 2fr 1fr;
+      align-items: start;
+    }
+
+    .cta-band-title {
+      font-size: 2.25rem;
+    }
+
+    .cta-band-buttons {
+      flex-direction: row;
+      justify-content: center;
+    }
+
+    .footer-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .catalog-grid {
       grid-template-columns: repeat(3, 1fr);
     }
   }
 </style>
 
 <script define:vars={{ skuData: JSON.stringify(shop.curatedPreview), ownerName: shop.ownerName }}>
-  // Parse SKU data baked at build time for modal rendering.
   const skus = JSON.parse(skuData);
-
-  // F17: voice button reset text uses dynamic ownerName, not hardcoded.
   const voiceBtnLabel = '🎤 ' + ownerName + ' की आवाज़ सुनिए';
 
-  // M5.2: voice note playback toggle.
   function toggleVoice() {
     const audio = document.getElementById('greetingAudio');
     const btn = document.getElementById('voiceBtn');
@@ -569,9 +954,7 @@ const hasFacePhoto = shop.shopkeeperFaceUrl.length > 0;
       audio.play().then(() => {
         btn.classList.add('playing');
         btn.textContent = '🔊 बंद कीजिए';
-      }).catch(() => {
-        // Autoplay blocked — button already shows CTA
-      });
+      }).catch(() => {});
     } else {
       audio.pause();
       audio.currentTime = 0;
@@ -585,66 +968,5 @@ const hasFacePhoto = shop.shopkeeperFaceUrl.length > 0;
     }, { once: true });
   }
 
-  // M5.3 AC #3: SKU detail modal — DOM API only, no innerHTML (F1 XSS fix).
-  function openSkuModal(skuId) {
-    const sku = skus.find(s => s.skuId === skuId);
-    if (!sku) return;
-
-    const modal = document.getElementById('skuModal');
-    const body = document.getElementById('modalBody');
-    if (!modal || !body) return;
-
-    // Clear previous content safely
-    body.textContent = '';
-
-    // Photo or placeholder — built via DOM API to prevent XSS
-    if (sku.thumbnailUrl) {
-      const img = document.createElement('img');
-      img.src = sku.thumbnailUrl;
-      img.alt = sku.nameDevanagari;
-      img.className = 'modal-photo';
-      body.appendChild(img);
-    } else {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'modal-photo-placeholder';
-      body.appendChild(placeholder);
-    }
-
-    // Body inner container — all text via textContent (auto-escapes)
-    const inner = document.createElement('div');
-    inner.className = 'modal-body-inner';
-
-    const h3 = document.createElement('h3');
-    h3.className = 'modal-sku-name';
-    h3.textContent = sku.nameDevanagari;
-    inner.appendChild(h3);
-
-    const pEn = document.createElement('p');
-    pEn.className = 'modal-sku-name-en';
-    pEn.textContent = sku.nameEnglish;
-    inner.appendChild(pEn);
-
-    const pPrice = document.createElement('p');
-    pPrice.className = 'modal-sku-price';
-    pPrice.textContent = '\u20B9' + Number(sku.priceInr).toLocaleString('en-IN');
-    inner.appendChild(pPrice);
-
-    body.appendChild(inner);
-
-    modal.classList.add('open');
-  }
-
-  function closeSkuModal(event) {
-    const modal = document.getElementById('skuModal');
-    if (!modal) return;
-    // Close on backdrop click or explicit close
-    if (!event || event.target === modal || event.target.closest('.modal-close')) {
-      modal.classList.remove('open');
-    }
-  }
-
-  // Expose to onclick handlers
   window.toggleVoice = toggleVoice;
-  window.openSkuModal = openSkuModal;
-  window.closeSkuModal = closeSkuModal;
 </script>

@@ -3,6 +3,9 @@
 // Per M5.1 AC #2: <100KB initial bundle including subset Devanagari font.
 // Per Constraint 4: 5 fonts only — Tiro Devanagari Hindi, Mukta, Fraunces,
 // EB Garamond, DM Mono.
+//
+// Design system: Workshop Almanac v1.1
+// Aesthetic: Artisan Industrial — warm family shopkeeper meets honest iron.
 interface Props {
   title: string;
   description?: string;
@@ -29,46 +32,63 @@ const { title, description = 'सुनील ट्रेडिंग कंप
 
     <style is:global>
       /* ================================================================
-       * Yugma Dukaan Marketing — Global Styles
-       * Constraint 4 font stack. ADR-003 color tokens.
+       * Yugma Dukaan Marketing — Workshop Almanac Design System
+       *
+       * Aesthetic: Artisan Industrial
+       * "A hand-bound 1960s North Indian shop ledger meets polished
+       *  sheesham wood, with the honest weight of iron and steel."
        * ================================================================ */
 
       :root {
-        /* Colors — from ShopThemeTokens for Sunil Trading Company */
-        --color-primary: #1B3A4B;
-        --color-primary-deep: #0F2330;
+        /* ── Workshop Almanac Color Tokens (ADR-003) ── */
+        --color-primary: #6B3410;
+        --color-primary-deep: #4A2308;
+        --color-secondary: #8B4513;
         --color-accent: #B8860B;
-        --color-background: #FAF8F5;
-        --color-surface: #FFFFFF;
-        --color-text-primary: #1A1A1A;
-        --color-text-secondary: #666666;
-        --color-text-muted: #999999;
-        --color-text-on-primary: #FFFFFF;
-        --color-divider: #E8E5E0;
-        --color-commit: #8B0000;
+        --color-accent-glow: #D4A547;
+        --color-background: #FAF3E7;
+        --color-bg-warmer: #F5EBD7;
+        --color-surface: #FFFAF0;
+        --color-text-primary: #1F1611;
+        --color-text-secondary: #5C4A3A;
+        --color-text-muted: #8B7A6B;
+        --color-text-on-primary: #FAF3E7;
+        --color-divider: rgba(107, 52, 16, 0.12);
+        --color-divider-solid: #E8DFD2;
 
-        /* Font families */
+        /* ── Font families (Constraint 4: 5 only) ── */
         --font-deva-display: 'Tiro Devanagari Hindi', serif;
         --font-deva-body: 'Mukta', sans-serif;
         --font-en-display: 'Fraunces', serif;
         --font-en-body: 'EB Garamond', serif;
         --font-mono: 'DM Mono', monospace;
 
-        /* Spacing */
+        /* ── Spacing ── */
         --s1: 4px;
         --s2: 8px;
         --s3: 12px;
         --s4: 16px;
+        --s5: 20px;
         --s6: 24px;
         --s8: 32px;
+        --s10: 40px;
         --s12: 48px;
         --s16: 64px;
+
+        /* ── Shadows (warm, never gray) ── */
+        --shadow-card: 0 2px 8px rgba(74, 35, 8, 0.10);
+        --shadow-card-hover: 0 4px 16px rgba(74, 35, 8, 0.18);
+        --shadow-hero: 0 4px 24px rgba(0, 0, 0, 0.3);
       }
 
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
       }
 
       body {
@@ -84,11 +104,17 @@ const { title, description = 'सुनील ट्रेडिंग कंप
         text-decoration: none;
       }
 
-      /* Tap targets ≥ 48px per accessibility */
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+
+      /* ── Button system (48px min touch target) ── */
       .btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: var(--s2);
         min-height: 48px;
         padding: var(--s3) var(--s6);
         border-radius: 8px;
@@ -97,10 +123,12 @@ const { title, description = 'सुनील ट्रेडिंग कंप
         font-weight: 600;
         cursor: pointer;
         border: none;
-        transition: opacity 0.2s;
+        transition: all 0.2s ease;
+        text-decoration: none;
       }
 
-      .btn:hover { opacity: 0.9; }
+      .btn:hover { opacity: 0.92; transform: translateY(-1px); }
+      .btn:active { transform: translateY(0); }
 
       .btn-primary {
         background-color: var(--color-primary);
@@ -116,6 +144,67 @@ const { title, description = 'सुनील ट्रेडिंग कंप
         background-color: transparent;
         border: 2px solid var(--color-primary);
         color: var(--color-primary);
+      }
+
+      .btn-outline:hover {
+        background-color: var(--color-primary);
+        color: var(--color-text-on-primary);
+      }
+
+      .btn-whatsapp {
+        background-color: #25D366;
+        color: #fff;
+      }
+
+      .btn-whatsapp:hover {
+        background-color: #1DA851;
+      }
+
+      /* ── Section system ── */
+      .section {
+        padding: var(--s12) var(--s4);
+      }
+
+      .section-inner {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      .section-title {
+        font-family: var(--font-deva-display);
+        font-size: 1.75rem;
+        font-weight: 400;
+        color: var(--color-text-primary);
+        margin-bottom: var(--s2);
+      }
+
+      .section-subtitle {
+        font-family: var(--font-en-display);
+        font-size: 0.9rem;
+        font-weight: 400;
+        font-style: italic;
+        color: var(--color-text-muted);
+        margin-bottom: var(--s8);
+      }
+
+      /* ── Brass divider ── */
+      .brass-divider {
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--color-accent), var(--color-accent-glow), var(--color-accent));
+        margin: var(--s6) auto;
+        border: none;
+      }
+
+      /* ── Responsive ── */
+      @media (min-width: 768px) {
+        .section {
+          padding: var(--s16) var(--s8);
+        }
+
+        .section-title {
+          font-size: 2.25rem;
+        }
       }
     </style>
   </head>
