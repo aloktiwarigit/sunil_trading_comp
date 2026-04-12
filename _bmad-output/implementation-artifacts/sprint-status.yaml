@@ -41,7 +41,7 @@
 # ===== CURRENT STATE SUMMARY (updated 2026-04-12 Session 6) =====
 #
 # Epics: 6 total. 1 done (E6). 4 in-progress (E1, E3, E4, E5). 1 backlog (E2).
-# Stories: 67 total. 45 done. 0 ready-for-dev. 0 in-progress. 22 backlog.
+# Stories: 67 total. 47 done. 0 ready-for-dev. 0 in-progress. 20 backlog.
 # Walking Skeleton (19 stories): 19 done. 0 remaining. *** WS CLOSED ***
 # Sprint 0 CLOSED: END STATE A — Alok is the Hindi reviewer (2026-04-12).
 #
@@ -50,13 +50,14 @@
 #   Sprint 12 (C3.10+C3.11+C3.12) — order tracking + delivery + deactivation
 #   Sprint 13 (S4.10+S4.11) — udhaar ledger management + analytics dashboard
 #   Sprint 14 (S4.2+S4.17) — multi-operator role gating + NPS survey
+#   Sprint 15 (B1.6+B1.7) — voice note recording + chat voice notes
 # Also completed B1.11 (foundation for S4.9).
-# 45 stories done total (33→45). Committed at bccd70c on main.
+# 47 stories done total (33→47). Committed at 22bd80e on main.
 #
 # =================================
 
 generated: 2026-04-11
-last_updated: 2026-04-12  # Session 6 — Sprint 11-14 shipped, 45/67 done
+last_updated: 2026-04-12  # Session 6 — Sprint 11-15 shipped, 47/67 done
 project: Almira-Project (Yugma Dukaan)
 project_key: NOKEY
 tracking_system: file-system
@@ -148,8 +149,10 @@ development_status:
   b1-5-sku-detail-with-golden-hour-photo: done
 
   # E1 depth stories (Sprint 3-5)
-  b1-6-voice-note-recording-shopkeeper: backlog
-  b1-7-voice-note-in-project-chat: backlog
+  # B1.6 Voice note recording — shipped Sprint 15 (22bd80e)
+  b1-6-voice-note-recording-shopkeeper: done
+  # B1.7 Voice note in project chat — shipped Sprint 15 (22bd80e)
+  b1-7-voice-note-in-project-chat: done
   b1-8-shop-landing-voice-note-management: backlog
   b1-9-absence-presence-status-banner: backlog
   b1-10-away-voice-note-fallback: backlog
