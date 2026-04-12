@@ -1,0 +1,30 @@
+# =============================================================================
+# functions/.gitignore
+# Per SAD v1.0.4 §3 — functions/ is a TypeScript workspace under firebase.json.
+# =============================================================================
+
+# Compiled output
+lib/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Jest
+coverage/
+
+# Firebase emulator state
+.runtimeconfig.json
+ui-debug.log
+firebase-debug.log
+firestore-debug.log
+pubsub-debug.log
+
+# Editor
+.vscode/
+*.local
+
+# OS
+.DS_Store
+Thumbs.db

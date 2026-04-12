@@ -123,18 +123,73 @@ When ready:
 
 ---
 
-## Step 6 — Blaze upgrade + budget alerts
+## Step 6 — Blaze upgrade + budget alerts + kill-switch function deploy
 
 **Required before:** Cloud Functions deploy (Sprint 5–6), Phone Auth SMS beyond free quota, or any scheduled job.
 
+### Step 6.1 — Blaze upgrade
 1. Firebase console → Settings → Usage and billing → Modify plan → Blaze (Pay-as-you-go)
 2. Link a billing account (requires Google Cloud billing account)
+
+### Step 6.2 — Budget alerts (minimum safety)
 3. Set up budget alerts at **$0.10 / $0.50 / $1.00** per Brief §10 + ADR-007:
    - Firebase console → Settings → Billing → Budgets & alerts
    - Create budget → amount = $1.00
    - Alerts at 10% / 50% / 100% of budget
-   - Subscribe the Yugma Labs ops contact email
-4. The `killSwitchOnBudgetAlert` Cloud Function (SAD §7 Function 1) subscribes to the Pub/Sub topic the budget alerts write to — deploy that function **before** the first real customer traffic hits staging so the kill-switch is live.
+   - Subscribe the Yugma Labs ops contact email (`aloktiwari49@gmail.com`)
+
+This gives email-to-operator notifications immediately. That's the minimum safety.
+
+### Step 6.3 — Pub/Sub topic + kill-switch function (automated response)
+
+For automated circuit-breaker behavior (not just email), wire a Pub/Sub topic:
+
+4. Go to Google Cloud Console → Billing → Budgets → your budget → "Edit" → Notifications → "Pub/Sub" section → "Connect a Cloud Pub/Sub topic"
+5. Create a topic named exactly **`budget-alerts`** in the same GCP project (e.g., `yugma-dukaan-dev`)
+6. Save the budget. Cloud Billing will start publishing threshold crossings to the topic.
+
+### Step 6.4 — Deploy the kill-switch Cloud Function
+
+Phase 2.x scaffolded the `killSwitchOnBudgetAlert` function (PRD I6.8 + SAD §7 Function 1). Deploy it once Blaze + budget + Pub/Sub are wired:
+
+```bash
+cd "C:/Alok/Business Projects/Almira-Project"
+firebase deploy --only functions --project yugma-dukaan-dev
+```
+
+Expected output:
+```
+=== Deploying to 'yugma-dukaan-dev'...
+i  deploying functions
+i  functions: preparing functions directory for uploading...
+i  functions: packaged C:\Alok\...\functions (XX.XX KB) for uploading
+✔  functions: functions folder uploaded successfully
+i  functions: creating Node.js 22 function killSwitchOnBudgetAlert(asia-south1)...
+✔  functions[killSwitchOnBudgetAlert(asia-south1)]: Successful create operation.
+Function URL: (pubsub trigger — no HTTPS URL)
+✔  Deploy complete!
+```
+
+### Step 6.5 — Verify subscriber
+
+After deploy, confirm the function is attached to the topic:
+```bash
+gcloud pubsub topics list-subscriptions budget-alerts --project=yugma-dukaan-dev
+```
+Expected: at least one subscription whose target is the deployed function.
+
+### Step 6.6 — Sanity test (optional but recommended)
+
+Manually publish a test payload to the topic to exercise the function end-to-end:
+```bash
+gcloud pubsub topics publish budget-alerts \
+  --project=yugma-dukaan-dev \
+  --message='{"budgetDisplayName":"test","costAmount":0.3,"budgetAmount":1.0,"currencyCode":"USD"}'
+```
+
+Expected: the function logs the alert at 30% (informational). Check via `firebase functions:log --project yugma-dukaan-dev` — should see `"Budget alert at 30.0% — informational"`.
+
+**Do NOT publish a test payload with `costAmount >= 1.0` unless you want to flip the kill-switch on the real tenant.** The 100% threshold writes real kill-switch flags to every shop's `featureFlags/runtime` doc, which would freeze real adapters.
 
 **Safety posture:** the $1 cap is a safety rail against SMS pumping attacks or runaway queries — NOT an expected spend. Real staging traffic at one-shop scale should cost $0.00 across an entire month. If staging ever approaches the cap, treat it as an incident and investigate before raising the cap.
 
