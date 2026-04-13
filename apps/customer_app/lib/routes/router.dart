@@ -505,14 +505,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                           strings: data.strings,
                           goldenHourPhotoUrl: goldenHourUrl,
                           workingLightPhotoUrl: workingUrl,
-                          onAddToList: () {
+                          onAddToList: () async {
                             HapticFeedback.lightImpact();
-                            innerRef
+                            await innerRef
                                 .read(draftControllerProvider.notifier)
                                 .addSku(sku);
-                            context.push('/draft');
+                            if (context.mounted) {
+                              context.push('/draft');
+                            }
                           },
-                          onTalkToBhaiya: () {
+                          onTalkToBhaiya: () async {
                             HapticFeedback.lightImpact();
                             final draft = innerRef
                                 .read(draftControllerProvider)
@@ -521,10 +523,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                             if (projectId != null) {
                               context.push('/project/$projectId/chat');
                             } else {
-                              innerRef
+                              await innerRef
                                   .read(draftControllerProvider.notifier)
                                   .addSku(sku);
-                              context.push('/draft');
+                              if (context.mounted) {
+                                context.push('/draft');
+                              }
                             }
                           },
                         );
