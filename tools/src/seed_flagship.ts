@@ -67,10 +67,10 @@ const shopRef = db.collection('shops').doc(SHOP_ID);
 
 // SKU IDs
 const SKU_GODREJ_4DOOR = 'sku-godrej-4door';
-const SKU_SHEESHAM_WARDROBE = 'sku-sheesham-wardrobe';
-const SKU_MODULAR_SLIDING = 'sku-modular-sliding';
-const SKU_TEAK_WARDROBE = 'sku-teak-wardrobe';
-const SKU_DRESSING_TABLE = 'sku-dressing-table';
+const SKU_STEEL_3DOOR_MIRROR = 'sku-steel-3door-mirror';
+const SKU_STEEL_LOCKER = 'sku-steel-locker';
+const SKU_STEEL_PREMIUM_6DOOR = 'sku-steel-premium-6door';
+const SKU_STEEL_DRESSING = 'sku-steel-dressing';
 const SKU_BUDGET_STEEL = 'sku-budget-steel';
 
 // -----------------------------------------------------------------------------
@@ -145,13 +145,13 @@ async function seedFlagship(): Promise<void> {
   );
   console.log('  + theme/current');
 
-  // ---- 3. Inventory: 6 SKUs ----
+  // ---- 3. Inventory: 6 SKUs (mostly iron/steel — Sunil bhaiya's specialty) ----
   const skus = [
     {
       skuId: SKU_GODREJ_4DOOR,
       name: 'Godrej-style 4-door Steel Almirah',
       nameDevanagari: 'गोदरेज स्टाइल 4 दरवाज़े स्टील अलमारी',
-      description: 'चार दरवाज़ों वाली मज़बूत स्टील अलमारी, पूरे परिवार के लिए',
+      description: 'चार दरवाज़ों वाली मज़बूत स्टील अलमारी — पूरे परिवार का सामान आराम से आ जाए। पाउडर कोटेड फ़िनिश, ज़ंग नहीं लगता। लॉक के साथ।',
       category: 'steel_almirah',
       material: 'steel',
       dimensions: { heightCm: 182, widthCm: 122, depthCm: 56 },
@@ -164,64 +164,64 @@ async function seedFlagship(): Promise<void> {
       ],
     },
     {
-      skuId: SKU_SHEESHAM_WARDROBE,
-      name: 'Sheesham 3-door Wardrobe',
-      nameDevanagari: 'शीशम 3 दरवाज़े अलमारी',
-      description: 'शीशम की लकड़ी, तीन दरवाज़े, आईना अंदर',
-      category: 'wooden_wardrobe',
-      material: 'wood_sheesham',
-      dimensions: { heightCm: 198, widthCm: 152, depthCm: 60 },
-      basePrice: 35000,
-      negotiableDownTo: 30000,
-      occasionTags: ['shaadi', 'dahej', 'ladies'],
+      skuId: SKU_STEEL_3DOOR_MIRROR,
+      name: '3-door Steel Almirah with Full Mirror',
+      nameDevanagari: '3 दरवाज़े स्टील अलमारी — फ़ुल आईना',
+      description: 'तीन दरवाज़ों वाली स्टील अलमारी, बीच में पूरे कद का आईना। बेटी की विदाई के लिए सबसे ज़्यादा बिकती है। मज़बूत हैंडल, सॉफ़्ट क्लोज़।',
+      category: 'steel_almirah',
+      material: 'steel',
+      dimensions: { heightCm: 190, widthCm: 152, depthCm: 58 },
+      basePrice: 24000,
+      negotiableDownTo: 21000,
+      occasionTags: ['shaadi', 'beti_ka_ghar', 'ladies'],
       fallbackPhotoUrls: [
         'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80',
         'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=800&q=80',
       ],
     },
     {
-      skuId: SKU_MODULAR_SLIDING,
-      name: 'Modular Sliding Wardrobe',
-      nameDevanagari: 'मॉड्यूलर स्लाइडिंग अलमारी',
-      description: 'स्लाइडिंग दरवाज़े, लैमिनेट फ़िनिश, आधुनिक डिज़ाइन',
-      category: 'modular',
-      material: 'ply_laminate',
-      dimensions: { heightCm: 210, widthCm: 180, depthCm: 62 },
-      basePrice: 22000,
-      negotiableDownTo: 19000,
-      occasionTags: ['naya_ghar', 'replacement', 'budget', 'ladies'],
+      skuId: SKU_STEEL_LOCKER,
+      name: 'Heavy-duty Steel Locker Almirah',
+      nameDevanagari: 'हैवी ड्यूटी स्टील लॉकर अलमारी',
+      description: 'डबल लॉकिंग सिस्टम, 18 गेज स्टील, ज़ेवर और ज़रूरी कागज़ात रखने के लिए। दीवार में फ़िक्स हो जाती है।',
+      category: 'steel_almirah',
+      material: 'steel',
+      dimensions: { heightCm: 165, widthCm: 85, depthCm: 50 },
+      basePrice: 14000,
+      negotiableDownTo: 12000,
+      occasionTags: ['naya_ghar', 'replacement'],
       fallbackPhotoUrls: [
         'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=80',
         'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&q=80',
       ],
     },
     {
-      skuId: SKU_TEAK_WARDROBE,
-      name: 'Teak 3-door Premium Wardrobe',
-      nameDevanagari: 'सागौन 3 दरवाज़े प्रीमियम अलमारी',
-      description: 'सागौन की लकड़ी, हाथ की नक्काशी, पीढ़ियों तक चले',
-      category: 'wooden_wardrobe',
-      material: 'wood_teak',
-      dimensions: { heightCm: 200, widthCm: 160, depthCm: 58 },
-      basePrice: 45000,
-      negotiableDownTo: 40000,
-      occasionTags: ['shaadi', 'dahej'],
+      skuId: SKU_STEEL_PREMIUM_6DOOR,
+      name: 'Premium 6-door Steel Wardrobe',
+      nameDevanagari: 'प्रीमियम 6 दरवाज़े स्टील वॉर्डरोब',
+      description: 'छह दरवाज़ों वाला बड़ा वॉर्डरोब — ऊपर तीन, नीचे तीन। शादी के सारे कपड़े और बिस्तर आ जाएँ। प्रीमियम मैट फ़िनिश।',
+      category: 'steel_almirah',
+      material: 'steel',
+      dimensions: { heightCm: 200, widthCm: 180, depthCm: 60 },
+      basePrice: 32000,
+      negotiableDownTo: 28000,
+      occasionTags: ['shaadi', 'beti_ka_ghar'],
       fallbackPhotoUrls: [
         'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800&q=80',
         'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&q=80',
       ],
     },
     {
-      skuId: SKU_DRESSING_TABLE,
-      name: 'Sheesham Dressing Table with Mirror',
-      nameDevanagari: 'शीशम ड्रेसिंग टेबल आईने वाली',
-      description: 'शीशम की लकड़ी, बड़ा आईना, तीन दराज़',
-      category: 'dressing',
-      material: 'wood_sheesham',
+      skuId: SKU_STEEL_DRESSING,
+      name: 'Steel Dressing Table with Mirror',
+      nameDevanagari: 'स्टील ड्रेसिंग टेबल आईने वाली',
+      description: 'स्टील फ़्रेम, बड़ा आईना, तीन दराज़ — मेकअप का सारा सामान सेट। पाउडर कोटेड, कलर ऑप्शन में उपलब्ध।',
+      category: 'steel_almirah',
+      material: 'steel',
       dimensions: { heightCm: 150, widthCm: 90, depthCm: 45 },
-      basePrice: 12000,
-      negotiableDownTo: 10000,
-      occasionTags: ['shaadi', 'dahej', 'ladies'],
+      basePrice: 8500,
+      negotiableDownTo: 7000,
+      occasionTags: ['shaadi', 'beti_ka_ghar', 'ladies'],
       fallbackPhotoUrls: [
         'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=800&q=80',
         'https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=800&q=80',
@@ -231,12 +231,12 @@ async function seedFlagship(): Promise<void> {
       skuId: SKU_BUDGET_STEEL,
       name: 'Budget 2-door Steel Almirah',
       nameDevanagari: 'बजट 2 दरवाज़े स्टील अलमारी',
-      description: 'दो दरवाज़ों वाली किफ़ायती स्टील अलमारी',
+      description: 'किफ़ायती दो दरवाज़ों वाली स्टील अलमारी — किराए के मकान या एक्स्ट्रा स्टोरेज के लिए बढ़िया। हल्की लेकिन मज़बूत।',
       category: 'steel_almirah',
       material: 'steel',
       dimensions: { heightCm: 170, widthCm: 90, depthCm: 50 },
-      basePrice: 8500,
-      negotiableDownTo: 7500,
+      basePrice: 6500,
+      negotiableDownTo: 5500,
       occasionTags: ['budget', 'replacement'],
       fallbackPhotoUrls: [
         'https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=800&q=80',
@@ -273,18 +273,18 @@ async function seedFlagship(): Promise<void> {
   }
   console.log(`  + ${skus.length} inventory SKUs`);
 
-  // ---- 4. Curated shortlists: 6 occasions ----
+  // ---- 4. Curated shortlists: 5 occasions (all steel/iron products) ----
   const shortlists = [
     {
       id: 'shaadi',
       occasion: 'shaadi',
       titleDevanagari: 'शादी के लिए',
       titleEnglish: 'For a wedding',
-      heroImageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80',
+      heroImageUrl: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=800&q=80',
       skuIdsInOrder: [
-        SKU_SHEESHAM_WARDROBE,
-        SKU_TEAK_WARDROBE,
-        SKU_DRESSING_TABLE,
+        SKU_STEEL_PREMIUM_6DOOR,
+        SKU_STEEL_3DOOR_MIRROR,
+        SKU_STEEL_DRESSING,
         SKU_GODREJ_4DOOR,
       ],
     },
@@ -295,54 +295,42 @@ async function seedFlagship(): Promise<void> {
       titleEnglish: 'For the new home',
       heroImageUrl: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=80',
       skuIdsInOrder: [
-        SKU_MODULAR_SLIDING,
         SKU_GODREJ_4DOOR,
-        SKU_SHEESHAM_WARDROBE,
+        SKU_STEEL_LOCKER,
+        SKU_STEEL_3DOOR_MIRROR,
       ],
     },
     {
-      id: 'dahej',
-      occasion: 'dahej',
-      titleDevanagari: 'दहेज के लिए',
-      titleEnglish: 'For dahej',
+      id: 'beti_ka_ghar',
+      occasion: 'beti_ka_ghar',
+      titleDevanagari: 'बेटी का नया घर',
+      titleEnglish: "For daughter's new home",
       heroImageUrl: 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800&q=80',
       skuIdsInOrder: [
-        SKU_TEAK_WARDROBE,
-        SKU_SHEESHAM_WARDROBE,
-        SKU_DRESSING_TABLE,
+        SKU_STEEL_PREMIUM_6DOOR,
+        SKU_STEEL_3DOOR_MIRROR,
+        SKU_STEEL_DRESSING,
       ],
     },
     {
       id: 'replacement',
       occasion: 'replacement',
-      titleDevanagari: 'पुराना बदलने के लिए',
-      titleEnglish: 'To replace the old one',
+      titleDevanagari: 'पुराना बदलना है',
+      titleEnglish: 'Replace the old one',
       heroImageUrl: 'https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=800&q=80',
       skuIdsInOrder: [
         SKU_BUDGET_STEEL,
         SKU_GODREJ_4DOOR,
-        SKU_MODULAR_SLIDING,
+        SKU_STEEL_LOCKER,
       ],
     },
     {
       id: 'budget',
       occasion: 'budget',
-      titleDevanagari: 'बजट के अनुसार',
-      titleEnglish: 'Budget picks',
+      titleDevanagari: 'बजट में बढ़िया',
+      titleEnglish: 'Best in budget',
       heroImageUrl: 'https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=800&q=80',
-      skuIdsInOrder: [SKU_BUDGET_STEEL, SKU_MODULAR_SLIDING],
-    },
-    {
-      id: 'ladies',
-      occasion: 'ladies',
-      titleDevanagari: 'लेडीज़ के लिए',
-      titleEnglish: 'For ladies',
-      heroImageUrl: 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=800&q=80',
-      skuIdsInOrder: [
-        SKU_DRESSING_TABLE,
-        SKU_MODULAR_SLIDING,
-        SKU_SHEESHAM_WARDROBE,
-      ],
+      skuIdsInOrder: [SKU_BUDGET_STEEL, SKU_STEEL_DRESSING, SKU_STEEL_LOCKER],
     },
   ];
 
