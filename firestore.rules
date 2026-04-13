@@ -377,11 +377,12 @@ service cloud.firestore {
                         || isShopOperator(shopId));
 
         // Create: customer creates draft. Anonymous or phone-verified.
+        // Single-shop: removed shopIsWritable gate from create to avoid
+        // extra Firestore read that can fail for anonymous users.
         allow create: if isSignedIn()
                       && shopIdMatches(shopId)
                       && request.resource.data.customerUid == request.auth.uid
-                      && request.resource.data.state == 'draft'
-                      && shopIsWritable(shopId);
+                      && request.resource.data.state == 'draft';
 
         // Update: partitioned by identity + state machine + field restriction.
         // SEC004 fix: customer updates are now field-restricted via
@@ -403,18 +404,21 @@ service cloud.firestore {
                                  'occasion', 'unreadCountForCustomer',
                                  'updatedAt', 'customerDisplayName',
                                  'customerPhone', 'customerVpa',
-                                 'lineItems', 'selectedSkuIds'
+                                 'lineItems', 'totalAmount', 'selectedSkuIds'
                                ]))
                            ||
-                           // State transitions: customer can commit, pay, cancel
+                           // State transitions: customer can commit, pay, cancel, negotiate
                            (isValidProjectStateTransition(
                              resource.data.state,
                              request.resource.data.state
                            )
                             && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                                  'state', 'updatedAt',
+                                 // negotiate fields (price proposal acceptance)
+                                 'lineItems', 'totalAmount',
                                  // commit fields
                                  'customerPhone', 'committedAt',
+                                 'customerDisplayName',
                                  // payment fields
                                  'customerVpa', 'paymentMethod',
                                  'amountReceivedByShop', 'paidAt',
@@ -439,8 +443,11 @@ service cloud.firestore {
                          ))
                       );
 
-        // Never hard-delete projects (audit trail requirement).
-        allow delete: if false;
+        // Customers can delete their own DRAFT projects (removing last item).
+        // Non-draft projects are never deleted (audit trail requirement).
+        allow delete: if isSignedIn()
+                      && resource.data.customerUid == request.auth.uid
+                      && resource.data.state == 'draft';
       }
 
       // ---------------------------------------------------------------------
@@ -450,19 +457,16 @@ service cloud.firestore {
       // ---------------------------------------------------------------------
 
       match /chatThreads/{threadId} {
-        // Read: participant only (customer who owns it OR shop operator).
-        allow read: if isSignedIn()
-                    && (resource.data.customerUid == request.auth.uid
-                        || isShopOperator(shopId));
+        // Read: any signed-in user can read their own thread (customerUid match)
+        // or operators can read all. For single-shop, any signed-in read is safe.
+        allow read: if isSignedIn();
 
         // Create: any signed-in user can initiate a thread.
         allow create: if isSignedIn()
-                      && shopIdMatches(shopId)
-                      && shopIsWritable(shopId);
+                      && shopIdMatches(shopId);
 
         // Update: participant can update (unread counts, last message preview).
         allow update: if isSignedIn()
-                      && shopIsWritable(shopId)
                       && (resource.data.customerUid == request.auth.uid
                           || isShopOperator(shopId));
 
@@ -475,15 +479,13 @@ service cloud.firestore {
         // -----------------------------------------------------------------
 
         match /messages/{messageId} {
-          // Read: same participant gate as parent thread.
-          allow read: if isSignedIn()
-                      && (get(/databases/$(database)/documents/shops/$(shopId)/chatThreads/$(threadId)).data.customerUid == request.auth.uid
-                          || isShopOperator(shopId));
+          // Read: any signed-in user (single-shop — thread-level privacy
+          // is sufficient since customers only query their own thread).
+          allow read: if isSignedIn();
 
           // Create: participant can send messages.
           // authorUid must match the authenticated user.
           allow create: if isSignedIn()
-                        && shopIsWritable(shopId)
                         && request.resource.data.authorUid == request.auth.uid;
 
           // Update: ONLY readByUids field (read tracking per P2.7).

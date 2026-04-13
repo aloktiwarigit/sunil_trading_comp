@@ -18,6 +18,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,15 +78,24 @@ class DraftController extends AsyncNotifier<DraftState> {
     final firestore = FirebaseFirestore.instance;
 
     // Query for existing draft projects by this customer.
-    final query = await firestore
-        .collection('shops')
-        .doc(shopId)
-        .collection('projects')
-        .where('customerUid', isEqualTo: user.uid)
-        .where('state', isEqualTo: 'draft')
-        .orderBy('createdAt', descending: true)
-        .limit(1)
-        .get();
+    debugPrint('[DRAFT] querying drafts for uid=${user.uid}, shopId=$shopId');
+    late final QuerySnapshot<Map<String, dynamic>> query;
+    try {
+      query = await firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .where('customerUid', isEqualTo: user.uid)
+          .where('state', isEqualTo: 'draft')
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+      debugPrint('[DRAFT] query succeeded, docs=${query.docs.length}');
+    } catch (e, st) {
+      debugPrint('[DRAFT] query FAILED: $e');
+      debugPrint('[DRAFT] stack: $st');
+      rethrow;
+    }
 
     if (query.docs.isNotEmpty) {
       final doc = query.docs.first;

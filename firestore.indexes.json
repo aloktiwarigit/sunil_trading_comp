@@ -46,6 +46,7 @@
       "collectionGroup": "udhaarLedger",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "closedAt", "order": "ASCENDING" },
         { "fieldPath": "runningBalance", "order": "DESCENDING" }
       ]
     }
