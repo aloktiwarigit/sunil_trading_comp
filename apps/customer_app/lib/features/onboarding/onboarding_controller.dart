@@ -121,7 +121,14 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
           .doc('current')
           .get();
       if (themeDoc.exists && themeDoc.data() != null) {
-        themeTokens = ShopThemeTokens.fromJson(themeDoc.data()!);
+        final raw = themeDoc.data()!;
+        // Normalize Timestamp fields — Firestore stores DateTime as
+        // Timestamp objects but Freezed expects ISO8601 strings.
+        themeTokens = ShopThemeTokens.fromJson(<String, dynamic>{
+          ...raw,
+          'updatedAt': _normalizeTimestamp(raw['updatedAt']),
+          'createdAt': _normalizeTimestamp(raw['createdAt']),
+        });
       } else {
         themeTokens = ShopThemeTokens.sunilTradingCompanyDefault();
       }

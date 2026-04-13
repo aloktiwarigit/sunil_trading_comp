@@ -152,26 +152,25 @@ class _BharosaLandingState extends State<BharosaLanding>
     final theme = context.yugmaTheme;
 
     final tileSize = theme.isElderTier ? 130.0 : 110.0;
+    debugPrint('[LANDING] hero colors: secondary=${theme.shopSecondary}, primary=${theme.shopPrimary}, deep=${theme.shopPrimaryDeep}, bg=${theme.shopBackground}, owner=${theme.ownerName}, brand=${theme.brandName}');
+    debugPrint('[LANDING] shortlists count: ${widget.previewShortlists.length}');
 
     return PopScope(
       canPop: false,
       child: Scaffold(
         backgroundColor: theme.shopBackground,
-        bottomNavigationBar: ShopkeeperPresenceDock(
-          onVoiceNote: widget.onPresenceVoiceNote,
-          strings: widget.strings,
-          onMyListTap: widget.onMyListTap,
-          onOrdersTap: widget.onOrdersTap,
-        ),
-        // CP012: Use CustomScrollView + SliverFillRemaining to avoid
-        // Expanded-inside-SingleChildScrollView anti-pattern while
-        // keeping pull-to-refresh and proper viewport fill.
-        body: CustomScrollView(
-          slivers: [
-            // Hero — pinned height, not scrollable off-screen
-            SliverToBoxAdapter(
-              child: Container(
-                height: 240,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Body content — scrollable
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+              // Hero — gradient with face + name
+              Container(
+                height: 280,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -181,35 +180,45 @@ class _BharosaLandingState extends State<BharosaLanding>
                   ),
                 ),
                 child: SafeArea(
+                  bottom: false,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const ShopkeeperFaceFrame(size: 80),
-                      const SizedBox(height: 8),
+                      const ShopkeeperFaceFrame(size: 100),
+                      const SizedBox(height: 12),
                       Text(
                         theme.ownerName,
                         style: TextStyle(
                           fontFamily: theme.fontFamilyDevanagariDisplay,
-                          fontSize: 24,
+                          fontSize: 26,
                           color: theme.shopTextOnPrimary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        theme.taglineDevanagari,
+                        style: TextStyle(
+                          fontFamily: theme.fontFamilyDevanagariBody,
+                          fontSize: 14,
+                          color: theme.shopTextOnPrimary.withValues(alpha: 0.9),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
                       Text(
                         '${theme.brandName} · ${theme.marketArea}',
                         style: TextStyle(
                           fontFamily: theme.fontFamilyDevanagariBody,
                           fontSize: 12,
-                          color: theme.shopTextOnPrimary.withValues(alpha: 0.85),
+                          color: theme.shopTextOnPrimary.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-            // Meta bar
-            SliverToBoxAdapter(
-              child: Container(
+              // Meta bar — years in business
+              Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 color: theme.shopSurface,
@@ -225,69 +234,84 @@ class _BharosaLandingState extends State<BharosaLanding>
                   ),
                 ),
               ),
-            ),
-            // Shortlist heading + horizontal tile scroll
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  widget.strings.shortlistPreviewHeadline(theme.ownerName),
-                  style: TextStyle(
-                    fontFamily: theme.fontFamilyDevanagariDisplay,
-                    fontSize: 14,
-                    color: theme.shopPrimary,
+              // Shortlist heading
+              if (widget.previewShortlists.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                  child: Text(
+                    widget.strings.shortlistPreviewHeadline(theme.ownerName),
+                    style: TextStyle(
+                      fontFamily: theme.fontFamilyDevanagariDisplay,
+                      fontSize: 16,
+                      color: theme.shopPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                // Shortlist tiles — horizontal scroll
+                SizedBox(
+                  height: tileSize,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: widget.previewShortlists.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, i) {
+                      final s = widget.previewShortlists[i];
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          widget.onShortlistTap(s.occasionTag);
+                        },
+                        child: Container(
+                          width: tileSize,
+                          height: tileSize,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [theme.shopPrimary, theme.shopPrimaryDeep],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.shopPrimaryDeep.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(10),
+                          alignment: Alignment.bottomLeft,
+                          child: Text(
+                            s.occasionLabel,
+                            style: TextStyle(
+                              fontFamily: theme.fontFamilyDevanagariDisplay,
+                              fontSize: 13,
+                              color: theme.shopAccentGlow,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+                    ],
                   ),
                 ),
               ),
-            ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: tileSize,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: widget.previewShortlists.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (context, i) {
-                    final s = widget.previewShortlists[i];
-                    return GestureDetector(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        widget.onShortlistTap(s.occasionTag);
-                      },
-                      child: Container(
-                        width: tileSize,
-                        height: tileSize,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [theme.shopPrimary, theme.shopPrimaryDeep],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        alignment: Alignment.bottomLeft,
-                        child: Text(
-                          s.occasionLabel,
-                          style: TextStyle(
-                            fontFamily: theme.fontFamilyDevanagariDisplay,
-                            fontSize: 13,
-                            color: theme.shopAccentGlow,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+              // Dock pinned at bottom
+              ShopkeeperPresenceDock(
+                onVoiceNote: widget.onPresenceVoiceNote,
+                strings: widget.strings,
+                onMyListTap: widget.onMyListTap,
+                onOrdersTap: widget.onOrdersTap,
               ),
-            ),
-            // Fill remaining viewport so background extends
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: const SizedBox.shrink(),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
