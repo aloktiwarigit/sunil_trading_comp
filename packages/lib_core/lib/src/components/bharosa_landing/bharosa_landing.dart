@@ -185,15 +185,42 @@ class _BharosaLandingState extends State<BharosaLanding>
     final theme = context.yugmaTheme;
 
     final years = DateTime.now().year - theme.establishedYear;
-    final screenWidth = MediaQuery.of(context).size.width;
 
     // Brass dot separator
     Widget brassDot() => Container(
-          width: 4, height: 4,
+          width: 4,
+          height: 4,
           decoration: BoxDecoration(
             color: theme.shopAccent.withValues(alpha: 0.6),
             shape: BoxShape.circle,
           ),
+        );
+
+    // Brass ornament line (─ ◆ ─)
+    Widget brassOrnament({double width = 100}) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: width * 0.4,
+              height: 1,
+              color: theme.shopAccent.withValues(alpha: 0.4),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                '\u25C6',
+                style: TextStyle(
+                  fontSize: 8,
+                  color: theme.shopAccent.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
+            Container(
+              width: width * 0.4,
+              height: 1,
+              color: theme.shopAccent.withValues(alpha: 0.4),
+            ),
+          ],
         );
 
     return PopScope(
@@ -212,9 +239,8 @@ class _BharosaLandingState extends State<BharosaLanding>
                       if (widget.deactivationBanner != null)
                         widget.deactivationBanner!,
 
-                      // ── 1. Hero Section ──
+                      // ── 1. HERO SECTION (content-sized) ──
                       Container(
-                        height: 240,
                         width: double.infinity,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -227,92 +253,182 @@ class _BharosaLandingState extends State<BharosaLanding>
                             ],
                           ),
                         ),
-                        child: SafeArea(
-                          bottom: false,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Animated face frame
-                              ScaleTransition(
-                                scale: CurvedAnimation(
-                                  parent: _entranceController,
-                                  curve: const Interval(
-                                    0.0,
-                                    0.6,
-                                    curve: Curves.easeOutBack,
-                                  ),
-                                ),
-                                child: const ShopkeeperFaceFrame(size: 90),
-                              ),
-                              const SizedBox(height: YugmaSpacing.s3),
-                              // Owner name — large Devanagari display
-                              FadeTransition(
-                                opacity: CurvedAnimation(
-                                  parent: _entranceController,
-                                  curve: const Interval(
-                                    0.3,
-                                    0.8,
-                                    curve: Curves.easeOut,
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      theme.ownerName,
+                        child: Stack(
+                          children: [
+                            // Locale toggle pill (EN/हिं) — top-right
+                            if (widget.onLocaleToggle != null)
+                              Positioned(
+                                top: YugmaSpacing.s3,
+                                right: YugmaSpacing.s4,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    widget.onLocaleToggle!();
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white
+                                          .withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(
+                                        YugmaRadius.pill,
+                                      ),
+                                      border: Border.all(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      widget.currentLocaleCode == 'hi'
+                                          ? 'EN'
+                                          : '\u0939\u093F\u0902',
                                       style: TextStyle(
-                                        fontFamily:
-                                            theme.fontFamilyDevanagariDisplay,
-                                        fontSize:
-                                            theme.isElderTier ? 28 : 24,
-                                        color: theme.shopTextOnPrimary,
+                                        fontSize: 11,
                                         fontWeight: FontWeight.w600,
-                                        height: YugmaLineHeights.tight,
-                                        shadows: const [
-                                          Shadow(
-                                            offset: Offset(0, 2),
-                                            blurRadius: 8,
-                                            color: Color(0x66000000),
+                                        color: theme.shopTextOnPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                            // Center column content
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 24,
+                                bottom: 28,
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Face frame with brass border ring
+                                    ScaleTransition(
+                                      scale: CurvedAnimation(
+                                        parent: _entranceController,
+                                        curve: const Interval(
+                                          0.0,
+                                          0.6,
+                                          curve: Curves.easeOutBack,
+                                        ),
+                                      ),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: theme.shopAccentGlow
+                                                .withValues(alpha: 0.5),
+                                            width: 3,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withValues(alpha: 0.3),
+                                              blurRadius: 16,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const ShopkeeperFaceFrame(
+                                          size: 130,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: YugmaSpacing.s4),
+
+                                    // Name + ornament + tagline + brand
+                                    FadeTransition(
+                                      opacity: CurvedAnimation(
+                                        parent: _entranceController,
+                                        curve: const Interval(
+                                          0.3,
+                                          0.8,
+                                          curve: Curves.easeOut,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          // Owner name — large Devanagari
+                                          Text(
+                                            theme.ownerName,
+                                            style: TextStyle(
+                                              fontFamily: theme
+                                                  .fontFamilyDevanagariDisplay,
+                                              fontSize: 28,
+                                              color:
+                                                  theme.shopTextOnPrimary,
+                                              fontWeight: FontWeight.w600,
+                                              height:
+                                                  YugmaLineHeights.tight,
+                                              shadows: const [
+                                                Shadow(
+                                                  offset: Offset(0, 2),
+                                                  blurRadius: 8,
+                                                  color: Color(0x66000000),
+                                                ),
+                                              ],
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(
+                                            height: YugmaSpacing.s2,
+                                          ),
+
+                                          // Brass ornament line
+                                          brassOrnament(width: 80),
+                                          const SizedBox(
+                                            height: YugmaSpacing.s2,
+                                          ),
+
+                                          // Tagline in italic
+                                          Text(
+                                            theme.taglineDevanagari,
+                                            style: TextStyle(
+                                              fontFamily: theme
+                                                  .fontFamilyDevanagariBody,
+                                              fontSize: theme.isElderTier
+                                                  ? 16
+                                                  : 14,
+                                              fontStyle: FontStyle.italic,
+                                              color: theme
+                                                  .shopTextOnPrimary
+                                                  .withValues(alpha: 0.9),
+                                              height:
+                                                  YugmaLineHeights.snug,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(
+                                            height: YugmaSpacing.s1,
+                                          ),
+
+                                          // Brand name in small caps style
+                                          Text(
+                                            theme.brandName.toUpperCase(),
+                                            style: TextStyle(
+                                              fontFamily: theme
+                                                  .fontFamilyDevanagariBody,
+                                              fontSize: 11,
+                                              letterSpacing: 2.0,
+                                              color: theme
+                                                  .shopTextOnPrimary
+                                                  .withValues(alpha: 0.6),
+                                              height:
+                                                  YugmaLineHeights.snug,
+                                            ),
+                                            textAlign: TextAlign.center,
                                           ),
                                         ],
                                       ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: YugmaSpacing.s1),
-                                    // Tagline in italics
-                                    Text(
-                                      theme.taglineDevanagari,
-                                      style: TextStyle(
-                                        fontFamily:
-                                            theme.fontFamilyDevanagariBody,
-                                        fontSize:
-                                            theme.isElderTier ? 16 : 14,
-                                        fontStyle: FontStyle.italic,
-                                        color: theme.shopTextOnPrimary
-                                            .withValues(alpha: 0.9),
-                                        height: YugmaLineHeights.snug,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: YugmaSpacing.s1),
-                                    // Shop name + market
-                                    Text(
-                                      '${theme.brandName} · ${theme.marketArea}',
-                                      style: TextStyle(
-                                        fontFamily:
-                                            theme.fontFamilyDevanagariBody,
-                                        fontSize:
-                                            theme.isElderTier ? 14 : 12,
-                                        color: theme.shopTextOnPrimary
-                                            .withValues(alpha: 0.7),
-                                        height: YugmaLineHeights.snug,
-                                      ),
-                                      textAlign: TextAlign.center,
                                     ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
 
@@ -320,46 +436,161 @@ class _BharosaLandingState extends State<BharosaLanding>
                       if (widget.presenceBanner != null)
                         widget.presenceBanner!,
 
-                      // ── 2. Trust Bar ──
+                      // ── 2. TRUST RIBBON (compact inline) ──
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
                           horizontal: YugmaSpacing.s4,
                           vertical: YugmaSpacing.s2,
                         ),
-                        color: theme.shopSurface,
+                        decoration: BoxDecoration(
+                          color: theme.shopSurface,
+                          border: Border(
+                            bottom: BorderSide(
+                              color:
+                                  theme.shopAccent.withValues(alpha: 0.15),
+                            ),
+                          ),
+                        ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Years in business
-                            _TrustSignal(
-                              theme: theme,
-                              icon: Icons.calendar_today_outlined,
-                              // TODO: extract to AppStrings
-                              label: '$years+ साल',
+                            Text(
+                              '$years+ \u0938\u093E\u0932',
+                              style: TextStyle(
+                                fontFamily:
+                                    theme.fontFamilyDevanagariBody,
+                                fontSize: 11,
+                                color: theme.shopTextMuted,
+                              ),
                             ),
-                            _trustDivider(theme),
-                            // Location
-                            _TrustSignal(
-                              theme: theme,
-                              icon: Icons.place_outlined,
-                              label: theme.marketArea,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: YugmaSpacing.s2,
+                              ),
+                              child: brassDot(),
                             ),
-                            _trustDivider(theme),
-                            // Presence status
-                            _TrustSignal(
-                              theme: theme,
-                              icon: Icons.circle,
-                              iconSize: 8,
-                              iconColor: YugmaColors.success,
-                              // TODO: extract to AppStrings
-                              label: 'दुकान पर हैं',
+                            Text(
+                              theme.marketArea,
+                              style: TextStyle(
+                                fontFamily:
+                                    theme.fontFamilyDevanagariBody,
+                                fontSize: 11,
+                                color: theme.shopTextMuted,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: YugmaSpacing.s2,
+                              ),
+                              child: brassDot(),
+                            ),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: YugmaColors.success,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: YugmaSpacing.s1),
+                            Text(
+                              '\u0926\u0941\u0915\u093E\u0928 \u092A\u0930 \u0939\u0948\u0902',
+                              style: TextStyle(
+                                fontFamily:
+                                    theme.fontFamilyDevanagariBody,
+                                fontSize: 11,
+                                color: theme.shopTextMuted,
+                              ),
                             ),
                           ],
                         ),
                       ),
 
-                      // ── 3. Shortlist Section ──
+                      // ── 3. VOICE GREETING CARD (conditional) ──
+                      if (widget.hasGreetingVoiceNote)
+                        Padding(
+                          padding: const EdgeInsets.all(YugmaSpacing.s4),
+                          child: GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              widget.onGreetingPlay();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(
+                                YugmaSpacing.s3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.shopPrimary
+                                    .withValues(alpha: 0.06),
+                                borderRadius: BorderRadius.circular(
+                                  YugmaRadius.lg,
+                                ),
+                                border: Border.all(
+                                  color: theme.shopAccent
+                                      .withValues(alpha: 0.25),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  // Play circle
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: theme.shopAccent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      _isMuted
+                                          ? Icons.volume_off
+                                          : Icons.play_arrow,
+                                      color: theme.shopPrimaryDeep,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: YugmaSpacing.s3),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          widget.strings
+                                              .greetingCardTitle,
+                                          style: TextStyle(
+                                            fontFamily: theme
+                                                .fontFamilyDevanagariBody,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: theme.shopPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          widget.strings
+                                              .greetingVoiceNoteSublabel(
+                                            theme.ownerName,
+                                            widget
+                                                .greetingDurationSeconds,
+                                          ),
+                                          style: TextStyle(
+                                            fontFamily: theme
+                                                .fontFamilyDevanagariBody,
+                                            fontSize: 11,
+                                            color: theme.shopTextMuted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      // ── 4. COLLECTIONS (2-column grid) ──
                       if (widget.previewShortlists.isNotEmpty) ...[
                         Padding(
                           padding: const EdgeInsets.fromLTRB(
@@ -368,209 +599,194 @@ class _BharosaLandingState extends State<BharosaLanding>
                             YugmaSpacing.s4,
                             YugmaSpacing.s3,
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 24,
-                                height: 1.5,
-                                color: theme.shopAccent,
-                              ),
-                              const SizedBox(width: YugmaSpacing.s2),
-                              Expanded(
-                                child: Text(
-                                  widget.strings
-                                      .shortlistPreviewHeadline(
-                                          theme.ownerName),
-                                  style: TextStyle(
-                                    fontFamily:
-                                        theme.fontFamilyDevanagariDisplay,
-                                    fontSize:
-                                        theme.isElderTier ? 18 : 16,
-                                    color: theme.shopPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            widget.strings.shortlistPreviewHeadline(
+                              theme.ownerName,
+                            ),
+                            style: TextStyle(
+                              fontFamily:
+                                  theme.fontFamilyDevanagariDisplay,
+                              fontSize: 17,
+                              color: theme.shopPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        // Shortlist tiles
-                        SizedBox(
-                          height: 128, // tile + bottom shadow room
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: YugmaSpacing.s4,
-                            ),
-                            itemCount: widget.previewShortlists.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: YugmaSpacing.s3),
-                            itemBuilder: (context, i) {
-                              final s = widget.previewShortlists[i];
-                              return GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  widget.onShortlistTap(s.occasionTag);
-                                },
-                                child: Container(
-                                  width: 140,
-                                  height: 120,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        theme.shopPrimary,
-                                        theme.shopPrimaryDeep,
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(
-                                      YugmaRadius.lg,
-                                    ),
-                                    border: i == 0
-                                        ? Border.all(
-                                            color: theme.shopAccent,
-                                            width: 1.5,
-                                          )
-                                        : null,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: theme.shopPrimaryDeep
-                                            .withValues(alpha: 0.35),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
-                                  ),
-                                  padding: const EdgeInsets.all(
-                                    YugmaSpacing.s3,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      if (i == 0)
-                                        Container(
-                                          padding:
-                                              const EdgeInsets.symmetric(
-                                            horizontal: 6,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: theme.shopAccent,
-                                            borderRadius:
-                                                BorderRadius.circular(
-                                              YugmaRadius.sm,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            widget.strings
-                                                .shortlistBadgeCurated,
-                                            style: TextStyle(
-                                              fontFamily: theme
-                                                  .fontFamilyDevanagariBody,
-                                              fontSize: 10,
-                                              color:
-                                                  theme.shopPrimaryDeep,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        )
-                                      else
-                                        const SizedBox.shrink(),
-                                      Text(
-                                        s.occasionLabel,
-                                        style: TextStyle(
-                                          fontFamily: theme
-                                              .fontFamilyDevanagariDisplay,
-                                          fontSize: 16,
-                                          color: theme.shopAccentGlow,
-                                          fontWeight: FontWeight.w600,
-                                          height: YugmaLineHeights.snug,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: YugmaSpacing.s4,
+                          ),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final tileWidth =
+                                  (constraints.maxWidth - 12) / 2;
+                              return Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: widget.previewShortlists
+                                    .map((s) {
+                                  return GestureDetector(
+                                    onTap: () {
+                                      HapticFeedback.lightImpact();
+                                      widget
+                                          .onShortlistTap(s.occasionTag);
+                                    },
+                                    child: Container(
+                                      width: tileWidth,
+                                      height: 110,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            theme.shopPrimary
+                                                .withValues(alpha: 0.85),
+                                            theme.shopPrimaryDeep,
+                                          ],
                                         ),
+                                        borderRadius:
+                                            BorderRadius.circular(14),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: theme.shopPrimaryDeep
+                                                .withValues(alpha: 0.3),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                ),
+                                      child: Stack(
+                                        children: [
+                                          // Brass corner ornament (top-right L-shape)
+                                          Positioned(
+                                            top: 0,
+                                            right: 0,
+                                            child: Container(
+                                              width: 24,
+                                              height: 24,
+                                              decoration: BoxDecoration(
+                                                border: Border(
+                                                  top: BorderSide(
+                                                    color: theme
+                                                        .shopAccent
+                                                        .withValues(
+                                                          alpha: 0.4,
+                                                        ),
+                                                    width: 1.5,
+                                                  ),
+                                                  right: BorderSide(
+                                                    color: theme
+                                                        .shopAccent
+                                                        .withValues(
+                                                          alpha: 0.4,
+                                                        ),
+                                                    width: 1.5,
+                                                  ),
+                                                ),
+                                                borderRadius:
+                                                    const BorderRadius
+                                                        .only(
+                                                  topRight:
+                                                      Radius.circular(14),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          // Content at bottom-left
+                                          Positioned(
+                                            left: YugmaSpacing.s3,
+                                            bottom: YugmaSpacing.s3,
+                                            right: YugmaSpacing.s3,
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment
+                                                      .start,
+                                              mainAxisSize:
+                                                  MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  s.occasionLabel,
+                                                  style: TextStyle(
+                                                    fontFamily: theme
+                                                        .fontFamilyDevanagariDisplay,
+                                                    fontSize: 15,
+                                                    color: theme
+                                                        .shopAccentGlow,
+                                                    fontWeight:
+                                                        FontWeight.w600,
+                                                    height:
+                                                        YugmaLineHeights
+                                                            .snug,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  '${s.skuCount} \u0938\u093E\u092E\u093E\u0928 \u2192',
+                                                  style: TextStyle(
+                                                    fontFamily: theme
+                                                        .fontFamilyDevanagariBody,
+                                                    fontSize: 11,
+                                                    color: theme
+                                                        .shopTextOnPrimary
+                                                        .withValues(
+                                                          alpha: 0.6,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
                               );
                             },
                           ),
                         ),
                       ],
 
-                      // ── 4. How it Works Section ──
+                      // ── 5. FOOTER (elegant closer) ──
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          YugmaSpacing.s4,
-                          YugmaSpacing.s5,
-                          YugmaSpacing.s4,
-                          YugmaSpacing.s3,
+                        padding: const EdgeInsets.only(
+                          top: YugmaSpacing.s6,
+                          bottom: YugmaSpacing.s4,
                         ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 24,
-                                  height: 1.5,
-                                  color: theme.shopAccent,
-                                ),
-                                const SizedBox(width: YugmaSpacing.s2),
-                                Text(
-                                  // TODO: extract to AppStrings
-                                  'कैसे काम करता है',
-                                  style: TextStyle(
-                                    fontFamily:
-                                        theme.fontFamilyDevanagariDisplay,
-                                    fontSize:
-                                        theme.isElderTier ? 18 : 16,
-                                    color: theme.shopPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            // Brass ornament divider
+                            brassOrnament(width: 120),
                             const SizedBox(height: YugmaSpacing.s3),
-                            // Step 1
-                            _HowItWorksStep(
-                              theme: theme,
-                              stepNumber: 1,
-                              icon: Icons.visibility_outlined,
-                              // TODO: extract to AppStrings
-                              label: 'पसंद करें',
-                              // TODO: extract to AppStrings
-                              sublabel: 'तस्वीरें देखें, पसंद आए तो लिस्ट में जोड़ें',
+                            // Brand name centered
+                            Text(
+                              theme.brandName,
+                              style: TextStyle(
+                                fontFamily:
+                                    theme.fontFamilyDevanagariDisplay,
+                                fontSize: 16,
+                                color: theme.shopPrimary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: YugmaSpacing.s2),
-                            // Step 2
-                            _HowItWorksStep(
-                              theme: theme,
-                              stepNumber: 2,
-                              icon: Icons.chat_outlined,
-                              // TODO: extract to AppStrings
-                              label: 'बात करें',
-                              // TODO: extract to AppStrings
-                              sublabel: 'भैया से दाम और डिटेल पूछें',
-                            ),
-                            const SizedBox(height: YugmaSpacing.s3),
-                            // Step 3
-                            _HowItWorksStep(
-                              theme: theme,
-                              stepNumber: 3,
-                              icon: Icons.home_outlined,
-                              // TODO: extract to AppStrings
-                              label: 'घर बैठे मँगाएँ',
-                              // TODO: extract to AppStrings
-                              sublabel: 'पक्का ऑर्डर करें, घर पर पाएँ',
+                            const SizedBox(height: YugmaSpacing.s1),
+                            // Market + years subtitle
+                            Text(
+                              '${theme.marketArea} \u00B7 $years+ \u0938\u093E\u0932 \u0915\u093E \u092D\u0930\u094B\u0938\u093E',
+                              style: TextStyle(
+                                fontFamily:
+                                    theme.fontFamilyDevanagariBody,
+                                fontSize: 11,
+                                color: theme.shopTextMuted,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
                       ),
 
-                      // ── 5. Bottom padding for dock clearance ──
+                      // ── Bottom padding for dock clearance ──
                       const SizedBox(height: 80),
                     ],
                   ),
