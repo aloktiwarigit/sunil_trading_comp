@@ -185,6 +185,16 @@ class _BharosaLandingState extends State<BharosaLanding>
     final theme = context.yugmaTheme;
 
     final years = DateTime.now().year - theme.establishedYear;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Brass dot separator
+    Widget brassDot() => Container(
+          width: 4, height: 4,
+          decoration: BoxDecoration(
+            color: theme.shopAccent.withValues(alpha: 0.6),
+            shape: BoxShape.circle,
+          ),
+        );
 
     return PopScope(
       canPop: false,
@@ -193,7 +203,6 @@ class _BharosaLandingState extends State<BharosaLanding>
         body: SafeArea(
           child: Column(
             children: [
-              // Body content — scrollable
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
