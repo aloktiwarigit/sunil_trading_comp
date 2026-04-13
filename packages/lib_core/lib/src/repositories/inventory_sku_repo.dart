@@ -159,6 +159,30 @@ class InventorySkuRepo {
     }
   }
 
+  /// List all SKUs in inventory. Used by landing page to display featured
+  /// products. For shops with large inventories (>50), callers should add
+  /// pagination — but v1 caps at ~10 SKUs so a full fetch is fine.
+  Future<List<InventorySku>> listAll() async {
+    try {
+      final snap = await _collection().get();
+      return snap.docs.map((doc) {
+        final raw = doc.data();
+        return InventorySku.fromJson(<String, dynamic>{
+          ...raw,
+          'skuId': doc.id,
+          'shopId': raw['shopId'] ?? _shopIdProvider.shopId,
+          'createdAt': _normalizeTimestamp(raw['createdAt']),
+          'updatedAt': _normalizeTimestamp(raw['updatedAt']),
+        });
+      }).toList();
+    } on FirebaseException catch (e) {
+      throw InventorySkuRepoException(
+        e.code,
+        'Failed to list all SKUs: ${e.message ?? e.code}',
+      );
+    }
+  }
+
   /// Create or fully replace a SKU document. Write is operator-only at
   /// the rule layer; this repo surfaces rule rejections as
   /// `InventorySkuRepoException('permission-denied', ...)`.

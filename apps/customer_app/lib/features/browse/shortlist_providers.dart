@@ -97,6 +97,21 @@ final shortlistSkusProvider =
 });
 
 // ---------------------------------------------------------------------------
+// All active SKUs provider — used by BharosaLanding for featured products
+// carousel and top-selling grid. Returns all in-stock SKUs sorted by price
+// descending (premium items first — aspirational).
+// ---------------------------------------------------------------------------
+
+final allActiveSkusProvider =
+    FutureProvider<List<InventorySku>>((ref) async {
+  final repo = ref.read(_inventorySkuRepoProvider);
+  final skus = await repo.listAll();
+  final active = skus.where((s) => s.isActive && s.inStock).toList()
+    ..sort((a, b) => b.basePrice.compareTo(a.basePrice));
+  return active;
+});
+
+// ---------------------------------------------------------------------------
 // Individual SKU provider — used by SkuDetailCard route.
 // Stream for real-time updates when shopkeeper edits SKU details.
 // ---------------------------------------------------------------------------

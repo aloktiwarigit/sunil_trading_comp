@@ -119,6 +119,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                   .watch(curatedShortlistsPreviewProvider)
                   .valueOrNull ?? const [];
 
+              // Featured products for carousel + grid.
+              final featuredProducts = innerRef
+                  .watch(allActiveSkusProvider)
+                  .valueOrNull ?? const [];
+
               // C3.12: Build deactivation banner if shop is not active.
               final lifecycle = data.shop.shopLifecycle;
               Widget? deactivationBanner;
@@ -156,6 +161,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 },
                 onRefresh: () async {
                   ref.invalidate(curatedShortlistsPreviewProvider);
+                  ref.invalidate(allActiveSkusProvider);
                   await ref
                       .read(onboardingControllerProvider.notifier)
                       .refreshTheme();
@@ -170,6 +176,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                 presenceMessage: '',
                 deactivationBanner: deactivationBanner,
                 presenceBanner: presenceBanner,
+                featuredProducts: featuredProducts,
+                onProductTap: (skuId) => context.push('/sku/$skuId'),
               );
             },
           );
