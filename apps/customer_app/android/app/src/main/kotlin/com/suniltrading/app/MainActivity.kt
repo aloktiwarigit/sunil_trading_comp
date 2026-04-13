@@ -1,4 +1,4 @@
-package com.yugmalabs.customer_app
+package com.suniltrading.app
 
 import io.flutter.embedding.android.FlutterActivity
 

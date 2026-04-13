@@ -1007,4 +1007,12 @@ class AppStringsHi extends AppStrings {
   @override
   String get voiceNoteAttached => 'आवाज़ नोट जुड़ गया';
 
+  // ---- §41 Payment success navigation ----
+
+  @override
+  String get paymentSuccessViewOrder => 'ऑर्डर देखिए';
+
+  @override
+  String get paymentSuccessBackHome => 'वापस जाइए';
+
 }

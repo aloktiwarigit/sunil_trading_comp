@@ -1001,4 +1001,12 @@ class AppStringsEn extends AppStrings {
   @override
   String get voiceNoteAttached => 'Voice note attached';
 
+  // ---- §41 Payment success navigation ----
+
+  @override
+  String get paymentSuccessViewOrder => 'View Order';
+
+  @override
+  String get paymentSuccessBackHome => 'Back to Home';
+
 }

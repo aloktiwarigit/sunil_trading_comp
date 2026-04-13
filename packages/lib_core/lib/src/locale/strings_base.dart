@@ -1099,4 +1099,14 @@ abstract class AppStrings {
 
   /// Voice note attached snackbar: "आवाज़ नोट जुड़ गया"
   String get voiceNoteAttached;
+
+  // =========================================================================
+  // §41 — Payment success navigation
+  // =========================================================================
+
+  /// "View Order" button on payment success screen.
+  String get paymentSuccessViewOrder;
+
+  /// "Back to Home" button on payment success screen.
+  String get paymentSuccessBackHome;
 }

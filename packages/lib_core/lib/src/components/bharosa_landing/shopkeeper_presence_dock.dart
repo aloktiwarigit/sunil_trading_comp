@@ -27,6 +27,9 @@ class ShopkeeperPresenceDock extends StatelessWidget {
   /// Called when the "My Orders" navigation target is tapped.
   final VoidCallback? onOrdersTap;
 
+  /// Called when the "Udhaar" navigation target is tapped.
+  final VoidCallback? onUdhaarTap;
+
   /// Locale strings for status labels.
   final AppStrings strings;
 
@@ -36,6 +39,7 @@ class ShopkeeperPresenceDock extends StatelessWidget {
     required this.strings,
     this.onMyListTap,
     this.onOrdersTap,
+    this.onUdhaarTap,
   });
 
   @override
@@ -124,7 +128,13 @@ class ShopkeeperPresenceDock extends StatelessWidget {
               onTap: onOrdersTap!,
               theme: theme,
             ),
-          if (onMyListTap != null || onOrdersTap != null)
+          if (onUdhaarTap != null)
+            _DockNavButton(
+              icon: Icons.account_balance_wallet_outlined,
+              onTap: onUdhaarTap!,
+              theme: theme,
+            ),
+          if (onMyListTap != null || onOrdersTap != null || onUdhaarTap != null)
             const SizedBox(width: YugmaSpacing.s2),
           // Voice note quick-play button
           Material(

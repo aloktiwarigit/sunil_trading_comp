@@ -94,6 +94,31 @@ class BharosaLanding extends StatefulWidget {
   /// B-2: Called when dock "My Orders" icon is tapped.
   final VoidCallback? onOrdersTap;
 
+  /// B-2: Called when dock "Udhaar" icon is tapped.
+  final VoidCallback? onUdhaarTap;
+
+  /// C3.12: Shop lifecycle string for DeactivationBanner.
+  final String? shopLifecycle;
+
+  /// C3.12: DPDP retention deadline.
+  final DateTime? dpdpRetentionUntil;
+
+  /// C3.12: Called when deactivation FAQ is tapped.
+  final VoidCallback? onDeactivationFaqTap;
+
+  /// B1.9: Presence status ('available', 'away', 'busyWithCustomer', 'atEvent').
+  final String presenceStatus;
+
+  /// B1.9: Presence message to display.
+  final String presenceMessage;
+
+  /// Optional banner widget shown at the top of the body when the shop is
+  /// deactivating. Passed from the router so lib_core stays decoupled.
+  final Widget? deactivationBanner;
+
+  /// Optional presence banner shown between hero and trust bar.
+  final Widget? presenceBanner;
+
   const BharosaLanding({
     super.key,
     required this.onShortlistTap,
@@ -109,6 +134,14 @@ class BharosaLanding extends StatefulWidget {
     this.onRefresh,
     this.onMyListTap,
     this.onOrdersTap,
+    this.onUdhaarTap,
+    this.shopLifecycle,
+    this.dpdpRetentionUntil,
+    this.onDeactivationFaqTap,
+    this.presenceStatus = 'available',
+    this.presenceMessage = '',
+    this.deactivationBanner,
+    this.presenceBanner,
   });
 
   @override
@@ -166,9 +199,13 @@ class _BharosaLandingState extends State<BharosaLanding>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // ── 1. Hero Section (300px) ──
+                      // ── 0. Deactivation Banner (C3.12) ──
+                      if (widget.deactivationBanner != null)
+                        widget.deactivationBanner!,
+
+                      // ── 1. Hero Section ──
                       Container(
-                        height: 300,
+                        height: 240,
                         width: double.infinity,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -196,7 +233,7 @@ class _BharosaLandingState extends State<BharosaLanding>
                                     curve: Curves.easeOutBack,
                                   ),
                                 ),
-                                child: const ShopkeeperFaceFrame(size: 120),
+                                child: const ShopkeeperFaceFrame(size: 90),
                               ),
                               const SizedBox(height: YugmaSpacing.s3),
                               // Owner name — large Devanagari display
@@ -217,7 +254,7 @@ class _BharosaLandingState extends State<BharosaLanding>
                                         fontFamily:
                                             theme.fontFamilyDevanagariDisplay,
                                         fontSize:
-                                            theme.isElderTier ? 32 : 28,
+                                            theme.isElderTier ? 28 : 24,
                                         color: theme.shopTextOnPrimary,
                                         fontWeight: FontWeight.w600,
                                         height: YugmaLineHeights.tight,
@@ -269,6 +306,10 @@ class _BharosaLandingState extends State<BharosaLanding>
                           ),
                         ),
                       ),
+
+                      // ── 1b. Presence Banner (B1.9) ──
+                      if (widget.presenceBanner != null)
+                        widget.presenceBanner!,
 
                       // ── 2. Trust Bar ──
                       Container(
@@ -344,9 +385,9 @@ class _BharosaLandingState extends State<BharosaLanding>
                             ],
                           ),
                         ),
-                        // Bigger shortlist tiles — 140px tall, 160px wide
+                        // Shortlist tiles
                         SizedBox(
-                          height: 148, // tile + bottom shadow room
+                          height: 128, // tile + bottom shadow room
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(
@@ -363,8 +404,8 @@ class _BharosaLandingState extends State<BharosaLanding>
                                   widget.onShortlistTap(s.occasionTag);
                                 },
                                 child: Container(
-                                  width: 160,
-                                  height: 140,
+                                  width: 140,
+                                  height: 120,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
@@ -454,9 +495,9 @@ class _BharosaLandingState extends State<BharosaLanding>
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
                           YugmaSpacing.s4,
-                          YugmaSpacing.s8,
+                          YugmaSpacing.s5,
                           YugmaSpacing.s4,
-                          YugmaSpacing.s4,
+                          YugmaSpacing.s3,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -483,7 +524,7 @@ class _BharosaLandingState extends State<BharosaLanding>
                                 ),
                               ],
                             ),
-                            const SizedBox(height: YugmaSpacing.s4),
+                            const SizedBox(height: YugmaSpacing.s3),
                             // Step 1
                             _HowItWorksStep(
                               theme: theme,
@@ -494,7 +535,7 @@ class _BharosaLandingState extends State<BharosaLanding>
                               // TODO: extract to AppStrings
                               sublabel: 'तस्वीरें देखें, पसंद आए तो लिस्ट में जोड़ें',
                             ),
-                            const SizedBox(height: YugmaSpacing.s3),
+                            const SizedBox(height: YugmaSpacing.s2),
                             // Step 2
                             _HowItWorksStep(
                               theme: theme,
@@ -532,6 +573,7 @@ class _BharosaLandingState extends State<BharosaLanding>
                 strings: widget.strings,
                 onMyListTap: widget.onMyListTap,
                 onOrdersTap: widget.onOrdersTap,
+                onUdhaarTap: widget.onUdhaarTap,
               ),
             ],
           ),

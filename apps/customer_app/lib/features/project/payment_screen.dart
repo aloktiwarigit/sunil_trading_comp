@@ -16,6 +16,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
 import 'package:customer_app/features/project/payment_controller.dart';
@@ -332,6 +333,54 @@ class PaymentScreen extends ConsumerWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+            const SizedBox(height: YugmaSpacing.s8),
+            // "View Order" button
+            SizedBox(
+              width: double.infinity,
+              height: theme.tapTargetMin,
+              child: ElevatedButton(
+                onPressed: () {
+                  context.go('/orders/$projectId');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.shopCommit,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  ),
+                  textStyle: TextStyle(
+                    fontFamily: theme.fontFamilyDevanagariBody,
+                    fontSize: theme.isElderTier ? 18.0 : 15.0,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                child: Text(strings.paymentSuccessViewOrder),
+              ),
+            ),
+            const SizedBox(height: YugmaSpacing.s3),
+            // "Back to Home" button
+            SizedBox(
+              width: double.infinity,
+              height: theme.tapTargetMin,
+              child: OutlinedButton(
+                onPressed: () {
+                  context.go('/landing');
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: theme.shopPrimary,
+                  side: BorderSide(color: theme.shopPrimary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  ),
+                  textStyle: TextStyle(
+                    fontFamily: theme.fontFamilyDevanagariBody,
+                    fontSize: theme.isElderTier ? 18.0 : 15.0,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                child: Text(strings.paymentSuccessBackHome),
+              ),
+            ),
           ],
         ),
       ),
