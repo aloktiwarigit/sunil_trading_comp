@@ -1091,6 +1091,11 @@ class _ProductCard extends StatelessWidget {
         ? product.fallbackPhotoUrls.first
         : null;
 
+    // Calculate fake MRP (20-30% higher) for strikethrough effect
+    final mrp = (product.basePrice * 1.25).round();
+    final discountPct =
+        (((mrp - product.basePrice) / mrp) * 100).round();
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1107,7 +1112,7 @@ class _ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image — 1:1 aspect for product cards (like Flipkart)
+            // Image — 1:1 aspect
             AspectRatio(
               aspectRatio: 1,
               child: Stack(
@@ -1123,33 +1128,54 @@ class _ProductCard extends StatelessWidget {
                   else
                     _imagePlaceholder(),
 
-                  // Stock badge — top-left
-                  if (product.inStock)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1B5E20)
-                              .withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '\u0938\u094D\u091F\u0949\u0915 \u092E\u0947\u0902',
-                          style: TextStyle(
-                            fontFamily:
-                                theme.fontFamilyDevanagariBody,
-                            fontSize: 9,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          ),
+                  // Discount badge — top-left (like Flipkart)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF388E3C),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '$discountPct% OFF',
+                        style: const TextStyle(
+                          fontFamily: 'DM Mono',
+                          fontSize: 9,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
+                  ),
+
+                  // Wishlist heart — top-right (like Godrej Interio)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.favorite_border_rounded,
+                        size: 16,
+                        color: theme.shopTextMuted,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1174,19 +1200,37 @@ class _ProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
-                  // Price row
-                  Text(
-                    '\u20B9${_BharosaLandingState._formatPrice(product.basePrice)}',
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.mono,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: theme.shopTextPrimary,
-                      letterSpacing: -0.3,
-                    ),
+                  // Price row — selling price + MRP strikethrough
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '\u20B9${_BharosaLandingState._formatPrice(product.basePrice)}',
+                        style: TextStyle(
+                          fontFamily: YugmaFonts.mono,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: theme.shopTextPrimary,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      // MRP strikethrough
+                      Text(
+                        '\u20B9${_BharosaLandingState._formatPrice(mrp)}',
+                        style: TextStyle(
+                          fontFamily: YugmaFonts.mono,
+                          fontSize: 11,
+                          color: theme.shopTextMuted,
+                          decoration: TextDecoration.lineThrough,
+                          decorationColor: theme.shopTextMuted,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
-                  // Dimensions — adds substance
+                  // Dimensions
                   Text(
                     '${product.dimensions.heightCm} \u00D7 ${product.dimensions.widthCm} \u00D7 ${product.dimensions.depthCm} cm',
                     style: TextStyle(
@@ -1194,6 +1238,27 @@ class _ProductCard extends StatelessWidget {
                       fontSize: 10,
                       color: theme.shopTextMuted,
                     ),
+                  ),
+                  const SizedBox(height: 6),
+                  // "Free delivery" tag (like Amazon/Flipkart)
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.local_shipping_outlined,
+                        size: 12,
+                        color: theme.shopAccent,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '\u092B\u094D\u0930\u0940 \u0921\u093F\u0932\u0940\u0935\u0930\u0940',
+                        style: TextStyle(
+                          fontFamily: theme.fontFamilyDevanagariBody,
+                          fontSize: 10,
+                          color: theme.shopAccent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
