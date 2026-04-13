@@ -148,7 +148,7 @@ abstract class AppStrings {
 
   /// Shortlist title — dowry occasion.
   /// Not in UX Spec §5.5 explicit row but called out in PRD B1.4 AC #1.
-  String get shortlistTitleDahej;
+  String get shortlistTitleBetiKaGhar;
 
   /// Shortlist title — budget-friendly picks.
   /// Called out in PRD B1.4 AC #1.

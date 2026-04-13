@@ -129,8 +129,8 @@ class ShortlistScreen extends StatelessWidget {
         return strings.shortlistTitleShaadi;
       case ShortlistOccasion.nayaGhar:
         return strings.shortlistTitleNayaGhar;
-      case ShortlistOccasion.dahej:
-        return strings.shortlistTitleDahej;
+      case ShortlistOccasion.betiKaGhar:
+        return strings.shortlistTitleBetiKaGhar;
       case ShortlistOccasion.replacement:
         return strings.shortlistTitlePuranaBadlne;
       case ShortlistOccasion.budget:

@@ -20,20 +20,18 @@ import 'package:lib_core/lib_core.dart';
 const _occasionKeys = <String>[
   'shaadi',
   'naya_ghar',
-  'dahej',
-  'purana_badalne',
+  'beti_ka_ghar',
+  'replacement',
   'budget',
-  'ladies',
 ];
 
 /// D-2: Resolve occasion label from AppStrings.
 String _occasionLabel(String key, AppStrings strings) => switch (key) {
       'shaadi' => strings.shortlistTitleShaadi,
       'naya_ghar' => strings.shortlistTitleNayaGhar,
-      'dahej' => strings.shortlistTitleDahej,
-      'purana_badalne' => strings.shortlistTitlePuranaBadlne,
+      'beti_ka_ghar' => strings.shortlistTitleBetiKaGhar,
+      'replacement' => strings.shortlistTitlePuranaBadlne,
       'budget' => strings.shortlistTitleBudget,
-      'ladies' => strings.shortlistTitleLadies,
       _ => key,
     };
 

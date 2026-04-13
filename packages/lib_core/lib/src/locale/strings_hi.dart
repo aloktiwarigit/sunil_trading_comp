@@ -117,7 +117,7 @@ class AppStringsHi extends AppStrings {
   String get shortlistTitlePuranaBadlne => 'पुराना बदलने के लिए';
 
   @override
-  String get shortlistTitleDahej => 'दहेज के लिए';
+  String get shortlistTitleBetiKaGhar => 'बेटी का नया घर';
 
   @override
   String get shortlistTitleBudget => 'बजट के अनुसार';
