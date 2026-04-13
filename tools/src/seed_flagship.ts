@@ -126,7 +126,7 @@ async function seedFlagship(): Promise<void> {
       fontFamilyDevanagariBody: 'Mukta',
       fontFamilyEnglishDisplay: 'Fraunces',
       fontFamilyEnglishBody: 'EB Garamond',
-      shopkeeperFaceUrl: '',
+      shopkeeperFaceUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
       greetingVoiceNoteId: '', // no audio file uploaded yet
       city: 'Ayodhya',
       marketArea: 'Harringtonganj',
@@ -158,6 +158,10 @@ async function seedFlagship(): Promise<void> {
       basePrice: 18500,
       negotiableDownTo: 16000,
       occasionTags: ['shaadi', 'naya_ghar', 'replacement'],
+      fallbackPhotoUrls: [
+        'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=800&q=80',
+        'https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=800&q=80',
+      ],
     },
     {
       skuId: SKU_SHEESHAM_WARDROBE,
@@ -170,6 +174,10 @@ async function seedFlagship(): Promise<void> {
       basePrice: 35000,
       negotiableDownTo: 30000,
       occasionTags: ['shaadi', 'dahej', 'ladies'],
+      fallbackPhotoUrls: [
+        'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80',
+        'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=800&q=80',
+      ],
     },
     {
       skuId: SKU_MODULAR_SLIDING,
@@ -182,6 +190,10 @@ async function seedFlagship(): Promise<void> {
       basePrice: 22000,
       negotiableDownTo: 19000,
       occasionTags: ['naya_ghar', 'replacement', 'budget', 'ladies'],
+      fallbackPhotoUrls: [
+        'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=80',
+        'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&q=80',
+      ],
     },
     {
       skuId: SKU_TEAK_WARDROBE,
@@ -194,6 +206,10 @@ async function seedFlagship(): Promise<void> {
       basePrice: 45000,
       negotiableDownTo: 40000,
       occasionTags: ['shaadi', 'dahej'],
+      fallbackPhotoUrls: [
+        'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800&q=80',
+        'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&q=80',
+      ],
     },
     {
       skuId: SKU_DRESSING_TABLE,
@@ -206,6 +222,10 @@ async function seedFlagship(): Promise<void> {
       basePrice: 12000,
       negotiableDownTo: 10000,
       occasionTags: ['shaadi', 'dahej', 'ladies'],
+      fallbackPhotoUrls: [
+        'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=800&q=80',
+        'https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=800&q=80',
+      ],
     },
     {
       skuId: SKU_BUDGET_STEEL,
@@ -218,6 +238,10 @@ async function seedFlagship(): Promise<void> {
       basePrice: 8500,
       negotiableDownTo: 7500,
       occasionTags: ['budget', 'replacement'],
+      fallbackPhotoUrls: [
+        'https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=800&q=80',
+        'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=800&q=80',
+      ],
     },
   ];
 
@@ -239,7 +263,7 @@ async function seedFlagship(): Promise<void> {
         isActive: true,
         occasionTags: sku.occasionTags,
         goldenHourPhotoIds: [],
-        fallbackPhotoUrls: [],
+        fallbackPhotoUrls: sku.fallbackPhotoUrls,
         voiceNoteIds: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -256,6 +280,7 @@ async function seedFlagship(): Promise<void> {
       occasion: 'shaadi',
       titleDevanagari: 'शादी के लिए',
       titleEnglish: 'For a wedding',
+      heroImageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80',
       skuIdsInOrder: [
         SKU_SHEESHAM_WARDROBE,
         SKU_TEAK_WARDROBE,
@@ -268,6 +293,7 @@ async function seedFlagship(): Promise<void> {
       occasion: 'naya_ghar',
       titleDevanagari: 'नए घर के लिए',
       titleEnglish: 'For the new home',
+      heroImageUrl: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=80',
       skuIdsInOrder: [
         SKU_MODULAR_SLIDING,
         SKU_GODREJ_4DOOR,
@@ -279,6 +305,7 @@ async function seedFlagship(): Promise<void> {
       occasion: 'dahej',
       titleDevanagari: 'दहेज के लिए',
       titleEnglish: 'For dahej',
+      heroImageUrl: 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800&q=80',
       skuIdsInOrder: [
         SKU_TEAK_WARDROBE,
         SKU_SHEESHAM_WARDROBE,
@@ -290,6 +317,7 @@ async function seedFlagship(): Promise<void> {
       occasion: 'replacement',
       titleDevanagari: 'पुराना बदलने के लिए',
       titleEnglish: 'To replace the old one',
+      heroImageUrl: 'https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=800&q=80',
       skuIdsInOrder: [
         SKU_BUDGET_STEEL,
         SKU_GODREJ_4DOOR,
@@ -301,6 +329,7 @@ async function seedFlagship(): Promise<void> {
       occasion: 'budget',
       titleDevanagari: 'बजट के अनुसार',
       titleEnglish: 'Budget picks',
+      heroImageUrl: 'https://images.unsplash.com/photo-1558997519-83ea9252edf8?w=800&q=80',
       skuIdsInOrder: [SKU_BUDGET_STEEL, SKU_MODULAR_SLIDING],
     },
     {
@@ -308,6 +337,7 @@ async function seedFlagship(): Promise<void> {
       occasion: 'ladies',
       titleDevanagari: 'लेडीज़ के लिए',
       titleEnglish: 'For ladies',
+      heroImageUrl: 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=800&q=80',
       skuIdsInOrder: [
         SKU_DRESSING_TABLE,
         SKU_MODULAR_SLIDING,
@@ -325,6 +355,7 @@ async function seedFlagship(): Promise<void> {
         occasion: sl.occasion,
         titleDevanagari: sl.titleDevanagari,
         titleEnglish: sl.titleEnglish,
+        heroImageUrl: sl.heroImageUrl,
         skuIdsInOrder: sl.skuIdsInOrder,
         isActive: true,
         createdAt: new Date(),

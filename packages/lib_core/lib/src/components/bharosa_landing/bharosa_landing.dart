@@ -151,9 +151,7 @@ class _BharosaLandingState extends State<BharosaLanding>
   Widget build(BuildContext context) {
     final theme = context.yugmaTheme;
 
-    final tileSize = theme.isElderTier ? 130.0 : 110.0;
-    debugPrint('[LANDING] hero colors: secondary=${theme.shopSecondary}, primary=${theme.shopPrimary}, deep=${theme.shopPrimaryDeep}, bg=${theme.shopBackground}, owner=${theme.ownerName}, brand=${theme.brandName}');
-    debugPrint('[LANDING] shortlists count: ${widget.previewShortlists.length}');
+    final years = DateTime.now().year - theme.establishedYear;
 
     return PopScope(
       canPop: false,
@@ -168,137 +166,362 @@ class _BharosaLandingState extends State<BharosaLanding>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-              // Hero — gradient with face + name
-              Container(
-                height: 280,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [theme.shopSecondary, theme.shopPrimary, theme.shopPrimaryDeep],
-                  ),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const ShopkeeperFaceFrame(size: 100),
-                      const SizedBox(height: 12),
-                      Text(
-                        theme.ownerName,
-                        style: TextStyle(
-                          fontFamily: theme.fontFamilyDevanagariDisplay,
-                          fontSize: 26,
-                          color: theme.shopTextOnPrimary,
-                          fontWeight: FontWeight.w600,
+                      // ── 1. Hero Section (300px) ──
+                      Container(
+                        height: 300,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              theme.shopSecondary,
+                              theme.shopPrimary,
+                              theme.shopPrimaryDeep,
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        theme.taglineDevanagari,
-                        style: TextStyle(
-                          fontFamily: theme.fontFamilyDevanagariBody,
-                          fontSize: 14,
-                          color: theme.shopTextOnPrimary.withValues(alpha: 0.9),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${theme.brandName} · ${theme.marketArea}',
-                        style: TextStyle(
-                          fontFamily: theme.fontFamilyDevanagariBody,
-                          fontSize: 12,
-                          color: theme.shopTextOnPrimary.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Meta bar — years in business
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                color: theme.shopSurface,
-                child: Text(
-                  widget.strings.metaBarYearsInBusiness(
-                    DateTime.now().year - theme.establishedYear,
-                    theme.establishedYear,
-                  ),
-                  style: TextStyle(
-                    fontFamily: theme.fontFamilyDevanagariBody,
-                    fontSize: 12,
-                    color: theme.shopTextMuted,
-                  ),
-                ),
-              ),
-              // Shortlist heading
-              if (widget.previewShortlists.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-                  child: Text(
-                    widget.strings.shortlistPreviewHeadline(theme.ownerName),
-                    style: TextStyle(
-                      fontFamily: theme.fontFamilyDevanagariDisplay,
-                      fontSize: 16,
-                      color: theme.shopPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                // Shortlist tiles — horizontal scroll
-                SizedBox(
-                  height: tileSize,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: widget.previewShortlists.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
-                    itemBuilder: (context, i) {
-                      final s = widget.previewShortlists[i];
-                      return GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          widget.onShortlistTap(s.occasionTag);
-                        },
-                        child: Container(
-                          width: tileSize,
-                          height: tileSize,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [theme.shopPrimary, theme.shopPrimaryDeep],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.shopPrimaryDeep.withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
+                        child: SafeArea(
+                          bottom: false,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Animated face frame
+                              ScaleTransition(
+                                scale: CurvedAnimation(
+                                  parent: _entranceController,
+                                  curve: const Interval(
+                                    0.0,
+                                    0.6,
+                                    curve: Curves.easeOutBack,
+                                  ),
+                                ),
+                                child: const ShopkeeperFaceFrame(size: 120),
+                              ),
+                              const SizedBox(height: YugmaSpacing.s3),
+                              // Owner name — large Devanagari display
+                              FadeTransition(
+                                opacity: CurvedAnimation(
+                                  parent: _entranceController,
+                                  curve: const Interval(
+                                    0.3,
+                                    0.8,
+                                    curve: Curves.easeOut,
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      theme.ownerName,
+                                      style: TextStyle(
+                                        fontFamily:
+                                            theme.fontFamilyDevanagariDisplay,
+                                        fontSize:
+                                            theme.isElderTier ? 32 : 28,
+                                        color: theme.shopTextOnPrimary,
+                                        fontWeight: FontWeight.w600,
+                                        height: YugmaLineHeights.tight,
+                                        shadows: const [
+                                          Shadow(
+                                            offset: Offset(0, 2),
+                                            blurRadius: 8,
+                                            color: Color(0x66000000),
+                                          ),
+                                        ],
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: YugmaSpacing.s1),
+                                    // Tagline in italics
+                                    Text(
+                                      theme.taglineDevanagari,
+                                      style: TextStyle(
+                                        fontFamily:
+                                            theme.fontFamilyDevanagariBody,
+                                        fontSize:
+                                            theme.isElderTier ? 16 : 14,
+                                        fontStyle: FontStyle.italic,
+                                        color: theme.shopTextOnPrimary
+                                            .withValues(alpha: 0.9),
+                                        height: YugmaLineHeights.snug,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: YugmaSpacing.s1),
+                                    // Shop name + market
+                                    Text(
+                                      '${theme.brandName} · ${theme.marketArea}',
+                                      style: TextStyle(
+                                        fontFamily:
+                                            theme.fontFamilyDevanagariBody,
+                                        fontSize:
+                                            theme.isElderTier ? 14 : 12,
+                                        color: theme.shopTextOnPrimary
+                                            .withValues(alpha: 0.7),
+                                        height: YugmaLineHeights.snug,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                          padding: const EdgeInsets.all(10),
-                          alignment: Alignment.bottomLeft,
-                          child: Text(
-                            s.occasionLabel,
-                            style: TextStyle(
-                              fontFamily: theme.fontFamilyDevanagariDisplay,
-                              fontSize: 13,
-                              color: theme.shopAccentGlow,
-                              fontWeight: FontWeight.w600,
+                        ),
+                      ),
+
+                      // ── 2. Trust Bar ──
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: YugmaSpacing.s4,
+                          vertical: YugmaSpacing.s2,
+                        ),
+                        color: theme.shopSurface,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // Years in business
+                            _TrustSignal(
+                              theme: theme,
+                              icon: Icons.calendar_today_outlined,
+                              // TODO: extract to AppStrings
+                              label: '$years+ साल',
                             ),
+                            _trustDivider(theme),
+                            // Location
+                            _TrustSignal(
+                              theme: theme,
+                              icon: Icons.place_outlined,
+                              label: theme.marketArea,
+                            ),
+                            _trustDivider(theme),
+                            // Presence status
+                            _TrustSignal(
+                              theme: theme,
+                              icon: Icons.circle,
+                              iconSize: 8,
+                              iconColor: YugmaColors.success,
+                              // TODO: extract to AppStrings
+                              label: 'दुकान पर हैं',
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── 3. Shortlist Section ──
+                      if (widget.previewShortlists.isNotEmpty) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            YugmaSpacing.s4,
+                            YugmaSpacing.s5,
+                            YugmaSpacing.s4,
+                            YugmaSpacing.s3,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 24,
+                                height: 1.5,
+                                color: theme.shopAccent,
+                              ),
+                              const SizedBox(width: YugmaSpacing.s2),
+                              Expanded(
+                                child: Text(
+                                  widget.strings
+                                      .shortlistPreviewHeadline(
+                                          theme.ownerName),
+                                  style: TextStyle(
+                                    fontFamily:
+                                        theme.fontFamilyDevanagariDisplay,
+                                    fontSize:
+                                        theme.isElderTier ? 18 : 16,
+                                    color: theme.shopPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
+                        // Bigger shortlist tiles — 140px tall, 160px wide
+                        SizedBox(
+                          height: 148, // tile + bottom shadow room
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: YugmaSpacing.s4,
+                            ),
+                            itemCount: widget.previewShortlists.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: YugmaSpacing.s3),
+                            itemBuilder: (context, i) {
+                              final s = widget.previewShortlists[i];
+                              return GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  widget.onShortlistTap(s.occasionTag);
+                                },
+                                child: Container(
+                                  width: 160,
+                                  height: 140,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        theme.shopPrimary,
+                                        theme.shopPrimaryDeep,
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(
+                                      YugmaRadius.lg,
+                                    ),
+                                    border: i == 0
+                                        ? Border.all(
+                                            color: theme.shopAccent,
+                                            width: 1.5,
+                                          )
+                                        : null,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: theme.shopPrimaryDeep
+                                            .withValues(alpha: 0.35),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
+                                  padding: const EdgeInsets.all(
+                                    YugmaSpacing.s3,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      if (i == 0)
+                                        Container(
+                                          padding:
+                                              const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: theme.shopAccent,
+                                            borderRadius:
+                                                BorderRadius.circular(
+                                              YugmaRadius.sm,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            widget.strings
+                                                .shortlistBadgeCurated,
+                                            style: TextStyle(
+                                              fontFamily: theme
+                                                  .fontFamilyDevanagariBody,
+                                              fontSize: 10,
+                                              color:
+                                                  theme.shopPrimaryDeep,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        const SizedBox.shrink(),
+                                      Text(
+                                        s.occasionLabel,
+                                        style: TextStyle(
+                                          fontFamily: theme
+                                              .fontFamilyDevanagariDisplay,
+                                          fontSize: 16,
+                                          color: theme.shopAccentGlow,
+                                          fontWeight: FontWeight.w600,
+                                          height: YugmaLineHeights.snug,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+
+                      // ── 4. How it Works Section ──
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          YugmaSpacing.s4,
+                          YugmaSpacing.s8,
+                          YugmaSpacing.s4,
+                          YugmaSpacing.s4,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 24,
+                                  height: 1.5,
+                                  color: theme.shopAccent,
+                                ),
+                                const SizedBox(width: YugmaSpacing.s2),
+                                Text(
+                                  // TODO: extract to AppStrings
+                                  'कैसे काम करता है',
+                                  style: TextStyle(
+                                    fontFamily:
+                                        theme.fontFamilyDevanagariDisplay,
+                                    fontSize:
+                                        theme.isElderTier ? 18 : 16,
+                                    color: theme.shopPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: YugmaSpacing.s4),
+                            // Step 1
+                            _HowItWorksStep(
+                              theme: theme,
+                              stepNumber: 1,
+                              icon: Icons.visibility_outlined,
+                              // TODO: extract to AppStrings
+                              label: 'पसंद करें',
+                              // TODO: extract to AppStrings
+                              sublabel: 'तस्वीरें देखें, पसंद आए तो लिस्ट में जोड़ें',
+                            ),
+                            const SizedBox(height: YugmaSpacing.s3),
+                            // Step 2
+                            _HowItWorksStep(
+                              theme: theme,
+                              stepNumber: 2,
+                              icon: Icons.chat_outlined,
+                              // TODO: extract to AppStrings
+                              label: 'बात करें',
+                              // TODO: extract to AppStrings
+                              sublabel: 'भैया से दाम और डिटेल पूछें',
+                            ),
+                            const SizedBox(height: YugmaSpacing.s3),
+                            // Step 3
+                            _HowItWorksStep(
+                              theme: theme,
+                              stepNumber: 3,
+                              icon: Icons.home_outlined,
+                              // TODO: extract to AppStrings
+                              label: 'घर बैठे मँगाएँ',
+                              // TODO: extract to AppStrings
+                              sublabel: 'पक्का ऑर्डर करें, घर पर पाएँ',
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── 5. Bottom padding for dock clearance ──
+                      const SizedBox(height: 80),
                     ],
                   ),
                 ),
@@ -810,6 +1033,148 @@ class _ShortlistTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// TRUST BAR — compact trust signals row
+// ─────────────────────────────────────────────────────────────────
+
+Widget _trustDivider(YugmaThemeExtension theme) {
+  return Container(
+    width: 1,
+    height: 16,
+    color: theme.shopDivider,
+  );
+}
+
+class _TrustSignal extends StatelessWidget {
+  final YugmaThemeExtension theme;
+  final IconData icon;
+  final String label;
+  final double? iconSize;
+  final Color? iconColor;
+
+  const _TrustSignal({
+    required this.theme,
+    required this.icon,
+    required this.label,
+    this.iconSize,
+    this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: iconSize ?? 14,
+          color: iconColor ?? theme.shopTextMuted,
+        ),
+        const SizedBox(width: YugmaSpacing.s1),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: theme.fontFamilyDevanagariBody,
+            fontSize: theme.isElderTier ? 13 : 11,
+            color: theme.shopTextSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// HOW IT WORKS — numbered step row
+// ─────────────────────────────────────────────────────────────────
+
+class _HowItWorksStep extends StatelessWidget {
+  final YugmaThemeExtension theme;
+  final int stepNumber;
+  final IconData icon;
+  final String label;
+  final String sublabel;
+
+  const _HowItWorksStep({
+    required this.theme,
+    required this.stepNumber,
+    required this.icon,
+    required this.label,
+    required this.sublabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(YugmaSpacing.s3),
+      decoration: BoxDecoration(
+        color: theme.shopSurface,
+        borderRadius: BorderRadius.circular(YugmaRadius.md),
+        boxShadow: YugmaShadows.card,
+      ),
+      child: Row(
+        children: [
+          // Numbered circle with accent background
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: theme.shopAccent,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '$stepNumber',
+                style: TextStyle(
+                  fontFamily: theme.fontFamilyDevanagariDisplay,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: theme.shopPrimaryDeep,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: YugmaSpacing.s3),
+          // Icon
+          Icon(
+            icon,
+            size: 20,
+            color: theme.shopPrimary,
+          ),
+          const SizedBox(width: YugmaSpacing.s2),
+          // Label + sublabel
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: theme.fontFamilyDevanagariDisplay,
+                    fontSize: theme.isElderTier ? 16 : 14,
+                    color: theme.shopTextPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  sublabel,
+                  style: TextStyle(
+                    fontFamily: theme.fontFamilyDevanagariBody,
+                    fontSize: theme.isElderTier ? 13 : 11,
+                    color: theme.shopTextMuted,
+                    height: YugmaLineHeights.snug,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
