@@ -186,23 +186,20 @@ final routerProvider = Provider<GoRouter>((ref) {
               final shellOnboarding = shellRef.watch(onboardingControllerProvider);
               final data = shellOnboarding.valueOrNull;
               if (data == null) return child;
-              final theme = YugmaThemeExtension.fromTokens(data.themeTokens);
-              return Theme(
-                data: ThemeData(
-                  useMaterial3: true,
-                  extensions: [theme],
-                ),
-                child: Scaffold(
-                  backgroundColor: theme.shopBackground,
-                  body: child,
-                  bottomNavigationBar: ShopkeeperPresenceDock(
+              return Material(
+                color: Colors.transparent,
+                child: Column(
+                children: [
+                  Expanded(child: child),
+                  ShopkeeperPresenceDock(
                     onVoiceNote: () {},
                     strings: data.strings,
                     onMyListTap: () => context.go('/draft'),
                     onOrdersTap: () => context.go('/orders'),
                     onUdhaarTap: () => context.go('/udhaar'),
                   ),
-                ),
+                ],
+              ),
               );
             },
           );
