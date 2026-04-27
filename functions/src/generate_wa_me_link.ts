@@ -30,6 +30,10 @@ export const generateWaMeLink = onCall(
     region: 'asia-south1',
     memory: '256MiB',
     timeoutSeconds: 30,
+    // §15.1.C — server-side App Check enforcement. Rejects calls that
+    // arrive without a valid App Check token; prevents cross-tenant
+    // phone number disclosure via unattested clients.
+    enforceAppCheck: true,
   },
   async (request) => {
     // ── Auth check ──

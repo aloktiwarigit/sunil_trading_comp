@@ -39,6 +39,11 @@ export const joinDecisionCircle = onCall(
     region: 'asia-south1',
     memory: '256MiB',
     timeoutSeconds: 30,
+    // §15.1.C — server-side App Check enforcement. Rejects calls that
+    // arrive without a valid App Check token; pairs with the client-side
+    // FirebaseAppCheck.activate() in customer_app/shopkeeper_app main.dart.
+    // Debug provider tokens are accepted in non-release builds.
+    enforceAppCheck: true,
   },
   async (request) => {
     // ── Auth check ──

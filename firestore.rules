@@ -68,9 +68,12 @@ service cloud.firestore {
           && request.resource.data.shopId == shopId;
     }
 
-    // App Check is enforced at the Firebase product level (firebase.json), not
-    // in rules — but we double-gate via the shopId token claim which is only
-    // issued through our auth flows.
+    // App Check enforcement: callable Cloud Functions enforce it via
+    // `enforceAppCheck: true` in their onCall options (functions/src/
+    // join_decision_circle.ts + generate_wa_me_link.ts). For Firestore +
+    // Storage, App Check enforcement must be toggled on in the Firebase
+    // Console (Project Settings → App Check); the rule layer additionally
+    // gates writes via the shopId token claim issued through auth flows.
 
     // -------------------------------------------------------------------------
     // Shop lifecycle write-freeze helper (SAD §6 v1.0.4 + ADR-013 + R16/DPDP)
