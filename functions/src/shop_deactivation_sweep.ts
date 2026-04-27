@@ -3,17 +3,34 @@
 //
 // Scheduled daily at 02:00 IST. Manages shop lifecycle transitions:
 //
-//   1. deactivating → purgeScheduled (after 24h grace period)
+//   1. deactivating → purgeScheduled (after 30-day grace period)
 //      - Cancels active projects (draft/negotiating/committed → cancelled)
 //      - Freezes open udhaar ledgers
 //      - Sets dpdpRetentionUntil = now + 180 days
+//      - Sends bilingual (Devanagari + English) FCM to customers with
+//        open udhaar + the operator (best-effort — see MT-2 caveat).
 //
 //   2. purgeScheduled → purged (after dpdpRetentionUntil expires)
 //      - Anonymizes PII fields
 //      - Sets shopLifecycle to 'purged'
+//      - Sends final bilingual FCM "data has been removed".
 //
 // Audit trail at /system/deactivation_sweeps/history/{auto-id}.
 // Batch writes in 500-doc chunks per kill_switch.ts pattern.
+//
+// Drifts addressed:
+//   §15.1.D — GRACE_PERIOD_MS bumped from 24h to 30 days to match the
+//     SAD/Five-Truths posture. A shopkeeper who clicks deactivate by
+//     mistake at 11 PM gets 30 days (not 24h) to undo before the
+//     irreversible purge is scheduled. Recommended default; founder
+//     can ratify or override (see docs/architecture-source-of-truth.md
+//     §15.1.D).
+//   §15.1.E — bilingual FCM dispatch added on both lifecycle transitions.
+//     Best-effort: customer FCM tokens come from open udhaar ledgers
+//     (the only place customer tokens currently land in Firestore today —
+//     see drift MT-2 / §15.2.L tracking the missing customer-app
+//     getToken() registration path). Operator FCM token comes from the
+//     operators doc if present.
 // =============================================================================
 
 import * as admin from 'firebase-admin';
@@ -27,14 +44,142 @@ const AUDIT_HISTORY_SUBCOLLECTION = 'history';
 const SYSTEM_UID = 'system_deactivation_sweep';
 const BATCH_SIZE = 500;
 
-/// 24 hours in milliseconds.
-const GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
+/// 30 days in milliseconds — DPDP grace per §15.1.D resolution.
+const GRACE_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;
 
 /// 180 days in milliseconds (DPDP retention).
 const DPDP_RETENTION_MS = 180 * 24 * 60 * 60 * 1000;
 
 /// Project statuses that should be cancelled on deactivation.
 const CANCELLABLE_STATUSES = ['draft', 'negotiating', 'committed'];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bilingual notification templates (drift §15.1.E).
+// Devanagari source (per ADR-008 — Hindi is canonical) + concatenated
+// English fallback. Single FCM payload per recipient — cheaper than
+// language-specific deliveries; both lines render in the notification body.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface BilingualMessage {
+  title: string;
+  body: string;
+}
+
+function deactivatingToPurgeScheduledMessage(brandName: string): BilingualMessage {
+  return {
+    title: `${brandName} — दुकान बंद हो रही है`,
+    // "180 दिन में आपकी जानकारी हटा दी जाएगी। बकाया हो तो पूरा कर लीजिए।"
+    // English: "Your data will be removed in 180 days. Settle any open
+    //           transactions soon."
+    body:
+      '180 दिन में आपकी ' +
+      'जानकारी हटा ' +
+      'दी जाएगी। बका' +
+      'या हो तो पूरा ' +
+      'कर लीजिए।' +
+      '\n\n' +
+      'Your data will be removed in 180 days. Settle any open transactions soon.',
+  };
+}
+
+function purgeScheduledToPurgedMessage(brandName: string): BilingualMessage {
+  return {
+    title: `${brandName} — जानकारी हटा दी गई`,
+    // "DPDP कानून के अनुसार आपकी जानकारी अब हमारे पास नहीं है।"
+    // English: "Per the DPDP Act, your data has been permanently removed."
+    body:
+      'DPDP कानून के अनु' +
+      'सार आपकी जानक' +
+      'ारी अब हमारे ' +
+      'पास नहीं है।' +
+      '\n\n' +
+      'Per the DPDP Act, your data has been permanently removed.',
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Best-effort FCM token discovery + bilingual send.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Returns the de-duplicated set of customer FCM tokens for a shop, sourced
+/// from `customerFcmToken` fields on the shop's udhaar ledgers (the only
+/// location customer tokens currently land — see drift §15.2.L / MT-2).
+async function collectCustomerFcmTokens(
+  db: admin.firestore.Firestore,
+  shopId: string,
+): Promise<string[]> {
+  const ledgersSnap = await db
+    .collection('shops')
+    .doc(shopId)
+    .collection('udhaarLedger')
+    .get();
+  const tokens = new Set<string>();
+  for (const ledgerDoc of ledgersSnap.docs) {
+    const t = ledgerDoc.data().customerFcmToken;
+    if (typeof t === 'string' && t.length > 0) {
+      tokens.add(t);
+    }
+  }
+  return Array.from(tokens);
+}
+
+/// Best-effort lookup of operator FCM tokens. Operator doc may carry
+/// `fcmToken` once shopkeeper_app starts registering it (MT-2 tracks the
+/// gap). Today this typically returns [].
+async function collectOperatorFcmTokens(
+  db: admin.firestore.Firestore,
+  shopId: string,
+): Promise<string[]> {
+  const opsSnap = await db
+    .collection('shops')
+    .doc(shopId)
+    .collection('operators')
+    .get();
+  const tokens = new Set<string>();
+  for (const opDoc of opsSnap.docs) {
+    const t = opDoc.data().fcmToken;
+    if (typeof t === 'string' && t.length > 0) {
+      tokens.add(t);
+    }
+  }
+  return Array.from(tokens);
+}
+
+/// Sends a bilingual FCM payload to a list of tokens. Returns the number of
+/// successful sends. Errors per-token are logged but do not abort the batch.
+async function sendBilingualFcm(
+  tokens: string[],
+  message: BilingualMessage,
+  context: { shopId: string; transition: string },
+): Promise<number> {
+  if (tokens.length === 0) {
+    return 0;
+  }
+  let sent = 0;
+  for (const token of tokens) {
+    try {
+      await admin.messaging().send({
+        token,
+        notification: { title: message.title, body: message.body },
+        data: {
+          shopId: context.shopId,
+          transition: context.transition,
+        },
+      });
+      sent++;
+    } catch (err) {
+      // Stale tokens (registration-token-not-registered) are common when
+      // a customer reinstalls the app. Don't escalate; just count and
+      // continue.
+      logger.warn('Deactivation FCM send failed', {
+        shopId: context.shopId,
+        transition: context.transition,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+  return sent;
+}
 
 export const shopDeactivationSweep = onSchedule(
   {
@@ -55,6 +200,7 @@ export const shopDeactivationSweep = onSchedule(
     let purged = 0;
     let projectsCancelled = 0;
     let ledgersFrozen = 0;
+    let notificationsSent = 0;
     const errors: string[] = [];
 
     // ── Phase 1: deactivating → purgeScheduled ──
@@ -153,6 +299,30 @@ export const shopDeactivationSweep = onSchedule(
           });
 
           transitioned++;
+
+          // §15.1.E — bilingual FCM after the transition is committed.
+          // Note that on the FCM side this is best-effort: customer
+          // tokens currently only land on udhaar ledger docs (drift
+          // MT-2 / §15.2.L), so customers without an open ledger
+          // receive nothing today. Operator tokens require shopkeeper_app
+          // to register them — also pending MT-2.
+          const brandName = (data.brandName as string | undefined) ?? 'Yugma Dukaan';
+          const message = deactivatingToPurgeScheduledMessage(brandName);
+          const customerTokens = await collectCustomerFcmTokens(db, shopId);
+          const operatorTokens = await collectOperatorFcmTokens(db, shopId);
+          const sent = await sendBilingualFcm(
+            [...customerTokens, ...operatorTokens],
+            message,
+            { shopId, transition: 'deactivating_to_purge_scheduled' },
+          );
+          notificationsSent += sent;
+          if (sent === 0 && customerTokens.length + operatorTokens.length === 0) {
+            logger.info(
+              'No FCM tokens available for shop deactivation notification — ' +
+                'skipped silently (drift MT-2 customer-side registration pending)',
+              { shopId, transition: 'deactivating_to_purge_scheduled' },
+            );
+          }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           logger.error('Error transitioning shop to purgeScheduled', {
@@ -198,6 +368,12 @@ export const shopDeactivationSweep = onSchedule(
             continue;
           }
 
+          // §15.1.E — capture brandName + collect FCM tokens BEFORE the
+          // anonymization update destroys them.
+          const brandName = (data.brandName as string | undefined) ?? 'Yugma Dukaan';
+          const customerTokens = await collectCustomerFcmTokens(db, shopId);
+          const operatorTokens = await collectOperatorFcmTokens(db, shopId);
+
           // Anonymize PII.
           await shopDoc.ref.update({
             shopLifecycle: 'purged',
@@ -214,6 +390,17 @@ export const shopDeactivationSweep = onSchedule(
           });
 
           purged++;
+
+          // Send the final bilingual "data has been removed" notification
+          // after PII anonymization is committed. Same best-effort caveat
+          // as Phase 1 applies.
+          const message = purgeScheduledToPurgedMessage(brandName);
+          const sent = await sendBilingualFcm(
+            [...customerTokens, ...operatorTokens],
+            message,
+            { shopId, transition: 'purge_scheduled_to_purged' },
+          );
+          notificationsSent += sent;
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           logger.error('Error purging shop', { shopId, error: msg });
@@ -238,6 +425,7 @@ export const shopDeactivationSweep = onSchedule(
           purged,
           projectsCancelled,
           ledgersFrozen,
+          notificationsSent,
           errorCount: errors.length,
           errors: errors.slice(0, 20),
           executedByUid: SYSTEM_UID,
@@ -253,6 +441,7 @@ export const shopDeactivationSweep = onSchedule(
       purged,
       projectsCancelled,
       ledgersFrozen,
+      notificationsSent,
       errorCount: errors.length,
     });
   },

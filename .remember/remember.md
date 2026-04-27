@@ -9,7 +9,7 @@ Built `docs/architecture-source-of-truth.md` v1.0 (5-agent code audit on commit 
 3. Author `docs/enterprise-posture.md` — Mary's axis-by-axis posture-with-trigger-events doc.
 
 ## Context
-- **DO NOT onboard shop #2** until §15.1 P0 closed: HMAC join token absent, DPDP grace 24h-vs-30d, bilingual deactivation FCM missing. (`dahej` ✅, hosting targets ✅, Triple Zero server-side ✅, App Check on callables ✅, Codex gate workflow ✅, 3 SAD runbooks ✅ + staging-setup updated with App-Check-Console + Codex-branch-protection ops steps.)
+- **DO NOT onboard shop #2** until §15.1 P0 closed: HMAC join token absent (P0-A — last item). (`dahej` ✅, hosting targets ✅, Triple Zero server-side ✅, App Check on callables ✅, Codex gate workflow ✅, 3 SAD runbooks ✅ + staging-setup with App-Check-Console + Codex-branch-protection ops steps, bilingual deactivation FCM ✅, DPDP grace = 30 days ⚠️ recommendation pending founder ratification.)
 - Sonnet quota was hit earlier today; Opus fine. Pass `model: "opus"` to Agent dispatches when subagents fail with rate-limit.
 - Free-tier OSS items (CodeQL/Semgrep/gitleaks/Codex/axe/pa11y/Dependabot/SBOM) cost zero — split them from paid SaaS (Sentry/PostHog/GrowthBook) when triaging "agency floor absent". Mary's reframe.
 - User prefers upstream rigor over downstream firefighting; never propose shortcuts. Quality > speed.
