@@ -13,6 +13,16 @@ import 'package:shopkeeper_app/features/dashboard/todays_task_card.dart';
 import 'package:shopkeeper_app/features/dashboard/todays_task_seed.dart';
 import 'package:shopkeeper_app/features/dashboard/home_dashboard.dart';
 
+/// Mirrors `app.dart`'s production theme so widgets that read
+/// `context.yugmaTheme` (HomeDashboard et al.) can build inside tests.
+ThemeData _testTheme() => ThemeData(
+      extensions: <ThemeExtension<dynamic>>[
+        YugmaThemeExtension.fromTokens(
+          ShopThemeTokens.sunilTradingCompanyDefault(),
+        ),
+      ],
+    );
+
 void main() {
   group('OpsAuthState', () {
     test('loading factory has correct status', () {
@@ -454,7 +464,7 @@ void main() {
               ),
             ),
           ],
-          child: const MaterialApp(home: HomeDashboard()),
+          child: MaterialApp(theme: _testTheme(), home: const HomeDashboard()),
         ),
       );
       await tester.pumpAndSettle();
