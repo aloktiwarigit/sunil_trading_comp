@@ -142,6 +142,51 @@ Drift §15.1.C is fully resolved only after this Console toggle lands per enviro
 
 ---
 
+## Step 5.55 — JOIN_TOKEN_HMAC_SECRET (P0-A ops step)
+
+The `joinDecisionCircle` and `generateWaMeLink` Cloud Functions both declare a Firebase Secret Manager dependency:
+
+```typescript
+secrets: ['JOIN_TOKEN_HMAC_SECRET']
+```
+
+This secret is the HMAC-SHA256 key used to sign + verify Decision-Circle join tokens (drift §15.1.A / ADR-009 v1.0.3). Without it set, `firebase deploy --only functions` succeeds but the first invocation throws `JOIN_TOKEN_HMAC_SECRET is not set or is too short`.
+
+For each environment, generate a 64-character random secret and bind it once:
+
+```bash
+# Generate a secret value (saved nowhere — feed it directly to firebase).
+openssl rand -hex 32 | xargs -I {} firebase functions:secrets:set JOIN_TOKEN_HMAC_SECRET --project yugma-dukaan-{env} --data-file <(echo -n "{}")
+```
+
+Or interactively (Firebase prompts for the value, accepts paste):
+
+```bash
+firebase functions:secrets:set JOIN_TOKEN_HMAC_SECRET --project yugma-dukaan-{env}
+# (paste 64+ random hex chars when prompted)
+```
+
+Then redeploy the affected functions so they pick up the new secret binding:
+
+```bash
+firebase deploy --only functions:joinDecisionCircle,functions:generateWaMeLink \
+  --project yugma-dukaan-{env}
+```
+
+**Secret rotation:** if the secret is suspected compromised, generate a new one with the same command (Firebase versions secrets — old tokens will fail to verify, which is the desired behavior). Allow a 7-day overlap if you can — that's the default token TTL, and any in-flight wa.me link minted under the old secret will be unverifiable post-rotation. For the v1 single-shop flagship, instant rotation is fine.
+
+**Local emulator:** when running the functions emulator, set the secret via `.secret.local`:
+
+```bash
+echo "JOIN_TOKEN_HMAC_SECRET=$(openssl rand -hex 32)" >> functions/.secret.local
+```
+
+(`.secret.local` is gitignored.)
+
+Drift §15.1.A is fully resolved only after this secret is set per environment.
+
+---
+
 ## Step 5.6 — Codex review gate branch protection (P0-Q ops step)
 
 `.github/workflows/codex-review-gate.yml` exists and runs on every PR — but for it to actually block merges, the GitHub branch protection rule needs to require it.

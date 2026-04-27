@@ -3,8 +3,9 @@
 # Per SAD v1.0.4 §3 — functions/ is a TypeScript workspace under firebase.json.
 # =============================================================================
 
-# Compiled output
-lib/
+# Compiled output (anchored to functions/ root — `lib/` would also match
+# `src/lib/` source directories, which is wrong).
+/lib/
 *.tsbuildinfo
 
 # Dependencies

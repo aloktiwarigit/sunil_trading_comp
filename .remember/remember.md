@@ -9,7 +9,7 @@ Built `docs/architecture-source-of-truth.md` v1.0 (5-agent code audit on commit 
 3. Author `docs/enterprise-posture.md` — Mary's axis-by-axis posture-with-trigger-events doc.
 
 ## Context
-- **DO NOT onboard shop #2** until §15.1 P0 closed: HMAC join token absent (P0-A — last item). (`dahej` ✅, hosting targets ✅, Triple Zero server-side ✅, App Check on callables ✅, Codex gate workflow ✅, 3 SAD runbooks ✅ + staging-setup with App-Check-Console + Codex-branch-protection ops steps, bilingual deactivation FCM ✅, DPDP grace = 30 days ⚠️ recommendation pending founder ratification.)
+- **§15.1 P0 backlog: ALL CLOSED** ✅ on the code side. Remaining ops steps before shop #2: (a) `firebase functions:secrets:set JOIN_TOKEN_HMAC_SECRET` per env [P0-A]; (b) Firebase Console App Check enforcement toggle for Firestore + Storage [P0-C]; (c) GitHub branch protection rule requiring `Codex review gate / verify-marker` [P0-Q]; (d) founder ratification of the DPDP grace = 30 days recommendation [P0-D]; (e) Phase 1 multi-tenant work (deep-link infra + customer FCM token registration + tenant onboarding tooling — see `C:\Users\alokt\.claude\plans\modular-shimmying-deer.md`).
 - Sonnet quota was hit earlier today; Opus fine. Pass `model: "opus"` to Agent dispatches when subagents fail with rate-limit.
 - Free-tier OSS items (CodeQL/Semgrep/gitleaks/Codex/axe/pa11y/Dependabot/SBOM) cost zero — split them from paid SaaS (Sentry/PostHog/GrowthBook) when triaging "agency floor absent". Mary's reframe.
 - User prefers upstream rigor over downstream firefighting; never propose shortcuts. Quality > speed.
