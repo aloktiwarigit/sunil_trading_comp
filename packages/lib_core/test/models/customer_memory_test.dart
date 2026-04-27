@@ -50,7 +50,7 @@ void main() {
     });
 
     test('PreferredOccasion enums serialize to domain names', () {
-      // Domain-grounded: shaadi, nayaGhar, dahej, puranaBadalne
+      // Domain-grounded: shaadi, nayaGhar, betiKaGhar, puranaBadalne
       // NOT: wedding, newHome, dowry, replacement
       final m = CustomerMemory(
         customerUid: 'test',
@@ -62,7 +62,7 @@ void main() {
       final occasions = json['preferredOccasions'] as List;
       expect(occasions, contains('shaadi'));
       expect(occasions, contains('nayaGhar'));
-      expect(occasions, contains('dahej'));
+      expect(occasions, contains('betiKaGhar'));
       expect(occasions, contains('puranaBadalne'));
       expect(occasions, contains('budget'));
       expect(occasions, contains('ladies'));

@@ -324,15 +324,15 @@ void main() {
     test('reorderSkus enforces finite cap', () async {
       await repo.upsert(
         build(
-          id: 'sl_dahej',
-          occasion: ShortlistOccasion.dahej,
+          id: 'sl_beti_ka_ghar',
+          occasion: ShortlistOccasion.betiKaGhar,
           skus: const <String>['sku_a'],
         ),
       );
 
       await expectLater(
         repo.reorderSkus(
-          'sl_dahej',
+          'sl_beti_ka_ghar',
           List.generate(7, (i) => 'sku_$i'),
         ),
         throwsA(

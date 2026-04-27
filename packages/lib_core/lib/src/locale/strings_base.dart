@@ -146,8 +146,8 @@ abstract class AppStrings {
   /// Shortlist title — replacement occasion.
   String get shortlistTitlePuranaBadlne;
 
-  /// Shortlist title — dowry occasion.
-  /// Not in UX Spec §5.5 explicit row but called out in PRD B1.4 AC #1.
+  /// Shortlist title — daughter's-new-home occasion (replaces former `dahej`
+  /// term per Maya's reframe). Called out in PRD B1.4 AC #1.
   String get shortlistTitleBetiKaGhar;
 
   /// Shortlist title — budget-friendly picks.

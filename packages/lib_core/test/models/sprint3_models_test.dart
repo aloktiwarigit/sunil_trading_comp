@@ -123,7 +123,7 @@ void main() {
         basePrice: 14000,
         negotiableDownTo: 12500,
         stockCount: 3,
-        occasionTags: const <String>['shaadi', 'dahej'],
+        occasionTags: const <String>['shaadi', 'beti_ka_ghar'],
         createdAt: DateTime.parse('2026-04-11T00:00:00Z'),
       );
 
@@ -237,7 +237,7 @@ void main() {
       const map = <ShortlistOccasion, String>{
         ShortlistOccasion.shaadi: 'shaadi',
         ShortlistOccasion.nayaGhar: 'naya_ghar',
-        ShortlistOccasion.dahej: 'dahej',
+        ShortlistOccasion.betiKaGhar: 'beti_ka_ghar',
         ShortlistOccasion.replacement: 'replacement',
         ShortlistOccasion.budget: 'budget',
         ShortlistOccasion.ladies: 'ladies',

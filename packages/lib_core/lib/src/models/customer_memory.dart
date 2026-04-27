@@ -19,12 +19,12 @@ part 'customer_memory.freezed.dart';
 part 'customer_memory.g.dart';
 
 /// Occasions that customers typically buy almirahs for.
-/// Domain-grounded: shaadi, naya_ghar, dahej, purana_badalne — NOT
+/// Domain-grounded: shaadi, naya_ghar, beti_ka_ghar, purana_badalne — NOT
 /// "wedding", "new_home", "dowry", "replacement".
 enum PreferredOccasion {
   shaadi,
   nayaGhar,
-  dahej,
+  betiKaGhar,
   puranaBadalne,
   budget,
   ladies,

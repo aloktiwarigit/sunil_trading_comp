@@ -1325,7 +1325,7 @@ class _MemorySummary extends StatelessWidget {
   static String _occasionLabel(PreferredOccasion o) => switch (o) {
         PreferredOccasion.shaadi => 'शादी',
         PreferredOccasion.nayaGhar => 'नया घर',
-        PreferredOccasion.dahej => 'बेटी का नया घर',
+        PreferredOccasion.betiKaGhar => 'बेटी का नया घर',
         PreferredOccasion.puranaBadalne => 'पुराना बदलने',
         PreferredOccasion.budget => 'बजट',
         PreferredOccasion.ladies => 'लेडीज',
