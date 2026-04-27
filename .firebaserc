@@ -3,13 +3,28 @@
     "default": "yugma-dukaan-dev",
     "dev": "yugma-dukaan-dev",
     "staging": "yugma-dukaan-staging",
-    "prod": "yugma-dukaan-prod"
+    "prod": "yugma-dukaan-prod",
+    "production": "yugma-dukaan-prod"
   },
   "targets": {
     "yugma-dukaan-dev": {
       "hosting": {
         "marketing": [
           "yugma-dukaan-dev"
+        ]
+      }
+    },
+    "yugma-dukaan-staging": {
+      "hosting": {
+        "marketing": [
+          "yugma-dukaan-staging"
+        ]
+      }
+    },
+    "yugma-dukaan-prod": {
+      "hosting": {
+        "marketing": [
+          "yugma-dukaan-prod"
         ]
       }
     }

@@ -1172,8 +1172,8 @@ This is unusually rigorous and is the strongest single discipline in the codebas
 | Alias | Project ID | Hosting target | Purpose |
 |---|---|---|---|
 | `default` / `dev` | `yugma-dukaan-dev` | `marketing` bound | Live development; flagship runs here today |
-| `staging` | `yugma-dukaan-staging` | **NOT bound — drift §15.1.F** | Pre-prod soak |
-| `prod` | `yugma-dukaan-prod` | **NOT bound — drift §15.1.F** | Production |
+| `staging` | `yugma-dukaan-staging` | `marketing` bound (resolved §15.1.F) | Pre-prod soak |
+| `prod` / `production` | `yugma-dukaan-prod` | `marketing` bound (resolved §15.1.F) | Production. Both aliases coexist — `deploy-production.yml` uses `production`; CLI users / the architecture doc historically said `prod`. |
 
 ### 10.2 CI pipelines (6 — README says 5, drift §15.3.F)
 
@@ -1386,7 +1386,7 @@ This is the doc's most important section. **Resolve P0 before any production use
 | **C** | **App Check not enforced server-side.** Comment in rules claims `firebase.json`-level enforcement; `firebase.json` has no such directive. Callables `joinDecisionCircle` and `generateWaMeLink` accept un-attested requests. | `firebase.json`, `functions/src/{join_decision_circle,generate_wa_me_link}.ts` | Add `enforceAppCheck: true` to onCall options. Enable App Check in Firebase Console for Firestore + Storage + Functions. |
 | **D** | **DPDP grace period: 24h in code vs 30 days in SAD/Five Truths.** Either spec or code is wrong; today the code wins because it deploys. If 30 days is correct, shopkeepers who deactivate today have data purged in 24h. | `functions/src/shop_deactivation_sweep.ts:31 GRACE_PERIOD_MS` | Decide canonical value with Alok. Update code OR update SAD. Add a project-level constant referenced from both. |
 | **E** | **DPDP bilingual FCM notification on deactivation NOT implemented.** Spec requires customer + shopkeeper get bilingual FCM on each lifecycle transition. `shop_deactivation_sweep.ts` has zero `messaging().send()` calls. | `functions/src/shop_deactivation_sweep.ts` | Implement: on `deactivating → purgeScheduled` and on `purgeScheduled → purged`, send bilingual (Devanagari + English) FCM to all customers with open Projects + the operator. |
-| **F** | **Hosting targets only bound on `dev`** — staging and prod deploys will fail at the hosting step until `targets` blocks are added under those aliases in `.firebaserc`. | `.firebaserc` | Add `targets: { yugma-dukaan-staging: { hosting: { marketing: ['yugma-dukaan-staging'] } }, yugma-dukaan-prod: ... }`. |
+| **F** | ✅ **RESOLVED** — hosting targets now bound for `yugma-dukaan-dev`, `-staging`, `-prod`. Adjacent fix: added `production` alias (`deploy-production.yml` references `--project production` which had no entry; `prod` retained for backwards compat). Note: `firebase hosting:sites:create yugma-dukaan-{staging,prod}` may still need to be run once per environment if the default hosting sites haven't been initialized — that's an ops step, see `docs/runbook/staging-setup.md`. | (resolved) | (resolved) |
 | **G** | ✅ **RESOLVED** — `dahej` removal completed: `PreferredOccasion.dahej` renamed to `betiKaGhar`; `project_detail_screen.dart` switch case updated; `customer_memory_test.dart`, `sprint3_models_test.dart`, `sprint3_repos_test.dart`, and `strings_test.dart` (4 broken files, not 3) all green; freezed/g.dart regenerated. Only residual reference is an intentional historical pointer in `strings_base.dart` shortlist-title comment. SAD-side enum drift remains Mary's patch. | (resolved) | (resolved) |
 | **H** | **SAD-prescribed runbooks missing** — no `kill_switch_response.md`, `multi_tenant_breach_response.md`, `phone_quota_breach_response.md`. Each corresponds to a deployed Cloud Function. P0 incidents have no playbook. | `docs/runbook/` | Author the three runbooks per SAD §3. |
 
