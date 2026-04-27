@@ -459,10 +459,9 @@ void main() {
           ),
         ),
       );
-
-      // Scroll down to find buttons
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
-      await tester.pump();
+      // Sticky-bottom buttons are in the widget tree regardless of scroll
+      // (v0.2.0 redesign — commit 3e6e2b0 — no longer uses CustomScrollView).
+      await tester.pumpAndSettle();
 
       expect(find.text('Add to my list'), findsOneWidget);
       expect(find.text('Talk to Sunil-bhaiya'), findsOneWidget);
@@ -530,10 +529,9 @@ void main() {
           ),
         ),
       );
-
-      // Scroll down to buttons
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
-      await tester.pump();
+      // Sticky-bottom buttons are visible at viewport bottom; no scroll needed
+      // (v0.2.0 redesign — commit 3e6e2b0 — no longer uses CustomScrollView).
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('Add to my list'));
       expect(addTapped, isTrue);
