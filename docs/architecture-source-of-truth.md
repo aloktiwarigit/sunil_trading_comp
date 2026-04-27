@@ -1220,7 +1220,9 @@ Staging + prod write SA JSON to `/tmp/sa-key.json` and `rm -f` it in `if: always
 
 ### 10.4 Codex review gate
 
-**Per agency CLAUDE.md, Codex CLI is the authoritative cross-model review gate.** Currently NOT wired in CI. No `.codex-review-passed` marker, no codex hook in any workflow. Drift §15.2.Q — wire in before any production user.
+**Per agency CLAUDE.md, Codex CLI is the authoritative cross-model review gate.** Wired in CI as `.github/workflows/codex-review-gate.yml` (resolved §15.2.Q). The workflow runs on every PR to `main` (no path filter), checks for the `.codex-review-passed` marker file, and verifies the marker was added or refreshed within this PR (anti-staleness — copying an old marker from `main` is caught). Contributors create the marker by running `codex review` (or invoking the `codex-review-gate` skill) locally before opening the PR.
+
+**Branch protection step (manual, in GitHub UI):** Settings → Branches → Branch protection rules for `main` → Require status checks to pass → add `Codex review gate / verify-marker`. Without that, the workflow runs but doesn't block merge.
 
 ---
 
@@ -1410,7 +1412,7 @@ This is the doc's most important section. **Resolve P0 before any production use
 | **N** | **5-device QA matrix is paper.** No Firebase Test Lab / Codemagic device matrix step. The Realme C21 / Redmi 9 / Tecno Spark 9T / Samsung M04 / Lava Blaze 2 5G verification is documentation-only. | Wire Firebase Test Lab job in `ci-flutter.yml` running widget tests across the 5 devices on every PR. |
 | **O** | **Elder Tier flag flips a bool but no `MediaQuery.textScaler` override exists.** `isElderTierProvider` consumed by some widgets for tap-target sizing; no actual font-scaling path. | Wire `MediaQuery(data: data.copyWith(textScaler: TextScaler.linear(1.4)))` at the `MaterialApp.builder` based on `isElderTierProvider`. |
 | **P** | **Marketing site loads Google Fonts CDN**, bypassing the subset build. Tier-3 3G target unmet on first visit; third-party request leaks IP without consent. | Self-host the subset woff2 outputs in `apps/marketing_site/public/fonts/`; use `@font-face` with `font-display: swap`; remove Google Fonts links. |
-| **Q** | **Codex review gate not wired in CI.** Agency CLAUDE.md mandates Codex as the authoritative cross-model review gate. | Add `codex-review` job to all PR workflows; require `.codex-review-passed` marker on green for merge. |
+| **Q** | ✅ **RESOLVED** (workflow side) — `.github/workflows/codex-review-gate.yml` checks for the `.codex-review-passed` marker on every PR and rejects stale markers (the marker must have been added or modified within the PR's commit range, not copied from main). **Branch protection step still required** (manual, in GitHub UI) to make the check truly blocking — captured in the staging-setup runbook. | (resolved) | (resolved + branch-protection step) |
 | **R** | **7 of 9 Cloud Functions have zero unit-test coverage.** Only `kill_switch.test.ts` and `trigger_marketing_rebuild.test.ts` exist. | Author tests for `sendUdhaarReminder`, `shopDeactivationSweep`, `phoneAuthQuotaMonitor`, `mediaCostMonitor`, `multiTenantAudit`, `joinDecisionCircle`, `generateWaMeLink`. Add Firebase emulator harness. |
 | **S** | **No coverage gate.** `package.json` Jest has no `coverageThreshold`; `ci-flutter.yml` has no `--coverage` flag. | Add 80% threshold per agency floor; wire `lcov.info` to a coverage badge (free Codecov OR CodSpeed). |
 | **T** | **Audit history collections grow unbounded.** `/system/*/history` has no TTL; at year-3 scale (~50–200 shops × daily writes × 365 × 3) ≈ 200k+ docs in `system/*/history`. | Add a `cleanupAuditHistory` scheduler CF that deletes records older than 365 days (or moves to GCS for cold storage). |

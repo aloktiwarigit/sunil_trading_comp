@@ -1,0 +1,83 @@
+# =============================================================================
+# codex-review-gate.yml — the authoritative cross-model review gate.
+#
+# Per agency CLAUDE.md, OpenAI Codex CLI is the only mandatory review layer
+# (Claude-only review skills are optional). Contributors run `codex review`
+# locally via the `codex-review-gate` skill, which writes the marker file
+# `.codex-review-passed` on success. This workflow enforces that the marker
+# exists on every PR — without it, the PR is rejected by the gate.
+#
+# To make this gate truly blocking, add this job to GitHub branch protection
+# for `main` (Settings → Branches → Branch protection rules → Require status
+# checks to pass before merging → "Codex review gate / verify-marker").
+#
+# Drift §15.2.Q resolved.
+# =============================================================================
+
+name: Codex review gate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify-marker:
+    name: Verify .codex-review-passed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify marker file exists at PR HEAD
+        run: |
+          if [ ! -f .codex-review-passed ]; then
+            echo "::error::This PR is missing the .codex-review-passed marker."
+            echo ""
+            echo "Per agency CLAUDE.md, every PR to main requires a Codex CLI"
+            echo "review pass. To create the marker:"
+            echo ""
+            echo "  1. Stage your changes (git add -A)"
+            echo "  2. Run \`codex review\` (or invoke the codex-review-gate skill)"
+            echo "  3. Commit the resulting .codex-review-passed file along with your changes"
+            echo ""
+            echo "Drift §15.2.Q — see docs/architecture-source-of-truth.md."
+            exit 1
+          fi
+          echo "::notice::.codex-review-passed marker is present."
+          echo ""
+          echo "Marker contents:"
+          cat .codex-review-passed
+          echo ""
+
+      - name: Verify marker was touched by this PR (anti-staleness)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # The marker must have been added/modified by one of the commits
+          # in this PR. Copying an old marker from main and not re-running
+          # Codex is caught here — the marker's last-modifying commit must
+          # lie strictly between BASE_SHA (exclusive) and HEAD_SHA (inclusive).
+          marker_sha=$(git log -1 --format=%H -- .codex-review-passed)
+          if [ -z "$marker_sha" ]; then
+            echo "::error::Could not resolve last-modifying commit for .codex-review-passed."
+            exit 1
+          fi
+          echo "Marker last touched by commit: $marker_sha"
+          echo "PR base: $BASE_SHA, PR head: $HEAD_SHA"
+
+          # Check if marker_sha is reachable from HEAD_SHA but not from BASE_SHA
+          # (i.e., it's part of the PR's new commits).
+          if ! git merge-base --is-ancestor "$marker_sha" "$HEAD_SHA"; then
+            echo "::error::Marker commit $marker_sha is not in PR head's history."
+            exit 1
+          fi
+          if git merge-base --is-ancestor "$marker_sha" "$BASE_SHA"; then
+            echo "::error::Marker is stale — it was committed before this PR's base."
+            echo "Re-run \`codex review\` and commit the refreshed marker."
+            exit 1
+          fi
+          echo "::notice::Marker was refreshed within this PR."
