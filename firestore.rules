@@ -389,8 +389,20 @@ service cloud.firestore {
         // affectedKeys().hasOnly() to prevent REST API bypass of Dart
         // typed-patch classes. Without this, a malicious client could set
         // totalAmount: 0 via the Firebase REST API.
+        //
+        // §15.1.B Triple Zero invariant — the close-state predicate.
+        // Whenever a project transitions into (or remains in) `closed`,
+        // amountReceivedByShop MUST equal totalAmount. The Dart typed
+        // patches enforce this client-side; this rule blocks REST clients
+        // that bypass them. Earlier states (draft, negotiating) are
+        // allowed to have the values diverge transiently.
         allow update: if isSignedIn()
                       && shopIsWritable(shopId)
+                      && (
+                        request.resource.data.state != 'closed'
+                        || request.resource.data.amountReceivedByShop
+                             == request.resource.data.totalAmount
+                      )
                       && (
                         // --- Customer updates ---
                         // Customer can update ONLY customer-partition fields.
