@@ -1319,10 +1319,13 @@ Single Firebase Secret Manager-bound credential: `GITHUB_PAT`. All GitHub Action
 | Runbook | Covers |
 |---|---|
 | `font-subset-build.md` | Devanagari font subsetting build process (fonttools / brotli / zopfli prereqs + budget mapping) |
-| `staging-setup.md` | Staging environment setup (Blaze upgrade, rule deploy, custom claims) |
+| `staging-setup.md` | Staging environment setup (Blaze upgrade, rule deploy, custom claims, App Check Console toggle, Codex branch protection) |
 | `hindi_design_capacity_verification.md` | Constraint 15 / I6.11 Sprint 0 gate |
+| `kill_switch_response.md` | Incident response when `killSwitchOnBudgetAlert` fires (P0-H, resolved §15.1.H) |
+| `multi_tenant_breach_response.md` | Incident response for cross-tenant data leaks (P0-H, resolved §15.1.H) |
+| `phone_quota_breach_response.md` | Incident response for phone-auth SMS quota events (P0-H, resolved §15.1.H) |
 
-**SAD §3 prescribed but missing**: `kill_switch_response.md`, `multi_tenant_breach_response.md`, `phone_quota_breach_response.md`. Each corresponds to a deployed Cloud Function. **A P0 incident on any of these has no playbook today** — drift §15.1.H.
+All P0-blocking incident playbooks are now in place.
 
 ### 13.2 Alerting
 
@@ -1390,7 +1393,7 @@ This is the doc's most important section. **Resolve P0 before any production use
 | **E** | **DPDP bilingual FCM notification on deactivation NOT implemented.** Spec requires customer + shopkeeper get bilingual FCM on each lifecycle transition. `shop_deactivation_sweep.ts` has zero `messaging().send()` calls. | `functions/src/shop_deactivation_sweep.ts` | Implement: on `deactivating → purgeScheduled` and on `purgeScheduled → purged`, send bilingual (Devanagari + English) FCM to all customers with open Projects + the operator. |
 | **F** | ✅ **RESOLVED** — hosting targets now bound for `yugma-dukaan-dev`, `-staging`, `-prod`. Adjacent fix: added `production` alias (`deploy-production.yml` references `--project production` which had no entry; `prod` retained for backwards compat). Note: `firebase hosting:sites:create yugma-dukaan-{staging,prod}` may still need to be run once per environment if the default hosting sites haven't been initialized — that's an ops step, see `docs/runbook/staging-setup.md`. | (resolved) | (resolved) |
 | **G** | ✅ **RESOLVED** — `dahej` removal completed: `PreferredOccasion.dahej` renamed to `betiKaGhar`; `project_detail_screen.dart` switch case updated; `customer_memory_test.dart`, `sprint3_models_test.dart`, `sprint3_repos_test.dart`, and `strings_test.dart` (4 broken files, not 3) all green; freezed/g.dart regenerated. Only residual reference is an intentional historical pointer in `strings_base.dart` shortlist-title comment. SAD-side enum drift remains Mary's patch. | (resolved) | (resolved) |
-| **H** | **SAD-prescribed runbooks missing** — no `kill_switch_response.md`, `multi_tenant_breach_response.md`, `phone_quota_breach_response.md`. Each corresponds to a deployed Cloud Function. P0 incidents have no playbook. | `docs/runbook/` | Author the three runbooks per SAD §3. |
+| **H** | ✅ **RESOLVED** — all three SAD-prescribed runbooks authored: `kill_switch_response.md`, `multi_tenant_breach_response.md`, `phone_quota_breach_response.md`. Each follows a consistent structure (trigger / severity / containment / diagnosis / resolution / communication / post-mortem) and cross-links to the others + the relevant Cloud Function source. Bonus: `staging-setup.md` updated with the App Check Console toggle (P0-C ops step) and Codex branch protection step (P0-Q ops step). | (resolved) | (resolved) |
 
 ### 15.2 P1 — correctness / contract / floor
 

@@ -83,7 +83,7 @@ firebase firestore:rules --project yugma-dukaan-staging
 # Should print the current firestore.rules version with Sprint 1.4 + 2.x fixes
 ```
 
-**Known pre-existing drift (flagged Phase 1.2):** `firestore.rules` lines 50-52 use `'shopkeeper' / 'son' / 'munshi'` for `callerRole()` whereas SAD §5 + PRD canonical use `'bhaiya' / 'beta' / 'munshi'`. This drift will propagate to staging on deploy. Fix is queued for Sprint 4 P2.4 when chat rules extend to cover the `operators` collection with role-specific checks.
+**Drift §15.2.C — RESOLVED:** the rule layer (lines 48-52) now uses canonical `'bhaiya' / 'beta' / 'munshi'` to match the Dart enum. This was confirmed during P0-B; the test seed + helper were the stale piece, and that has been corrected. The remaining piece (drift §15.2.L) is the `signupNewOperator` Cloud Function — when it lands, it must issue custom claims with these canonical role names, not the old `'shopkeeper'/'son'`.
 
 ---
 
@@ -120,6 +120,44 @@ When ready:
    ```bash
    firebase deploy --only storage --project yugma-dukaan-staging
    ```
+
+---
+
+## Step 5.5 — App Check enforcement (Console toggle, P0-C ops step)
+
+The customer + shopkeeper apps already activate App Check at boot (Play Integrity / DeviceCheck in release; debug provider in debug). The two callable Cloud Functions ship with `enforceAppCheck: true` in their onCall options. **For Firestore + Storage**, App Check enforcement must be toggled in the Firebase Console — there is no firebase.json directive for this.
+
+For each environment (`yugma-dukaan-dev`, `yugma-dukaan-staging`, `yugma-dukaan-prod`):
+
+1. Firebase Console → **App Check** → **Apps** tab.
+2. For each registered app (customer_app Android, customer_app iOS, shopkeeper_app Android, shopkeeper_app iOS), confirm the attestation provider is configured (Play Integrity for Android release, DeviceCheck for iOS — already done as part of the SDK init).
+3. Switch to the **APIs** tab.
+4. For **Cloud Firestore**: change "Enforcement" from `Unenforced` → `Enforced`.
+5. For **Cloud Storage for Firebase**: same toggle.
+6. (Cloud Functions: enforcement is per-function via `enforceAppCheck: true` — already in code, no Console step.)
+
+**Do this AFTER the apps have been released for at least one full release cycle.** Switching to Enforced before all clients ship App Check tokens will lock out legitimate users.
+
+Drift §15.1.C is fully resolved only after this Console toggle lands per environment.
+
+---
+
+## Step 5.6 — Codex review gate branch protection (P0-Q ops step)
+
+`.github/workflows/codex-review-gate.yml` exists and runs on every PR — but for it to actually block merges, the GitHub branch protection rule needs to require it.
+
+For the `main` branch:
+
+1. GitHub repo → **Settings** → **Branches**.
+2. Add or edit the protection rule for `main`.
+3. Tick **"Require status checks to pass before merging"**.
+4. In the search box, look up `Codex review gate / verify-marker` and add it to the required checks list.
+5. (Recommended also) tick **"Require branches to be up to date before merging"** so the marker check sees the merge commit's diff, not stale base.
+6. Save.
+
+Now any PR without a fresh `.codex-review-passed` marker (added or refreshed within the PR's commit range) cannot be merged. Drift §15.2.Q is fully resolved only after this branch-protection step lands.
+
+Repeat the same for any other long-lived branches (none today).
 
 ---
 
