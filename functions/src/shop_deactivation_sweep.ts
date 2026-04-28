@@ -265,6 +265,15 @@ export const shopDeactivationSweep = onSchedule(
             await batch.commit();
           }
 
+          // §15.1.E — collect FCM tokens BEFORE freezing ledgers.
+          // collectCustomerFcmTokens(openOnly=true) filters closedAt==null.
+          // If tokens were collected after the freeze, all just-closed
+          // ledgers would be excluded and customers would receive nothing
+          // (Codex P2 finding). Capture tokens while they're still open.
+          const brandName = (data.brandName as string | undefined) ?? 'Yugma Dukaan';
+          const preFreezeCustomerTokens = await collectCustomerFcmTokens(db, shopId, true);
+          const preFreezeOperatorTokens = await collectOperatorFcmTokens(db, shopId);
+
           // Freeze open udhaar ledgers.
           const ledgersSnap = await db
             .collection('shops')
@@ -305,22 +314,17 @@ export const shopDeactivationSweep = onSchedule(
           transitioned++;
 
           // §15.1.E — bilingual FCM after the transition is committed.
-          // Note that on the FCM side this is best-effort: customer
-          // tokens currently only land on udhaar ledger docs (drift
-          // MT-2 / §15.2.L), so customers without an open ledger
-          // receive nothing today. Operator tokens require shopkeeper_app
-          // to register them — also pending MT-2.
-          const brandName = (data.brandName as string | undefined) ?? 'Yugma Dukaan';
+          // Tokens were collected BEFORE the ledger freeze (above) so
+          // open-ledger customers are included. Best-effort: tokens only
+          // land on udhaar ledger docs today (drift MT-2 / §15.2.L).
           const message = deactivatingToPurgeScheduledMessage(brandName);
-          const customerTokens = await collectCustomerFcmTokens(db, shopId, true);
-          const operatorTokens = await collectOperatorFcmTokens(db, shopId);
           const sent = await sendBilingualFcm(
-            [...customerTokens, ...operatorTokens],
+            [...preFreezeCustomerTokens, ...preFreezeOperatorTokens],
             message,
             { shopId, transition: 'deactivating_to_purge_scheduled' },
           );
           notificationsSent += sent;
-          if (sent === 0 && customerTokens.length + operatorTokens.length === 0) {
+          if (sent === 0 && preFreezeCustomerTokens.length + preFreezeOperatorTokens.length === 0) {
             logger.info(
               'No FCM tokens available for shop deactivation notification — ' +
                 'skipped silently (drift MT-2 customer-side registration pending)',

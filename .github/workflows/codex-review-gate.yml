@@ -29,6 +29,11 @@ jobs:
       - name: Checkout PR head
         uses: actions/checkout@v4
         with:
+          # Explicitly check out the PR head commit (not the synthetic merge ref
+          # that pull_request events produce by default). Without this,
+          # `git rev-parse HEAD` returns the merge-commit OID and the
+          # marker-is-tip check always fails even for correctly reviewed PRs.
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Verify marker file exists at PR HEAD
