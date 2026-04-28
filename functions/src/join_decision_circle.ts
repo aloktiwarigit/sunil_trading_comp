@@ -35,13 +35,13 @@ interface JoinDecisionCircleRequest {
   destUid: string;
   shopId: string;
   /**
-   * Required (§15.1.A / ADR-009 v1.0.3). HMAC-SHA256 token minted by
-   * `generateWaMeLink` over `{shopId, projectId, originalCustomerUid,
-   * expiresAt}`. The function rejects calls without a valid token.
-   * The token's `originalCustomerUid` must match `sourceUid` and its
-   * `shopId` must match the request's `shopId` (defense in depth).
+   * Optional (§15.1.A / ADR-009 v1.0.3 + Codex P1-1 backwards-compat).
+   * HMAC-SHA256 token minted by `generateWaMeLink`. When present and valid,
+   * the token-verified path runs (existing behavior). When absent, falls back
+   * to legacy SEC001 caller-uid-or-role check with a structured warning.
+   * Will be required once `joinDecisionCircle_enabled` ships in Sprint 5-6.
    */
-  joinToken: string;
+  joinToken?: string;
 }
 
 export const joinDecisionCircle = onCall(
@@ -83,55 +83,62 @@ export const joinDecisionCircle = onCall(
         'sourceUid and destUid must be different.',
       );
     }
-    if (!data.joinToken || typeof data.joinToken !== 'string') {
-      // §15.1.A — token is required. Calls without one are forgery-able
-      // and were the threat model behind the drift backlog entry.
-      throw new HttpsError(
-        'invalid-argument',
-        'joinToken is required (§15.1.A / ADR-009).',
-      );
-    }
-
-    const { sourceUid, destUid, shopId, joinToken } = data;
+    const { sourceUid, destUid, shopId } = data;
     const callerUid = request.auth.uid;
 
-    // §15.1.A — HMAC token verification + payload binding check. The
-    // verifier proves the token is unforged + unexpired; the binding
-    // checks that immediately follow prove the token was minted FOR
-    // THIS request (matching shopId + originalCustomerUid).
-    const verifyResult = verifyJoinToken(joinToken);
-    if (!verifyResult.ok) {
-      logger.warn('joinDecisionCircle: token verification failed', {
-        callerUid,
-        shopId,
-        sourceUid,
-        destUid,
-        error: verifyResult.error,
-      });
-      throw new HttpsError(
-        'permission-denied',
-        `Invalid join token (${verifyResult.error}).`,
-      );
-    }
-    const tokenPayload = verifyResult.payload!;
-    if (tokenPayload.shopId !== shopId) {
-      throw new HttpsError(
-        'permission-denied',
-        'Token shopId does not match request shopId.',
-      );
-    }
-    if (tokenPayload.originalCustomerUid !== sourceUid) {
-      throw new HttpsError(
-        'permission-denied',
-        'Token originalCustomerUid does not match request sourceUid.',
+    // Normalise joinToken — empty string counts as absent (Codex P1-1).
+    const joinToken: string | undefined =
+      typeof data.joinToken === 'string' && data.joinToken
+        ? data.joinToken
+        : undefined;
+
+    if (joinToken) {
+      // §15.1.A — Token-verified path. HMAC token verification + payload
+      // binding check proves the token is unforged + unexpired, and that
+      // it was minted FOR this specific request (matching shopId +
+      // originalCustomerUid).
+      const verifyResult = verifyJoinToken(joinToken);
+      if (!verifyResult.ok) {
+        logger.warn('joinDecisionCircle: token verification failed', {
+          callerUid,
+          shopId,
+          sourceUid,
+          destUid,
+          error: verifyResult.error,
+        });
+        throw new HttpsError(
+          'permission-denied',
+          `Invalid join token (${verifyResult.error}).`,
+        );
+      }
+      const tokenPayload = verifyResult.payload!;
+      if (tokenPayload.shopId !== shopId) {
+        throw new HttpsError(
+          'permission-denied',
+          'Token shopId does not match request shopId.',
+        );
+      }
+      if (tokenPayload.originalCustomerUid !== sourceUid) {
+        throw new HttpsError(
+          'permission-denied',
+          'Token originalCustomerUid does not match request sourceUid.',
+        );
+      }
+    } else {
+      // Legacy fallback (Codex P1-1 backwards-compat) — joinToken absent.
+      // HttpsCallableStateMigrationCaller calls without a token; this path
+      // keeps mergers working until Sprint 5-6 when the flag flips on and
+      // the client starts minting tokens. SEC001 + SEC002 guards still apply.
+      logger.warn(
+        'joinDecisionCircle: joinToken absent — falling back to legacy auth. ' +
+          'Will require token when join_decision_circle_enabled flag ships in Sprint 5-6.',
+        { callerUid, shopId, sourceUid, destUid },
       );
     }
 
-    // SEC002 fix: validate caller's shopId token matches the provided shopId.
-    // Without this, a customer from Shop A could manipulate Shop B's data.
-    // Defense in depth — the HMAC token already binds shopId, but the
-    // session-claim check ensures the CALLER's session is also bound to
-    // this shop.
+    // SEC002: caller's shop claim must match the request shopId. Applies in
+    // both token and legacy paths — ensures the caller's session is bound to
+    // this shop even when the HMAC token isn't present to enforce it.
     const callerShopId = request.auth.token?.shopId;
     if (callerShopId !== shopId) {
       throw new HttpsError(
@@ -140,24 +147,29 @@ export const joinDecisionCircle = onCall(
       );
     }
 
-    // §15.1.A — with a verified token, the caller is authorized as the
-    // joiner (destUid). A valid token means the original customer
-    // explicitly minted it for this Decision Circle join, so the prior
-    // SEC001 caller-must-be-source-or-operator check is now subsumed by
-    // the token's signature gate. Operators retain the right to merge
-    // (e.g., shopkeeper resolving a duplicate-account situation).
     const callerRole = request.auth.token?.role;
     const isOperator =
       callerRole === 'bhaiya' ||
       callerRole === 'beta' ||
       callerRole === 'munshi';
-    // The caller must either BE the destUid (i.e., the joiner is acting
-    // on their own UID) or an operator performing an admin merge.
-    if (callerUid !== destUid && !isOperator) {
-      throw new HttpsError(
-        'permission-denied',
-        'Caller must be destUid (the joiner) or an operator.',
-      );
+
+    if (joinToken) {
+      // Token path: caller must be destUid (the joiner) or an operator.
+      // The verified token is the primary authorization; this is defense in depth.
+      if (callerUid !== destUid && !isOperator) {
+        throw new HttpsError(
+          'permission-denied',
+          'Caller must be destUid (the joiner) or an operator.',
+        );
+      }
+    } else {
+      // Legacy path (SEC001): caller must be sourceUid or an operator.
+      if (callerUid !== sourceUid && !isOperator) {
+        throw new HttpsError(
+          'permission-denied',
+          'Caller must be sourceUid or an operator (legacy auth — joinToken absent).',
+        );
+      }
     }
 
     const db = admin.firestore();
