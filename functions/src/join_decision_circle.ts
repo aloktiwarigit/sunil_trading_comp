@@ -194,32 +194,43 @@ export const joinDecisionCircle = onCall(
         }
 
         // ── 1. Migrate Decision Circle membership ──
-        const sourceMemberRef = shopRef
-          .collection('decisionCircle')
-          .doc(sourceUid);
-        const destMemberRef = shopRef
-          .collection('decisionCircle')
-          .doc(destUid);
+        // Token path (wa.me DC join): this is a PARTICIPANT ADD, not a full
+        // account merger. sourceUid is NOT being deprecated — they are still a
+        // valid customer with their own DC memberships and projects. Deleting
+        // sourceMemberRef unconditionally would orphan other projects in the
+        // same shop that weren't part of the shared link. Skip DC migration
+        // entirely; the project + chatThread participant updates in Phases 2
+        // and 3 are sufficient for the wa.me join use case.
+        //
+        // Legacy path (phone collision, no token): full account merge —
+        // sourceUid is being deprecated. Move DC membership to destUid.
+        if (!tokenPayload) {
+          const sourceMemberRef = shopRef
+            .collection('decisionCircle')
+            .doc(sourceUid);
+          const destMemberRef = shopRef
+            .collection('decisionCircle')
+            .doc(destUid);
 
-        const sourceMemberSnap = await txn.get(sourceMemberRef);
-        if (sourceMemberSnap.exists) {
-          const memberData = sourceMemberSnap.data() ?? {};
-          // Merge into dest, preserving any existing dest membership.
-          const destMemberSnap = await txn.get(destMemberRef);
-          const existingDestData = destMemberSnap.exists
-            ? destMemberSnap.data() ?? {}
-            : {};
+          const sourceMemberSnap = await txn.get(sourceMemberRef);
+          if (sourceMemberSnap.exists) {
+            const memberData = sourceMemberSnap.data() ?? {};
+            const destMemberSnap = await txn.get(destMemberRef);
+            const existingDestData = destMemberSnap.exists
+              ? destMemberSnap.data() ?? {}
+              : {};
 
-          txn.set(destMemberRef, {
-            ...existingDestData,
-            ...memberData,
-            uid: destUid,
-            mergedFrom: sourceUid,
-            mergedAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedByUid: SYSTEM_UID,
-          });
+            txn.set(destMemberRef, {
+              ...existingDestData,
+              ...memberData,
+              uid: destUid,
+              mergedFrom: sourceUid,
+              mergedAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedByUid: SYSTEM_UID,
+            });
 
-          txn.delete(sourceMemberRef);
+            txn.delete(sourceMemberRef);
+          }
         }
       });
 

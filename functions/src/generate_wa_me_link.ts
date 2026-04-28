@@ -133,8 +133,11 @@ export const generateWaMeLink = onCall(
         projectId,
         originalCustomerUid: request.auth.uid,
       });
+      // DNS labels must not contain underscores — replace with hyphens so
+      // synthetic IDs like shop_0 / shop_1 produce valid hostnames.
+      const dnsShopId = shopId.replace(/_/g, '-');
       const joinUrl =
-        JOIN_DEEP_LINK_HOST_TEMPLATE.replace('{shopId}', shopId) +
+        JOIN_DEEP_LINK_HOST_TEMPLATE.replace('{shopId}', dnsShopId) +
         `?token=${encodeURIComponent(joinToken)}`;
       messageText = `${messageText}\n\n${joinUrl}`;
     }
