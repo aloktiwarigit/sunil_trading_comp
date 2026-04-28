@@ -80,4 +80,8 @@ jobs:
             echo "Re-run \`codex review\` and commit the refreshed marker."
             exit 1
           fi
+          if [ "$marker_sha" != "$(git rev-parse HEAD)" ]; then
+            echo "::error::Marker is not the tip commit. Run \`codex review\` again and commit the refreshed marker as the final commit."
+            exit 1
+          fi
           echo "::notice::Marker was refreshed within this PR."

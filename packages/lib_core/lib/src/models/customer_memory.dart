@@ -24,13 +24,33 @@ part 'customer_memory.g.dart';
 enum PreferredOccasion {
   shaadi,
   nayaGhar,
-  // Stored as 'dahej' in Firestore docs written before the rename.
-  @JsonValue('dahej')
+  @JsonValue('beti_ka_ghar')
   betiKaGhar,
   puranaBadalne,
   budget,
   ladies,
   other,
+}
+
+extension PreferredOccasionWireValue on PreferredOccasion {
+  String get wireValue {
+    switch (this) {
+      case PreferredOccasion.shaadi:
+        return 'shaadi';
+      case PreferredOccasion.nayaGhar:
+        return 'nayaGhar';
+      case PreferredOccasion.betiKaGhar:
+        return 'beti_ka_ghar';
+      case PreferredOccasion.puranaBadalne:
+        return 'puranaBadalne';
+      case PreferredOccasion.budget:
+        return 'budget';
+      case PreferredOccasion.ladies:
+        return 'ladies';
+      case PreferredOccasion.other:
+        return 'other';
+    }
+  }
 }
 
 @freezed

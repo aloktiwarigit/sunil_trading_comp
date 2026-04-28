@@ -116,7 +116,7 @@ class CustomerMemoryRepo {
     }
     if (preferredOccasions != null) {
       data['preferredOccasions'] =
-          preferredOccasions.map((e) => e.name).toList();
+          preferredOccasions.map((e) => e.wireValue).toList();
     }
     // CR #2: always include price fields — use FieldValue.delete() to clear
     // when null, so previously-set values don't persist after the operator

@@ -50,9 +50,8 @@ void main() {
     });
 
     test('PreferredOccasion enums serialize to domain names', () {
-      // Domain-grounded: shaadi, nayaGhar, betiKaGhar (wire: 'dahej'), puranaBadalne
-      // NOT: wedding, newHome, dowry, replacement
-      // betiKaGhar writes as 'dahej' for Firestore backward compat (@JsonValue).
+      // Domain-grounded: shaadi, nayaGhar, beti_ka_ghar, puranaBadalne
+      // NOT: wedding, newHome, dowry, replacement, dahej (forbidden)
       final m = CustomerMemory(
         customerUid: 'test',
         shopId: 'test-shop',
@@ -63,25 +62,15 @@ void main() {
       final occasions = json['preferredOccasions'] as List;
       expect(occasions, contains('shaadi'));
       expect(occasions, contains('nayaGhar'));
-      expect(occasions, contains('dahej')); // wire key for betiKaGhar (legacy compat)
+      expect(occasions, contains('beti_ka_ghar'));
       expect(occasions, contains('puranaBadalne'));
       expect(occasions, contains('budget'));
       expect(occasions, contains('ladies'));
       expect(occasions, contains('other'));
-      // No forbidden generic terms
+      // Forbidden words must never appear on the wire
+      expect(occasions, isNot(contains('dahej')));
       expect(occasions, isNot(contains('wedding')));
       expect(occasions, isNot(contains('newHome')));
-    });
-
-    test('legacy dahej wire value deserializes to betiKaGhar', () {
-      // Firestore docs written before the rename carry 'dahej' as the wire value.
-      final json = <String, dynamic>{
-        'customerUid': 'cust_legacy',
-        'shopId': 'sunil-trading-company',
-        'preferredOccasions': ['dahej'],
-      };
-      final m = CustomerMemory.fromJson(json);
-      expect(m.preferredOccasions, contains(PreferredOccasion.betiKaGhar));
     });
 
     test('hasContent is false for default empty memory', () {
