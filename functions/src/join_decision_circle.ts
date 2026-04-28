@@ -262,49 +262,57 @@ export const joinDecisionCircle = onCall(
       }
 
       // ── 3. Update ChatThread.participantUids ──
-      // Codex P1-2: when a token is present, scope to the single thread
-      // whose threadId equals the token's projectId (architecture §6.1 —
-      // chatThread doc ID == project doc ID).
-      let threadsQuery: admin.firestore.Query = shopRef
-        .collection('chatThreads')
-        .where('participantUids', 'array-contains', sourceUid);
+      // Codex P1-2: when a token is present, the thread to update is the one
+      // whose threadId == tokenPayload.projectId. Since threadId == projectId
+      // (architecture §6.1 — chatThread document ID == project document ID),
+      // we fetch it directly by doc ID — no compound query, no index needed.
+      // Legacy path (no token) still queries by participantUids array-contains.
+      const updateThread = async (
+        threadRef: admin.firestore.DocumentReference,
+        threadData: admin.firestore.DocumentData,
+      ): Promise<void> => {
+        const currentParticipants: string[] = threadData.participantUids ?? [];
+        const newParticipants = currentParticipants
+          .filter((uid: string) => uid !== sourceUid)
+          .concat(destUid);
+        const uniqueParticipants = [...new Set(newParticipants)];
+        const batch = db.batch();
+        batch.update(threadRef, {
+          participantUids: uniqueParticipants,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedByUid: SYSTEM_UID,
+        });
+        await batch.commit();
+      };
+
+      let threadsUpdated = 0;
       if (tokenPayload) {
-        threadsQuery = threadsQuery.where(
-          'threadId',
-          '==',
-          tokenPayload.projectId,
-        );
-      }
-      const threadsSnap = await threadsQuery.get();
-
-      if (!threadsSnap.empty) {
-        const chunks: admin.firestore.QueryDocumentSnapshot[][] = [];
-        for (let i = 0; i < threadsSnap.docs.length; i += BATCH_SIZE) {
-          chunks.push(threadsSnap.docs.slice(i, i + BATCH_SIZE));
+        // Token path: direct fetch by projectId (no index required).
+        const threadSnap = await shopRef
+          .collection('chatThreads')
+          .doc(tokenPayload.projectId)
+          .get();
+        if (threadSnap.exists) {
+          await updateThread(threadSnap.ref, threadSnap.data()!);
+          threadsUpdated = 1;
         }
-
-        for (const chunk of chunks) {
-          const batch = db.batch();
-          for (const threadDoc of chunk) {
-            // SEC003 fix: read current participants, compute new array,
-            // write once. Avoids the arrayRemove+arrayUnion double-update
-            // race within a single batch.
-            const currentData = threadDoc.data();
-            const currentParticipants: string[] =
-              currentData.participantUids ?? [];
-            const newParticipants = currentParticipants
-              .filter((uid: string) => uid !== sourceUid)
-              .concat(destUid);
-            // Deduplicate in case destUid was already a participant.
-            const uniqueParticipants = [...new Set(newParticipants)];
-
-            batch.update(threadDoc.ref, {
-              participantUids: uniqueParticipants,
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-              updatedByUid: SYSTEM_UID,
-            });
+      } else {
+        // Legacy path: query by participantUids.
+        const threadsSnap = await shopRef
+          .collection('chatThreads')
+          .where('participantUids', 'array-contains', sourceUid)
+          .get();
+        if (!threadsSnap.empty) {
+          threadsUpdated = threadsSnap.size;
+          const chunks: admin.firestore.QueryDocumentSnapshot[][] = [];
+          for (let i = 0; i < threadsSnap.docs.length; i += BATCH_SIZE) {
+            chunks.push(threadsSnap.docs.slice(i, i + BATCH_SIZE));
           }
-          await batch.commit();
+          for (const chunk of chunks) {
+            for (const threadDoc of chunk) {
+              await updateThread(threadDoc.ref, threadDoc.data());
+            }
+          }
         }
       }
 
@@ -321,7 +329,7 @@ export const joinDecisionCircle = onCall(
             shopId,
             callerUid,
             projectsReassigned: projectsSnap.size,
-            threadsUpdated: threadsSnap.size,
+            threadsUpdated: threadsUpdated,
             executedByUid: SYSTEM_UID,
           });
       } catch (err) {
@@ -335,7 +343,7 @@ export const joinDecisionCircle = onCall(
         destUid,
         shopId,
         projectsReassigned: projectsSnap.size,
-        threadsUpdated: threadsSnap.size,
+        threadsUpdated: threadsUpdated,
       });
 
       return { success: true };

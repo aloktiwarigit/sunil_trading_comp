@@ -76,10 +76,15 @@ const mockShopRef: any = {
       return { doc: (_uid: string) => ({ _memberRef: true }) };
     }
     if (sub === 'projects' || sub === 'chatThreads') {
-      // Support chained .where().where() when a join token is present (Codex P1-2).
+      // Support both the legacy where().get() path and the token path
+      // doc(id).get() (Codex P1-2 — direct fetch avoids composite index).
       const emptySnap = { empty: true, docs: [], size: 0 };
+      const emptyDocSnap = { exists: false };
       const q: any = { where: () => q, get: async () => emptySnap };
-      return { where: () => q };
+      return {
+        where: () => q,
+        doc: (_id: string) => ({ get: async () => emptyDocSnap, ref: {} }),
+      };
     }
     return {};
   },
