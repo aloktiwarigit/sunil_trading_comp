@@ -75,19 +75,11 @@ const mockShopRef: any = {
     if (sub === 'decisionCircle') {
       return { doc: (_uid: string) => ({ _memberRef: true }) };
     }
-    if (sub === 'projects') {
-      return {
-        where: () => ({
-          get: async () => ({ empty: true, docs: [], size: 0 }),
-        }),
-      };
-    }
-    if (sub === 'chatThreads') {
-      return {
-        where: () => ({
-          get: async () => ({ empty: true, docs: [], size: 0 }),
-        }),
-      };
+    if (sub === 'projects' || sub === 'chatThreads') {
+      // Support chained .where().where() when a join token is present (Codex P1-2).
+      const emptySnap = { empty: true, docs: [], size: 0 };
+      const q: any = { where: () => q, get: async () => emptySnap };
+      return { where: () => q };
     }
     return {};
   },

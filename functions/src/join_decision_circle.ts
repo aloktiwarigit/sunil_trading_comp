@@ -19,7 +19,7 @@ import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions/v2';
 
-import { verifyJoinToken } from './lib/hmac_join_token';
+import { verifyJoinToken, JoinTokenPayload } from './lib/hmac_join_token';
 
 /// Audit trail constants.
 const AUDIT_COLLECTION = 'system';
@@ -92,6 +92,9 @@ export const joinDecisionCircle = onCall(
         ? data.joinToken
         : undefined;
 
+    // Hoisted so Phases 2 + 3 can scope queries to the token's projectId (Codex P1-2).
+    let tokenPayload: JoinTokenPayload | undefined;
+
     if (joinToken) {
       // §15.1.A — Token-verified path. HMAC token verification + payload
       // binding check proves the token is unforged + unexpired, and that
@@ -111,7 +114,7 @@ export const joinDecisionCircle = onCall(
           `Invalid join token (${verifyResult.error}).`,
         );
       }
-      const tokenPayload = verifyResult.payload!;
+      tokenPayload = verifyResult.payload!;
       if (tokenPayload.shopId !== shopId) {
         throw new HttpsError(
           'permission-denied',
@@ -224,10 +227,19 @@ export const joinDecisionCircle = onCall(
       // SEC003 fix: use sequential batches (not parallel) and merge
       // arrayRemove + arrayUnion into a single update per document to
       // prevent partial migration / overwrite race.
-      const projectsSnap = await shopRef
+      // Codex P1-2: when a token is present, scope to the single project the
+      // wa.me link was minted for — prevents cross-project migration.
+      let projectsQuery: admin.firestore.Query = shopRef
         .collection('projects')
-        .where('customerUid', '==', sourceUid)
-        .get();
+        .where('customerUid', '==', sourceUid);
+      if (tokenPayload) {
+        projectsQuery = projectsQuery.where(
+          'projectId',
+          '==',
+          tokenPayload.projectId,
+        );
+      }
+      const projectsSnap = await projectsQuery.get();
 
       if (!projectsSnap.empty) {
         const chunks: admin.firestore.QueryDocumentSnapshot[][] = [];
@@ -250,10 +262,20 @@ export const joinDecisionCircle = onCall(
       }
 
       // ── 3. Update ChatThread.participantUids ──
-      const threadsSnap = await shopRef
+      // Codex P1-2: when a token is present, scope to the single thread
+      // whose threadId equals the token's projectId (architecture §6.1 —
+      // chatThread doc ID == project doc ID).
+      let threadsQuery: admin.firestore.Query = shopRef
         .collection('chatThreads')
-        .where('participantUids', 'array-contains', sourceUid)
-        .get();
+        .where('participantUids', 'array-contains', sourceUid);
+      if (tokenPayload) {
+        threadsQuery = threadsQuery.where(
+          'threadId',
+          '==',
+          tokenPayload.projectId,
+        );
+      }
+      const threadsSnap = await threadsQuery.get();
 
       if (!threadsSnap.empty) {
         const chunks: admin.firestore.QueryDocumentSnapshot[][] = [];
