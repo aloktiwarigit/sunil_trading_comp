@@ -24,6 +24,8 @@ part 'customer_memory.g.dart';
 enum PreferredOccasion {
   shaadi,
   nayaGhar,
+  // Stored as 'dahej' in Firestore docs written before the rename.
+  @JsonValue('dahej')
   betiKaGhar,
   puranaBadalne,
   budget,

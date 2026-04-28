@@ -107,12 +107,16 @@ function purgeScheduledToPurgedMessage(brandName: string): BilingualMessage {
 async function collectCustomerFcmTokens(
   db: admin.firestore.Firestore,
   shopId: string,
+  openOnly = false,
 ): Promise<string[]> {
-  const ledgersSnap = await db
+  const base = db
     .collection('shops')
     .doc(shopId)
-    .collection('udhaarLedger')
-    .get();
+    .collection('udhaarLedger');
+  const ledgersSnap = await (openOnly
+    ? base.where('closedAt', '==', null)
+    : base
+  ).get();
   const tokens = new Set<string>();
   for (const ledgerDoc of ledgersSnap.docs) {
     const t = ledgerDoc.data().customerFcmToken;
@@ -308,7 +312,7 @@ export const shopDeactivationSweep = onSchedule(
           // to register them — also pending MT-2.
           const brandName = (data.brandName as string | undefined) ?? 'Yugma Dukaan';
           const message = deactivatingToPurgeScheduledMessage(brandName);
-          const customerTokens = await collectCustomerFcmTokens(db, shopId);
+          const customerTokens = await collectCustomerFcmTokens(db, shopId, true);
           const operatorTokens = await collectOperatorFcmTokens(db, shopId);
           const sent = await sendBilingualFcm(
             [...customerTokens, ...operatorTokens],
