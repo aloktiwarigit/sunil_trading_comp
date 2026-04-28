@@ -109,17 +109,23 @@ async function collectCustomerFcmTokens(
   shopId: string,
   openOnly = false,
 ): Promise<string[]> {
-  const base = db
+  const ledgersSnap = await db
     .collection('shops')
     .doc(shopId)
-    .collection('udhaarLedger');
-  const ledgersSnap = await (openOnly
-    ? base.where('closedAt', '==', null)
-    : base
-  ).get();
+    .collection('udhaarLedger')
+    .get();
   const tokens = new Set<string>();
   for (const ledgerDoc of ledgersSnap.docs) {
-    const t = ledgerDoc.data().customerFcmToken;
+    const data = ledgerDoc.data();
+    // When openOnly=true, skip ledgers that are closed. An open ledger
+    // either has closedAt == null OR has no closedAt field at all (docs
+    // created before explicit null was set on creation). Both are "open".
+    // Firestore .where('closedAt', '==', null) would miss documents
+    // where the field is absent entirely, so we filter in-code instead.
+    if (openOnly && data.closedAt != null) {
+      continue;
+    }
+    const t = data.customerFcmToken;
     if (typeof t === 'string' && t.length > 0) {
       tokens.add(t);
     }
