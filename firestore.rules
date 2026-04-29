@@ -154,15 +154,6 @@ service cloud.firestore {
       allow delete: if false;
 
       // ---------------------------------------------------------------------
-      // /shops/{shopId}/themeTokens/{docId} — multi-tenant theming (SAD §8)
-      // ---------------------------------------------------------------------
-
-      match /themeTokens/{tokenDocId} {
-        allow read: if isSignedIn();
-        allow write: if isShopOperator(shopId) && shopIsWritable(shopId);
-      }
-
-      // ---------------------------------------------------------------------
       // /shops/{shopId}/theme/{docId} — ShopThemeTokens current doc
       // Read by customer app at onboarding, written by shopkeeper settings.
       // ---------------------------------------------------------------------
@@ -183,7 +174,7 @@ service cloud.firestore {
 
       // ---------------------------------------------------------------------
       // Sub-collections expand in Sprints 2–6 as stories ship:
-      //   projects/, customers/, chatThreads/, customerMemory/, decisionCircles/
+      //   projects/, customers/, chatThreads/, customer_memory/, decisionCircles/
       //
       // Phase 1.9 code review cleanup (Agent A finding #1): the Phase 1.5
       // shared models repos target these four sub-collections:

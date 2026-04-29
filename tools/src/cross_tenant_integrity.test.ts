@@ -74,8 +74,8 @@ beforeEach(async () => {
       await db
         .collection('shops')
         .doc(shopId)
-        .collection('themeTokens')
-        .doc('active')
+        .collection('theme')
+        .doc('current')
         .set({ shopId, primaryColor: '#000', version: 1 });
 
       await db
@@ -355,7 +355,7 @@ const PRIVATE_SUB_COLLECTIONS = [
 // WS5.5: expanded with inventory/voiceNotes/curatedShortlists/golden_hour_photos
 // — all use `allow read: if isSignedIn()`.
 const PUBLIC_SUB_COLLECTIONS = [
-  'themeTokens',
+  'theme',
   'featureFlags',
   'inventory',
   'voiceNotes',
@@ -427,14 +427,14 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
 
-    test('shop_1 operator cannot update shop_0/themeTokens/active', async () => {
+    test('shop_1 operator cannot update shop_0/theme/current', async () => {
       const db = ctxAsShopOperator('shop_1').firestore();
       await assertFails(
         db
           .collection('shops')
           .doc('shop_0')
-          .collection('themeTokens')
-          .doc('active')
+          .collection('theme')
+          .doc('current')
           .update({ primaryColor: '#FF0000' }),
       );
     });
@@ -448,14 +448,14 @@ describe('Cross-tenant integrity (rules.test)', () => {
       await assertSucceeds(db.collection('shops').doc('shop_1').get());
     });
 
-    test('shop_1 operator can read /shops/shop_1/themeTokens/active', async () => {
+    test('shop_1 operator can read /shops/shop_1/theme/current', async () => {
       const db = ctxAsShopOperator('shop_1').firestore();
       await assertSucceeds(
         db
           .collection('shops')
           .doc('shop_1')
-          .collection('themeTokens')
-          .doc('active')
+          .collection('theme')
+          .doc('current')
           .get(),
       );
     });
@@ -571,7 +571,7 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
 
-    test('shopLifecycle=deactivating rejects themeTokens writes', async () => {
+    test('shopLifecycle=deactivating rejects theme/current writes', async () => {
       await setShopLifecycle('shop_1', 'deactivating');
       const db = ctxAsShopOperator('shop_1').firestore();
 
@@ -579,8 +579,8 @@ describe('Cross-tenant integrity (rules.test)', () => {
         db
           .collection('shops')
           .doc('shop_1')
-          .collection('themeTokens')
-          .doc('active')
+          .collection('theme')
+          .doc('current')
           .update({ primaryColor: '#FF0000' }),
       );
     });
@@ -699,15 +699,15 @@ describe('Cross-tenant integrity (rules.test)', () => {
     );
 
     test(
-      'themeTokens writes are operator-only (customer partition rejection)',
+      'theme/current writes are operator-only (customer partition rejection)',
       async () => {
         const db = ctxAsCustomer('shop_1').firestore();
         await assertFails(
           db
             .collection('shops')
             .doc('shop_1')
-            .collection('themeTokens')
-            .doc('active')
+            .collection('theme')
+            .doc('current')
             .update({ primaryColor: '#FFFFFF' }),
         );
       },

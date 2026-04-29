@@ -7,7 +7,7 @@
 // Security: uses Firebase admin SDK with a READ-ONLY service account scoped to:
 //   - shops/{shopId}/theme/current
 //   - shops/{shopId}/voice_notes/{greetingVoiceNoteId}
-//   - shops/{shopId}/curated_shortlists (top 6 picks for catalog preview)
+//   - shops/{shopId}/curatedShortlists (top 6 picks for catalog preview)
 //
 // Credential: FIREBASE_MARKETING_READONLY_SA_JSON env var (GitHub Actions
 // secret). Local dev falls back to hardcoded flagship shop data — no
@@ -203,7 +203,7 @@ export async function fetchShopContent(
     const shortlistsSnap = await db
       .collection('shops')
       .doc(shopId)
-      .collection('curated_shortlists')
+      .collection('curatedShortlists')
       .where('isActive', '==', true)
       .where('occasion', '==', 'shaadi')
       .limit(1)

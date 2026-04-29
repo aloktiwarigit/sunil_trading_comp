@@ -155,8 +155,8 @@ async function seedShop(shop: SyntheticShop): Promise<void> {
     dpdpRetentionUntil: null,
   });
 
-  // 3. /shops/{shopId}/themeTokens/active
-  batch.set(shopRef.collection('themeTokens').doc('active'), {
+  // 3. /shops/{shopId}/theme/current
+  batch.set(shopRef.collection('theme').doc('current'), {
     shopId: shop.shopId,
     primaryColor: shop.uglyColors ? '#FF00FF' : '#6B3410',
     secondaryColor: shop.uglyColors ? '#00FFFF' : '#B8860B',
@@ -275,8 +275,8 @@ async function seedShop(shop: SyntheticShop): Promise<void> {
     reminderCadenceDays: 14, // default; operator adjustable 7–30
   });
 
-  // 13. /shops/{shopId}/customerMemory/{memId}
-  batch.set(shopRef.collection('customerMemory').doc('mem-1'), {
+  // 13. /shops/{shopId}/customer_memory/{memId}
+  batch.set(shopRef.collection('customer_memory').doc('mem-1'), {
     shopId: shop.shopId,
     customerId: 'cust-1',
     note: 'Daughter pursuing MBBS, family from Lucknow originally',
@@ -284,8 +284,8 @@ async function seedShop(shop: SyntheticShop): Promise<void> {
     createdAt: new Date(),
   });
 
-  // 14. /shops/{shopId}/goldenHourPhotos/{photoId}
-  batch.set(shopRef.collection('goldenHourPhotos').doc('gh-1'), {
+  // 14. /shops/{shopId}/golden_hour_photos/{photoId}
+  batch.set(shopRef.collection('golden_hour_photos').doc('gh-1'), {
     shopId: shop.shopId,
     skuId: 'sku-1',
     cloudinaryPublicId: `synthetic/${shop.shopId}/gh-1`,

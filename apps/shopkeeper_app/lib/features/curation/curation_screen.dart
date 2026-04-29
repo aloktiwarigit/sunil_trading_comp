@@ -44,7 +44,7 @@ final shortlistsProvider =
   return firestore
       .collection('shops')
       .doc(shopId)
-      .collection('curated_shortlists')
+      .collection('curatedShortlists')
       .snapshots()
       .map((snap) {
     final result = <String, List<String>>{};
@@ -374,7 +374,7 @@ class _OccasionTab extends ConsumerWidget {
     FirebaseFirestore.instance
         .collection('shops')
         .doc(shopId)
-        .collection('curated_shortlists')
+        .collection('curatedShortlists')
         .doc(occasionTag)
         .set(<String, dynamic>{
       'occasionTag': occasionTag,
