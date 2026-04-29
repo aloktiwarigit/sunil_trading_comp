@@ -82,3 +82,6 @@ coverage/
 
 # -------- Melos --------
 .melos_tool/
+
+# Serena MCP agent cache
+.serena/
