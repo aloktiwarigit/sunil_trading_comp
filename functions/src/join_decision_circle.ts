@@ -277,15 +277,22 @@ export const joinDecisionCircle = onCall(
       // (architecture §6.1 — chatThread document ID == project document ID),
       // we fetch it directly by doc ID — no compound query, no index needed.
       // Legacy path (no token) still queries by participantUids array-contains.
+      // updateThread helper — `replaceSource` controls whether sourceUid is
+      // removed before destUid is added.
+      //   Token path (participant add): replaceSource=false → sourceUid stays,
+      //     destUid is added. The original customer keeps chat access.
+      //   Legacy path (account merge): replaceSource=true → sourceUid removed,
+      //     destUid takes over (existing behaviour).
       const updateThread = async (
         threadRef: admin.firestore.DocumentReference,
         threadData: admin.firestore.DocumentData,
+        replaceSource: boolean,
       ): Promise<void> => {
         const currentParticipants: string[] = threadData.participantUids ?? [];
-        const newParticipants = currentParticipants
-          .filter((uid: string) => uid !== sourceUid)
-          .concat(destUid);
-        const uniqueParticipants = [...new Set(newParticipants)];
+        const filtered = replaceSource
+          ? currentParticipants.filter((uid: string) => uid !== sourceUid)
+          : currentParticipants;
+        const uniqueParticipants = [...new Set([...filtered, destUid])];
         const batch = db.batch();
         batch.update(threadRef, {
           participantUids: uniqueParticipants,
@@ -303,7 +310,19 @@ export const joinDecisionCircle = onCall(
           .doc(tokenPayload.projectId)
           .get();
         if (threadSnap.exists) {
-          await updateThread(threadSnap.ref, threadSnap.data()!);
+          const threadData = threadSnap.data()!;
+          const participants: string[] = threadData.participantUids ?? [];
+          // Verify sourceUid is already a participant in this thread.
+          // Prevents a malicious customer from adding themselves to
+          // another customer's thread by guessing a projectId.
+          if (!participants.includes(sourceUid)) {
+            throw new HttpsError(
+              'permission-denied',
+              'sourceUid is not a participant in the target chatThread.',
+            );
+          }
+          // Token path: ADD destUid, keep sourceUid (participant add, not merge).
+          await updateThread(threadSnap.ref, threadData, /* replaceSource= */ false);
           threadsUpdated = 1;
         }
       } else {
@@ -320,7 +339,8 @@ export const joinDecisionCircle = onCall(
           }
           for (const chunk of chunks) {
             for (const threadDoc of chunk) {
-              await updateThread(threadDoc.ref, threadDoc.data());
+              // Legacy path: REPLACE sourceUid with destUid (full account merge).
+              await updateThread(threadDoc.ref, threadDoc.data(), /* replaceSource= */ true);
             }
           }
         }
