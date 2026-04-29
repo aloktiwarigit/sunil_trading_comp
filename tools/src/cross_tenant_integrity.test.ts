@@ -119,6 +119,37 @@ beforeEach(async () => {
         // on the rule side; the test seed lagged).
         role: 'bhaiya',
       });
+
+      // WS5.1 seed — chatThread for cross-tenant isolation tests.
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('chatThreads')
+        .doc('thread-p1')
+        .set({
+          shopId,
+          threadId: 'thread-p1',
+          customerUid: `cust-${shopId}-uid`,
+          participantUids: [`cust-${shopId}-uid`, `op-${shopId}-owner`],
+          unreadCountForCustomer: 0,
+          unreadCountForOperator: 1,
+          lastMessagePreview: 'नमस्ते',
+          createdAt: new Date(),
+        });
+
+      // WS5.2 seed — decision_circle for cross-tenant isolation tests.
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('decision_circles')
+        .doc('dc-p1')
+        .set({
+          shopId,
+          dcId: 'dc-p1',
+          creatorUid: `cust-${shopId}-uid`,
+          personas: [],
+          createdAt: new Date(),
+        });
     }
   });
 });
@@ -717,6 +748,78 @@ describe('Cross-tenant integrity (rules.test)', () => {
           .collection('feedback')
           .doc('fb-seed-nps')
           .delete(),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // WS5.1 — chatThreads cross-tenant isolation (PR gate for shop #2)
+  // Verifies that the bare `isSignedIn()` read rule has been replaced with
+  // a tenant-scoped predicate (customerUid match OR isShopOperator(shopId)).
+  // -------------------------------------------------------------------------
+
+  describe('WS5.1 — chatThreads cross-tenant isolation', () => {
+    test('shop_1 operator cannot read /shops/shop_0/chatThreads (cross-tenant leak)', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.collection('shops').doc('shop_0').collection('chatThreads').get(),
+      );
+    });
+
+    test('shop_1 operator can read /shops/shop_1/chatThreads (own shop — no false positive)', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db.collection('shops').doc('shop_1').collection('chatThreads').get(),
+      );
+    });
+
+    test('shop_0 customer can read their own chatThread doc without shopId claim (anonymous path)', async () => {
+      // Simulates an anonymous customer (pre-OTP) who has no shopId token
+      // claim but whose UID matches the customerUid stored on the thread.
+      const uid = 'cust-shop_0-uid';
+      const db = testEnv
+        .authenticatedContext(uid, {
+          firebase: { sign_in_provider: 'anonymous' },
+          // Intentionally no shopId claim — anonymous users don't have it.
+        })
+        .firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .get(),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // WS5.2 — decision_circles cross-tenant isolation (PR gate for shop #2)
+  // Verifies that the bare `isSignedIn()` read rule has been replaced with
+  // isShopMember(shopId), which checks the shopId token claim.
+  // -------------------------------------------------------------------------
+
+  describe('WS5.2 — decision_circles cross-tenant isolation', () => {
+    test('shop_1 operator cannot read /shops/shop_0/decision_circles (cross-tenant leak)', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('decision_circles')
+          .get(),
+      );
+    });
+
+    test('shop_1 operator can read /shops/shop_1/decision_circles (own shop — no false positive)', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('decision_circles')
+          .get(),
       );
     });
   });

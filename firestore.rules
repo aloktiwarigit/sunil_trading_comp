@@ -472,9 +472,14 @@ service cloud.firestore {
       // ---------------------------------------------------------------------
 
       match /chatThreads/{threadId} {
-        // Read: any signed-in user can read their own thread (customerUid match)
-        // or operators can read all. For single-shop, any signed-in read is safe.
-        allow read: if isSignedIn();
+        // Read: customer reads their own thread via customerUid match (works for
+        // anonymous users who have no shopId claim); operators read all threads
+        // in their shop via isShopOperator (which checks the shopId token claim).
+        // WS5.1: replaced bare isSignedIn() — any signed-in user of shop B was
+        // able to read shop A's threads before this fix.
+        allow read: if isSignedIn()
+                    && (resource.data.customerUid == request.auth.uid
+                        || isShopOperator(shopId));
 
         // Create: any signed-in user can initiate a thread.
         allow create: if isSignedIn()
@@ -494,9 +499,12 @@ service cloud.firestore {
         // -----------------------------------------------------------------
 
         match /messages/{messageId} {
-          // Read: any signed-in user (single-shop — thread-level privacy
-          // is sufficient since customers only query their own thread).
-          allow read: if isSignedIn();
+          // Read: look up the parent thread's customerUid to allow the thread
+          // owner (including anonymous users who have no shopId claim) and
+          // shop operators. WS5.1: was bare isSignedIn() — now tenant-scoped.
+          allow read: if isSignedIn()
+                      && (get(/databases/$(database)/documents/shops/$(shopId)/chatThreads/$(threadId)).data.customerUid == request.auth.uid
+                          || isShopOperator(shopId));
 
           // Create: participant can send messages.
           // authorUid must match the authenticated user.
@@ -570,8 +578,13 @@ service cloud.firestore {
       // ---------------------------------------------------------------------
 
       match /decision_circles/{dcId} {
-        // Read: any signed-in user (participants + operator can view).
-        allow read: if isSignedIn();
+        // Read: any member of this shop (shopId token claim must match).
+        // DCs are a post-OTP feature; anonymous users (no shopId claim) do
+        // not need DC reads. isShopMember covers both phone-verified customers
+        // and operators, while blocking cross-tenant reads.
+        // WS5.2: replaced bare isSignedIn() — any signed-in user of shop B
+        // was able to read shop A's decision circles before this fix.
+        allow read: if isShopMember(shopId);
 
         // Create/Update: any signed-in user can create (customer on draft) or
         // update (persona toggle adds participant entries).
