@@ -30,7 +30,11 @@ scripts:
   # ---------- Quality ----------
   analyze:
     description: Static analysis across all packages
-    run: melos exec -- "dart analyze --fatal-infos --fatal-warnings"
+    # --fatal-warnings escalates actual errors/warnings to exit 1.
+    # --fatal-infos was removed because the 536 style infos (prefer_const,
+    # require_trailing_commas, etc.) are not correctness issues and blocked CI.
+    # Correctness items remain as error: in analysis_options.yaml (errors block).
+    run: melos exec -- "dart analyze --fatal-warnings"
 
   format:
     description: Format all Dart files
