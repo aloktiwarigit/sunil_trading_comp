@@ -10,7 +10,7 @@
 
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json is tracked in git for reproducible CI builds (npm ci requires it)
 
 # Jest
 coverage/
