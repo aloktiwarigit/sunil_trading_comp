@@ -16,6 +16,9 @@ import 'package:lib_core/src/adapters/auth_provider.dart';
 import 'package:lib_core/src/adapters/auth_provider_firebase.dart';
 
 void main() {
+  // Required for tests that touch GoogleSignIn which calls platform channels.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('AuthProviderFirebase', () {
     late MockFirebaseAuth mockAuth;
     late AuthProviderFirebase provider;
