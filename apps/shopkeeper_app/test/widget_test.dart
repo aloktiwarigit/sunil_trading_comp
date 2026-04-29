@@ -475,59 +475,60 @@ void main() {
     testWidgets(
       'renders dashboard with sign-out menu',
       (tester) async {
-      final testOperator = Operator(
-        uid: 'test-uid',
-        shopId: 'sunil-trading-company',
-        role: OperatorRole.bhaiya,
-        displayName: 'Test Bhaiya',
-        email: 'test@test.com',
-        joinedAt: DateTime.now(),
-      );
+        final testOperator = Operator(
+          uid: 'test-uid',
+          shopId: 'sunil-trading-company',
+          role: OperatorRole.bhaiya,
+          displayName: 'Test Bhaiya',
+          email: 'test@test.com',
+          joinedAt: DateTime.now(),
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            opsAuthControllerProvider.overrideWith(
-              () => _FakeOpsAuthController(
-                OpsAuthState(
-                  status: OpsAuthStatus.authorized,
-                  user: const AppUser(
-                    uid: 'test-uid',
-                    tier: AuthTier.googleOperator,
-                    isAnonymous: false,
-                    isPhoneVerified: false,
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              opsAuthControllerProvider.overrideWith(
+                () => _FakeOpsAuthController(
+                  OpsAuthState(
+                    status: OpsAuthStatus.authorized,
+                    user: const AppUser(
+                      uid: 'test-uid',
+                      tier: AuthTier.googleOperator,
+                      isAnonymous: false,
+                      isPhoneVerified: false,
+                    ),
+                    operator: testOperator,
                   ),
-                  operator: testOperator,
                 ),
               ),
-            ),
-          ],
-          child: MaterialApp(theme: _testTheme(), home: const HomeDashboard()),
-        ),
-      );
-      await tester.pumpAndSettle();
+            ],
+            child:
+                MaterialApp(theme: _testTheme(), home: const HomeDashboard()),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Dashboard title
-      expect(
-        find.text(const AppStringsHi().opsDashboardTitle),
-        findsOneWidget,
-      );
+        // Dashboard title
+        expect(
+          find.text(const AppStringsHi().opsDashboardTitle),
+          findsOneWidget,
+        );
 
-      // Operator name + role
-      expect(find.text('Test Bhaiya (bhaiya)'), findsOneWidget);
+        // Operator name + role
+        expect(find.text('Test Bhaiya (bhaiya)'), findsOneWidget);
 
-      // Inventory section (S4.3 — now live, uses Hindi label)
-      expect(find.text(const AppStringsHi().inventoryTitle), findsOneWidget);
-      // Remaining placeholder sections
-      expect(find.text('Orders'), findsOneWidget);
-      expect(find.text('Chat'), findsOneWidget);
-      expect(find.text('Udhaar'), findsOneWidget);
-    },
-    // Task #20: HomeDashboard embeds MediaSpendTile which reads
-    // FirebaseFirestore.instance directly (not injectable via Riverpod).
-    // Needs provider refactor before these tests can pass.
-    skip: true,
-  );
+        // Inventory section (S4.3 — now live, uses Hindi label)
+        expect(find.text(const AppStringsHi().inventoryTitle), findsOneWidget);
+        // Remaining placeholder sections
+        expect(find.text('Orders'), findsOneWidget);
+        expect(find.text('Chat'), findsOneWidget);
+        expect(find.text('Udhaar'), findsOneWidget);
+      },
+      // Task #20: HomeDashboard embeds MediaSpendTile which reads
+      // FirebaseFirestore.instance directly (not injectable via Riverpod).
+      // Needs provider refactor before these tests can pass.
+      skip: true,
+    );
   });
 
   group('Operator model domain naming', () {

@@ -632,104 +632,106 @@ void main() {
     testWidgets(
       'renders inventory section with domain label',
       (tester) async {
-      final testOperator = Operator(
-        uid: 'test-uid',
-        shopId: 'sunil-trading-company',
-        role: OperatorRole.bhaiya,
-        displayName: 'Test Bhaiya',
-        email: 'test@test.com',
-        joinedAt: DateTime.now(),
-      );
+        final testOperator = Operator(
+          uid: 'test-uid',
+          shopId: 'sunil-trading-company',
+          role: OperatorRole.bhaiya,
+          displayName: 'Test Bhaiya',
+          email: 'test@test.com',
+          joinedAt: DateTime.now(),
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            opsAuthControllerProvider.overrideWith(
-              () => _FakeOpsAuthController(
-                OpsAuthState(
-                  status: OpsAuthStatus.authorized,
-                  user: const AppUser(
-                    uid: 'test-uid',
-                    tier: AuthTier.googleOperator,
-                    isAnonymous: false,
-                    isPhoneVerified: false,
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              opsAuthControllerProvider.overrideWith(
+                () => _FakeOpsAuthController(
+                  OpsAuthState(
+                    status: OpsAuthStatus.authorized,
+                    user: const AppUser(
+                      uid: 'test-uid',
+                      tier: AuthTier.googleOperator,
+                      isAnonymous: false,
+                      isPhoneVerified: false,
+                    ),
+                    operator: testOperator,
                   ),
-                  operator: testOperator,
                 ),
               ),
-            ),
-          ],
-          child: MaterialApp(theme: _testTheme(), home: const HomeDashboard()),
-        ),
-      );
-      await tester.pumpAndSettle();
+            ],
+            child:
+                MaterialApp(theme: _testTheme(), home: const HomeDashboard()),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Inventory section should show the Hindi label
-      expect(
-        find.text(const AppStringsHi().inventoryTitle),
-        findsOneWidget,
-      );
+        // Inventory section should show the Hindi label
+        expect(
+          find.text(const AppStringsHi().inventoryTitle),
+          findsOneWidget,
+        );
 
-      // Should show inventory icon
-      expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
+        // Should show inventory icon
+        expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
 
-      // Should show navigation chevron
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
-    },
-    skip: true, // Task #20: MediaSpendTile needs provider injection refactor.
-  );
+        // Should show navigation chevron
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      },
+      skip: true, // Task #20: MediaSpendTile needs provider injection refactor.
+    );
 
     testWidgets(
       'inventory placeholder is gone from dashboard',
       (tester) async {
-      final testOperator = Operator(
-        uid: 'test-uid',
-        shopId: 'sunil-trading-company',
-        role: OperatorRole.bhaiya,
-        displayName: 'Test Bhaiya',
-        email: 'test@test.com',
-        joinedAt: DateTime.now(),
-      );
+        final testOperator = Operator(
+          uid: 'test-uid',
+          shopId: 'sunil-trading-company',
+          role: OperatorRole.bhaiya,
+          displayName: 'Test Bhaiya',
+          email: 'test@test.com',
+          joinedAt: DateTime.now(),
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            opsAuthControllerProvider.overrideWith(
-              () => _FakeOpsAuthController(
-                OpsAuthState(
-                  status: OpsAuthStatus.authorized,
-                  user: const AppUser(
-                    uid: 'test-uid',
-                    tier: AuthTier.googleOperator,
-                    isAnonymous: false,
-                    isPhoneVerified: false,
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              opsAuthControllerProvider.overrideWith(
+                () => _FakeOpsAuthController(
+                  OpsAuthState(
+                    status: OpsAuthStatus.authorized,
+                    user: const AppUser(
+                      uid: 'test-uid',
+                      tier: AuthTier.googleOperator,
+                      isAnonymous: false,
+                      isPhoneVerified: false,
+                    ),
+                    operator: testOperator,
                   ),
-                  operator: testOperator,
                 ),
               ),
-            ),
-          ],
-          child: MaterialApp(theme: _testTheme(), home: const HomeDashboard()),
-        ),
-      );
-      await tester.pumpAndSettle();
+            ],
+            child:
+                MaterialApp(theme: _testTheme(), home: const HomeDashboard()),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // The old placeholder text "Coming soon" should NOT appear next to Inventory
-      // (Other placeholders for Orders/Chat/Udhaar still have it)
-      // Check that "Inventory" text no longer appears with "Coming soon" in the
-      // same _PlaceholderSection.
-      // We verify by checking that the Inventory label is followed by a chevron,
-      // not "Coming soon".
+        // The old placeholder text "Coming soon" should NOT appear next to Inventory
+        // (Other placeholders for Orders/Chat/Udhaar still have it)
+        // Check that "Inventory" text no longer appears with "Coming soon" in the
+        // same _PlaceholderSection.
+        // We verify by checking that the Inventory label is followed by a chevron,
+        // not "Coming soon".
 
-      // The old English "Inventory" placeholder should be gone
-      // (it was replaced by the Hindi "सामान" section)
-      // We verify other placeholders still exist
-      expect(find.text('Orders'), findsOneWidget);
-      expect(find.text('Chat'), findsOneWidget);
-      expect(find.text('Udhaar'), findsOneWidget);
-    },
-    skip: true, // Task #20: MediaSpendTile needs provider injection refactor.
-  );
+        // The old English "Inventory" placeholder should be gone
+        // (it was replaced by the Hindi "सामान" section)
+        // We verify other placeholders still exist
+        expect(find.text('Orders'), findsOneWidget);
+        expect(find.text('Chat'), findsOneWidget);
+        expect(find.text('Udhaar'), findsOneWidget);
+      },
+      skip: true, // Task #20: MediaSpendTile needs provider injection refactor.
+    );
   });
 
   // =========================================================================
