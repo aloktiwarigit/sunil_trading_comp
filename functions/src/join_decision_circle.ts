@@ -309,22 +309,29 @@ export const joinDecisionCircle = onCall(
           .collection('chatThreads')
           .doc(tokenPayload.projectId)
           .get();
-        if (threadSnap.exists) {
-          const threadData = threadSnap.data()!;
-          const participants: string[] = threadData.participantUids ?? [];
-          // Verify sourceUid is already a participant in this thread.
-          // Prevents a malicious customer from adding themselves to
-          // another customer's thread by guessing a projectId.
-          if (!participants.includes(sourceUid)) {
-            throw new HttpsError(
-              'permission-denied',
-              'sourceUid is not a participant in the target chatThread.',
-            );
-          }
-          // Token path: ADD destUid, keep sourceUid (participant add, not merge).
-          await updateThread(threadSnap.ref, threadData, /* replaceSource= */ false);
-          threadsUpdated = 1;
+        if (!threadSnap.exists) {
+          // A valid token whose projectId has no matching chatThread means the
+          // project was deleted or the thread was never created. Surface an
+          // explicit error rather than silently returning { success: true }.
+          throw new HttpsError(
+            'not-found',
+            `chatThread for project '${tokenPayload.projectId}' not found.`,
+          );
         }
+        const threadData = threadSnap.data()!;
+        const participants: string[] = threadData.participantUids ?? [];
+        // Verify sourceUid is already a participant in this thread.
+        // Prevents a malicious customer from adding themselves to
+        // another customer's thread by guessing a projectId.
+        if (!participants.includes(sourceUid)) {
+          throw new HttpsError(
+            'permission-denied',
+            'sourceUid is not a participant in the target chatThread.',
+          );
+        }
+        // Token path: ADD destUid, keep sourceUid (participant add, not merge).
+        await updateThread(threadSnap.ref, threadData, /* replaceSource= */ false);
+        threadsUpdated = 1;
       } else {
         // Legacy path: query by participantUids.
         const threadsSnap = await shopRef

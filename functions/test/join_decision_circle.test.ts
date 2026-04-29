@@ -83,12 +83,25 @@ const mockShopRef: any = {
       const q: any = { where: () => q, get: async () => emptySnap };
       return {
         where: () => q,
-        doc: (_id: string) => ({ get: async () => emptyDocSnap, ref: {} }),
+        // Return an existing thread that contains SOURCE_UID as a participant
+        // so the token path can verify ownership + add DEST_UID.
+        doc: (_id: string) => ({
+          get: async () => ({
+            exists: true,
+            ref: { update: jest.fn() },
+            data: () => ({ participantUids: ['uid_alice'] }),
+          }),
+          ref: {},
+        }),
       };
     }
     return {};
   },
 };
+
+const mockBatchUpdate = jest.fn();
+const mockBatchCommit = jest.fn(async () => ({}));
+const mockBatch = { update: mockBatchUpdate, commit: mockBatchCommit };
 
 const mockFirestore = jest.fn(() => ({
   collection: (name: string) => {
@@ -101,6 +114,7 @@ const mockFirestore = jest.fn(() => ({
     return {};
   },
   runTransaction: async (fn: any) => fn(mockTxn),
+  batch: () => mockBatch,
 }));
 (mockFirestore as any).FieldValue = {
   serverTimestamp: () => '__server_timestamp__',
