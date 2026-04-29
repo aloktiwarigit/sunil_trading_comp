@@ -17,6 +17,8 @@ import 'package:lib_core/src/adapters/auth_provider_msg91.dart';
 import 'package:lib_core/src/adapters/auth_provider_upi_only.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late MockFirebaseAuth mockAuth;
   late AuthProviderFirebase delegate;
 

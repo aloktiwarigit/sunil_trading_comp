@@ -16,6 +16,8 @@ import 'package:lib_core/lib_core.dart';
 import 'package:customer_app/features/shop/deactivation_banner.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   const strings = AppStringsHi();
 
   Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
