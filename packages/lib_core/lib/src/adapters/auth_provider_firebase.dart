@@ -34,7 +34,8 @@ class AuthProviderFirebase implements AuthProvider {
   })  : _auth = auth,
         _googleSignIn = googleSignIn ?? GoogleSignIn(),
         _shopId = shopId,
-        _firestore = firestore ?? (shopId != null ? FirebaseFirestore.instance : null);
+        _firestore =
+            firestore ?? (shopId != null ? FirebaseFirestore.instance : null);
 
   final fb.FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
@@ -369,8 +370,7 @@ class AuthProviderFirebase implements AuthProvider {
     if (db == null || shopId == null || shopId.isEmpty) return;
 
     final now = DateTime.now().toUtc();
-    final monthKey =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    final monthKey = '${now.year}-${now.month.toString().padLeft(2, '0')}';
 
     db
         .collection('system')
@@ -378,21 +378,19 @@ class AuthProviderFirebase implements AuthProvider {
         .collection('shops')
         .doc(shopId)
         .set(
-          {
-            'smsCount_$monthKey': FieldValue.increment(1),
-            'shopId': shopId,
-            'lastUpdatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        )
-        .then((_) {
-          _log.fine('Per-shop SMS counter incremented: $shopId/$monthKey');
-        })
-        .catchError((Object err) {
-          _log.warning(
-            'Failed to increment per-shop SMS counter for $shopId: $err',
-          );
-        });
+      {
+        'smsCount_$monthKey': FieldValue.increment(1),
+        'shopId': shopId,
+        'lastUpdatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    ).then((_) {
+      _log.fine('Per-shop SMS counter incremented: $shopId/$monthKey');
+    }).catchError((Object err) {
+      _log.warning(
+        'Failed to increment per-shop SMS counter for $shopId: $err',
+      );
+    });
   }
 
   // ---------------------------------------------------------------------------
