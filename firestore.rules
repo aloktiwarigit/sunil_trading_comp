@@ -103,6 +103,13 @@ service cloud.firestore {
           && (isAnonymous() || isPhoneVerified());
     }
 
+    // Yugma Labs platform admin — issued only via Admin SDK to Yugma engineers.
+    // Never issued to shop-level operators (bhaiya/beta/munshi).
+    // Required for cross-shop audit reads at /system/*.
+    function isYugmaAdmin() {
+      return isSignedIn() && request.auth.token.yugmaAdmin == true;
+    }
+
     // isBhaiyaOf(shopId) helper is intentionally NOT defined until a rule
     // actually needs to distinguish bhaiya from other operator roles
     // (currently isShopOperator covers all 3 roles uniformly). Add in
@@ -638,13 +645,11 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /system/{docId} {
-      allow read: if isSignedIn()
-                  && callerRole() == 'bhaiya';
+      allow read: if isYugmaAdmin();
       allow write: if false; // Cloud Functions use Admin SDK (bypasses rules).
 
       match /{subcollection=**} {
-        allow read: if isSignedIn()
-                    && callerRole() == 'bhaiya';
+        allow read: if isYugmaAdmin();
         allow write: if false;
       }
     }

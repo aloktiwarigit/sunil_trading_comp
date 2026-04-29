@@ -151,6 +151,14 @@ beforeEach(async () => {
           createdAt: new Date(),
         });
     }
+
+    // WS5.3 seed — global system doc. Written via Admin SDK (rules-disabled)
+    // to mirror how Cloud Functions write it. Client reads are gated by
+    // isYugmaAdmin() — shop operators and customers must never reach this.
+    await db.collection('system').doc('audit_results').set({
+      createdAt: new Date(),
+      summary: { flagged: 0, checked: 0 },
+    });
   });
 });
 
@@ -820,6 +828,35 @@ describe('Cross-tenant integrity (rules.test)', () => {
           .doc('shop_1')
           .collection('decision_circles')
           .get(),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // WS5.3 — /system/* reads restricted to isYugmaAdmin (PR gate for shop #2)
+  // Any bhaiya from any shop could previously read all of /system/* because
+  // the rule checked `callerRole() == 'bhaiya'` without requiring the
+  // yugmaAdmin custom claim. Now only Yugma Labs admins (claim yugmaAdmin==true)
+  // may client-read these docs. Cloud Functions use Admin SDK and are unaffected.
+  // -------------------------------------------------------------------------
+
+  describe('WS5.3 — /system/* reads restricted to isYugmaAdmin', () => {
+    test('shop_1 operator cannot read /system/audit_results (bhaiya claim, not yugmaAdmin)', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.collection('system').doc('audit_results').get(),
+      );
+    });
+
+    test('anonymous customer cannot read /system/audit_results', async () => {
+      const db = testEnv
+        .authenticatedContext('anon-cust-1', {
+          firebase: { sign_in_provider: 'anonymous' },
+          // No shopId, no yugmaAdmin — anonymous customers have neither.
+        })
+        .firestore();
+      await assertFails(
+        db.collection('system').doc('audit_results').get(),
       );
     });
   });
