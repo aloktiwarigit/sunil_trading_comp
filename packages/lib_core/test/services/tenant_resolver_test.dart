@@ -46,8 +46,8 @@ void main() {
     });
 
     test('strips path and preserves slug-only host portion', () {
-      final uri =
-          Uri.parse('https://sunil-trading-company.yugmalabs.ai/products/almirah');
+      final uri = Uri.parse(
+          'https://sunil-trading-company.yugmalabs.ai/products/almirah');
       expect(
         TenantResolver.parseTenantSlug(uri),
         equals('sunil-trading-company'),
