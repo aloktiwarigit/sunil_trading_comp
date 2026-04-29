@@ -61,7 +61,7 @@ beforeEach(async () => {
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
 
-    for (const shopId of ['shop_0', 'shop_1']) {
+    for (const shopId of ['shop_0', 'shop_1', 'shop_2']) {
       // SAD v1.0.4 ADR-013: shopLifecycle = 'active' is the default state.
       await db.collection('shops').doc(shopId).set({
         shopId,
@@ -150,6 +150,141 @@ beforeEach(async () => {
           personas: [],
           createdAt: new Date(),
         });
+
+      // WS5.5 seeds — additional subcollections for expanded cross-tenant coverage.
+
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('projects')
+        .doc('proj-seed')
+        .set({
+          shopId,
+          projectId: 'proj-seed',
+          customerUid: `cust-${shopId}-uid`,
+          state: 'draft',
+          totalAmount: 25000,
+          amountReceivedByShop: 0,
+          lineItems: [],
+          createdAt: new Date(),
+        });
+
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('customers')
+        .doc(`cust-${shopId}-uid`)
+        .set({
+          shopId,
+          customerId: `cust-${shopId}-uid`,
+          isPhoneVerified: false,
+          previousProjectIds: [],
+          createdAt: new Date(),
+        });
+
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('customer_memory')
+        .doc(`cust-${shopId}-uid`)
+        .set({
+          shopId,
+          uid: `cust-${shopId}-uid`,
+          notes: 'Test note',
+          updatedAt: new Date(),
+        });
+
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('inventory')
+        .doc('sku-seed')
+        .set({
+          shopId,
+          skuId: 'sku-seed',
+          nameHindi: 'अलमारी',
+          isActive: true,
+          createdAt: new Date(),
+        });
+
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('voiceNotes')
+        .doc('vn-seed')
+        .set({
+          shopId,
+          voiceNoteId: 'vn-seed',
+          authorUid: `op-${shopId}-owner`,
+          storageRef: `gs://placeholder/${shopId}/vn-seed.m4a`,
+          createdAt: new Date(),
+        });
+
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('curatedShortlists')
+        .doc('cs-seed')
+        .set({
+          shopId,
+          shortlistId: 'cs-seed',
+          occasion: 'shaadi',
+          skuIdsInOrder: [],
+          isActive: true,
+          createdAt: new Date(),
+        });
+
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('golden_hour_photos')
+        .doc('gh-seed')
+        .set({
+          shopId,
+          photoId: 'gh-seed',
+          operatorUid: `op-${shopId}-owner`,
+          cloudinaryUrl: `https://res.cloudinary.com/placeholder/${shopId}/gh-seed.jpg`,
+          createdAt: new Date(),
+        });
+
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('telemetry')
+        .doc('media-seed')
+        .set({
+          shopId,
+          period: '2026-04',
+          voiceNoteMinutes: 0,
+          imageCount: 0,
+          updatedAt: new Date(),
+        });
+
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('today_tasks')
+        .doc('task-seed')
+        .set({
+          shopId,
+          taskId: 'task-seed',
+          operatorUid: `op-${shopId}-owner`,
+          completed: false,
+          createdAt: new Date(),
+        });
+
+      // /shops/{shopId}/operators — shop-scoped subcollection (distinct from
+      // the top-level /operators/{uid} collection seeded above).
+      await db
+        .collection('shops')
+        .doc(shopId)
+        .collection('operators')
+        .doc(`op-${shopId}-owner`)
+        .set({
+          uid: `op-${shopId}-owner`,
+          shopId,
+          role: 'bhaiya',
+        });
     }
 
     // WS5.3 seed — global system doc. Written via Admin SDK (rules-disabled)
@@ -197,12 +332,36 @@ async function setShopLifecycle(
 
 // Sub-collections under /shops/{shopId} that contain PII / shop-private
 // data and must NOT be readable across tenants.
-const PRIVATE_SUB_COLLECTIONS = ['udhaarLedger', 'feedback'];
+// WS5.5: expanded from 4 to 10 — covers all shop-scoped subcollections
+// whose read rules gate on isShopOperator/isShopMember/isCustomerOf rather
+// than bare isSignedIn(). inventory/voiceNotes/curatedShortlists/
+// golden_hour_photos all use isSignedIn() and are intentionally public.
+const PRIVATE_SUB_COLLECTIONS = [
+  'udhaarLedger',
+  'feedback',
+  'projects',
+  'customers',
+  'customer_memory',
+  'chatThreads',
+  'decision_circles',
+  'telemetry',
+  'today_tasks',
+  'operators',
+];
 
 // Sub-collections that are intentionally readable by any signed-in user
-// (the marketing site + customer apps need them for branding / runtime
-// flags). Cross-tenant read here is DESIGN, not a leak.
-const PUBLIC_SUB_COLLECTIONS = ['themeTokens', 'featureFlags'];
+// (the marketing site + customer apps need them for branding, catalog
+// browsing, and runtime flags). Cross-tenant read here is DESIGN, not a leak.
+// WS5.5: expanded with inventory/voiceNotes/curatedShortlists/golden_hour_photos
+// — all use `allow read: if isSignedIn()`.
+const PUBLIC_SUB_COLLECTIONS = [
+  'themeTokens',
+  'featureFlags',
+  'inventory',
+  'voiceNotes',
+  'curatedShortlists',
+  'golden_hour_photos',
+];
 
 // -----------------------------------------------------------------------------
 // Test cases — PRD I6.4 ACs #5–#7
@@ -925,6 +1084,40 @@ describe('Cross-tenant integrity (rules.test)', () => {
 
       expect(brokenCondition).toBe(false); // bug: violation silently missed
       expect(fixedCondition).toBe(true);   // fix: violation correctly detected
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // WS5.5 — 3-way isolation (shop_2 operator cannot read shop_0 or shop_1)
+  // Verifies that cross-tenant denial is not a 2-shop coincidence but holds
+  // for any N-th tenant. shop_2 is seeded identically to shop_0/shop_1 in
+  // beforeEach so all private subcollections have at least one document.
+  // -------------------------------------------------------------------------
+
+  describe('WS5.5 — 3-way isolation (shop_2 → shop_0 and shop_1)', () => {
+    test.each(PRIVATE_SUB_COLLECTIONS)(
+      'shop_2 operator cannot read /shops/shop_0/%s',
+      async (collection) => {
+        const db = ctxAsShopOperator('shop_2').firestore();
+        await assertFails(
+          db.collection('shops').doc('shop_0').collection(collection).get(),
+        );
+      },
+    );
+
+    test.each(PRIVATE_SUB_COLLECTIONS)(
+      'shop_2 operator cannot read /shops/shop_1/%s',
+      async (collection) => {
+        const db = ctxAsShopOperator('shop_2').firestore();
+        await assertFails(
+          db.collection('shops').doc('shop_1').collection(collection).get(),
+        );
+      },
+    );
+
+    test('shop_2 operator can read own /shops/shop_2 doc (no false positive)', async () => {
+      const db = ctxAsShopOperator('shop_2').firestore();
+      await assertSucceeds(db.collection('shops').doc('shop_2').get());
     });
   });
 });
