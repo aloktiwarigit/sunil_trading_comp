@@ -10,27 +10,17 @@
 //   #2: Address update → rebuild triggered by M5.5 (deferred)
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { fetchShopContent } from '../lib/fetch_shop_content';
 
-const shop = {
-  name: 'सुनील ट्रेडिंग कंपनी',
-  address: 'हैरिंगटनगंज बाज़ार, अयोध्या, उत्तर प्रदेश 224001',
-  addressEn: 'Harringtonganj Market, Ayodhya, Uttar Pradesh 224001',
-  hours: 'सोमवार–शनिवार: सुबह 10 बजे – शाम 8 बजे',
-  hoursEn: 'Mon–Sat: 10 AM – 8 PM',
-  phone: '+919876543210',
-  phoneDisplay: '+91 98765 43210',
-  whatsappGreeting: 'नमस्ते सुनील भैया, मुझे अलमारी देखनी है',
-  mapUrl: 'https://maps.google.com/?q=Harringtonganj+Ayodhya',
-  // Static map — placeholder until Google Static Maps API key is configured.
-  // M5.5 build pipeline will fetch this at build time.
-  staticMapUrl: '',
-  directions: 'अयोध्या रेलवे स्टेशन से 2 किमी — ऑटो से 10 मिनट',
-};
+const shopId = import.meta.env.SHOP_ID ?? process.env.SHOP_ID ?? 'sunil-trading-company';
+const shop = await fetchShopContent(shopId);
 
-const whatsappUrl = `https://wa.me/${shop.phone.replace('+', '')}?text=${encodeURIComponent(shop.whatsappGreeting)}`;
+const whatsappGreeting = `नमस्ते ${shop.ownerName}, मुझे अलमारी देखनी है`;
+const whatsappUrl = `https://wa.me/${shop.whatsappNumberE164.replace('+', '')}?text=${encodeURIComponent(whatsappGreeting)}`;
+const mapUrl = `https://maps.google.com/?q=${encodeURIComponent(shop.marketArea + ' ' + shop.city)}`;
 ---
 
-<BaseLayout title={`दुकान आइए — ${shop.name}`} description="सुनील ट्रेडिंग कंपनी का पता, समय, और संपर्क">
+<BaseLayout title={`दुकान आइए — ${shop.brandName}`} description={`${shop.brandName} का पता, समय, और संपर्क`}>
   <main class="visit-page">
     <header class="visit-header">
       <a href="/" class="back-link">&larr; वापस</a>
@@ -39,49 +29,37 @@ const whatsappUrl = `https://wa.me/${shop.phone.replace('+', '')}?text=${encodeU
 
     <!-- Map Section -->
     <section class="map-section">
-      {shop.staticMapUrl ? (
-        <a href={shop.mapUrl} target="_blank" rel="noopener">
-          <img
-            src={shop.staticMapUrl}
-            alt="सुनील ट्रेडिंग कंपनी का नक्शा"
-            class="map-image"
-            loading="lazy"
-          />
-        </a>
-      ) : (
-        <a href={shop.mapUrl} target="_blank" rel="noopener" class="map-placeholder">
-          <div class="map-placeholder-content">
-            <span class="map-icon">📍</span>
-            <p class="map-text">Google Maps पर देखिए</p>
-          </div>
-        </a>
-      )}
+      <a href={mapUrl} target="_blank" rel="noopener" class="map-placeholder">
+        <div class="map-placeholder-content">
+          <span class="map-icon">📍</span>
+          <p class="map-text">Google Maps पर देखिए</p>
+        </div>
+      </a>
     </section>
 
     <!-- Address Card -->
     <section class="info-card">
       <h2 class="info-label">पता</h2>
-      <p class="info-value-deva">{shop.address}</p>
-      <p class="info-value-en">{shop.addressEn}</p>
-      <p class="info-directions">{shop.directions}</p>
+      <p class="info-value-deva">{shop.marketArea}, {shop.city}</p>
+      <p class="info-directions">अयोध्या रेलवे स्टेशन से 2 किमी — ऑटो से 10 मिनट</p>
     </section>
 
     <!-- Hours Card -->
     <section class="info-card">
       <h2 class="info-label">समय</h2>
-      <p class="info-value-deva">{shop.hours}</p>
-      <p class="info-value-en">{shop.hoursEn}</p>
+      <p class="info-value-deva">सोमवार–शनिवार: सुबह 10 बजे – शाम 8 बजे</p>
+      <p class="info-value-en">Mon–Sat: 10 AM – 8 PM</p>
     </section>
 
     <!-- Contact Actions -->
     <section class="contact-actions">
-      <a href={`tel:${shop.phone}`} class="btn btn-primary contact-btn">
-        फ़ोन कीजिए — {shop.phoneDisplay}
+      <a href={`tel:${shop.whatsappNumberE164}`} class="btn btn-primary contact-btn">
+        फ़ोन कीजिए — {shop.whatsappNumberE164}
       </a>
       <a href={whatsappUrl} class="btn btn-accent contact-btn" target="_blank" rel="noopener">
         WhatsApp पर बात कीजिए
       </a>
-      <a href={shop.mapUrl} class="btn btn-outline contact-btn" target="_blank" rel="noopener">
+      <a href={mapUrl} class="btn btn-outline contact-btn" target="_blank" rel="noopener">
         रास्ता दिखाइए
       </a>
     </section>

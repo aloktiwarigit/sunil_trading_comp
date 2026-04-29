@@ -27,7 +27,8 @@ const shop = await fetchShopContent(shopId);
 const yearsInBusiness = new Date().getFullYear() - shop.establishedYear;
 const whatsappBase = `https://wa.me/${shop.whatsappNumberE164.replace('+', '')}`;
 const whatsappUrl = `${whatsappBase}?text=${encodeURIComponent(`नमस्ते ${shop.ownerName}, मुझे अलमारी देखनी है`)}`;
-const appUrl = 'https://play.google.com/store/apps/details?id=ai.yugmalabs.suniltrading';
+// TODO: update to com.yugmadukaan.app before first Play Store upload (pending WS2 decision)
+const appUrl = 'https://play.google.com/store/apps/details?id=com.suniltrading.app';
 const hasVoiceNote = shop.greetingVoiceNoteUrl.length > 0;
 const hasFacePhoto = shop.shopkeeperFaceUrl.length > 0;
 const hasCatalog = shop.curatedPreview.length > 0;
@@ -45,7 +46,7 @@ const occasions = [
 ];
 ---
 
-<BaseLayout title={`${shop.brandName} — ${shop.brandNameEnglish}`}>
+<BaseLayout title={`${shop.brandName} — ${shop.brandNameEnglish}`} description={shop.taglineDevanagari}>
 
   <!-- ═══════════════════════════════════════════════════════
        §1 HERO — The digital shopfront entrance
