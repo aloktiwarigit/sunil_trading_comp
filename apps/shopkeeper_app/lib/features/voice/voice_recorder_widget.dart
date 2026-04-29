@@ -68,7 +68,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
     _recorder.dispose();
     // Clean up temp file
     if (_filePath != null) {
-      File(_filePath!).delete().catchError((_) {});
+      File(_filePath!).delete().catchError((Object _) => File(''));
     }
     super.dispose();
   }
@@ -135,7 +135,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
   Future<void> _reRecord() async {
     // Delete old file
     if (_filePath != null) {
-      File(_filePath!).delete().catchError((_) {});
+      File(_filePath!).delete().catchError((Object _) => File(''));
     }
     setState(() {
       _hasRecording = false;

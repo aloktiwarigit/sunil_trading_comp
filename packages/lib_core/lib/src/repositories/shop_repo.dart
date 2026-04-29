@@ -33,8 +33,6 @@ class ShopRepo {
   ShopRepo({required FirebaseFirestore firestore}) : _firestore = firestore;
 
   final FirebaseFirestore _firestore;
-  static final Logger _log = Logger('ShopRepo');
-
   CollectionReference<Map<String, dynamic>> _collection() =>
       _firestore.collection('shops');
 

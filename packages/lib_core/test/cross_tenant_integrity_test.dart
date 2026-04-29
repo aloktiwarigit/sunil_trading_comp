@@ -23,7 +23,6 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:lib_core/src/models/chat_thread.dart';
-import 'package:lib_core/src/models/chat_thread_patch.dart';
 import 'package:lib_core/src/models/customer.dart';
 import 'package:lib_core/src/models/customer_memory.dart';
 import 'package:lib_core/src/models/line_item.dart';

@@ -10,7 +10,6 @@
 //   - Error normalization (FirebaseAuthException → AuthException)
 // =============================================================================
 
-import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lib_core/src/adapters/auth_provider.dart';

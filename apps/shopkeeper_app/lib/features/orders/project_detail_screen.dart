@@ -831,13 +831,6 @@ class ProjectDetailScreen extends ConsumerWidget {
             onPressed: () async {
               Navigator.of(ctx).pop();
 
-              final repo = ProjectRepo(
-                firestore: FirebaseFirestore.instance,
-                shopIdProvider: ShopIdProvider(
-                  ref.read(shopIdProviderProvider).shopId,
-                ),
-              );
-
               try {
                 // CR F1+F3: use server timestamps, include closedAt.
                 final patchMap = const ProjectOperatorPatch(

@@ -23,7 +23,6 @@ class OpsSignInScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(opsAuthControllerProvider);
-    final theme = Theme.of(context);
     final strings = const AppStringsHi();
 
     return Scaffold(

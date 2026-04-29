@@ -24,7 +24,6 @@ import 'package:lib_core/src/locale/strings_hi.dart';
 import 'package:lib_core/src/models/curated_shortlist.dart';
 import 'package:lib_core/src/models/inventory_sku.dart';
 import 'package:lib_core/src/theme/shop_theme_tokens.dart';
-import 'package:lib_core/src/theme/tokens.dart';
 import 'package:lib_core/src/theme/yugma_theme_extension.dart';
 
 // ---------------------------------------------------------------------------

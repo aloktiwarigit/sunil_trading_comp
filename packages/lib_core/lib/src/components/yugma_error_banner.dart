@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../locale/strings_base.dart';
 import '../theme/tokens.dart';
 import '../theme/yugma_theme_extension.dart';
 

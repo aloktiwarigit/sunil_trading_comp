@@ -25,7 +25,6 @@ import '../../locale/strings_base.dart';
 import '../../models/inventory_sku.dart';
 import '../../theme/tokens.dart';
 import '../../theme/yugma_theme_extension.dart';
-import '../yugma_connectivity_banner.dart';
 import 'shopkeeper_face_frame.dart';
 import 'shopkeeper_presence_dock.dart';
 

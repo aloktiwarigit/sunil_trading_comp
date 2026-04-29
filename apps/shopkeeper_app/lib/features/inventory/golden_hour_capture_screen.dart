@@ -10,7 +10,6 @@
 // AC #7: customer sees on next view
 // =============================================================================
 
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,10 +19,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lib_core/lib_core.dart';
 
 import '../../main.dart';
-import 'package:path_provider/path_provider.dart';
-
-import '../auth/auth_controller.dart';
-
 /// S4.5 — Golden Hour photo capture screen.
 ///
 /// Opens the device camera, captures a photo, uploads via MediaStore,

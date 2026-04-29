@@ -139,7 +139,7 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
             backgroundColor: YugmaColors.surface,
             onRefresh: () async {
               ref.invalidate(udhaarLedgersProvider);
-              await Future.delayed(const Duration(milliseconds: 500));
+              await Future<void>.delayed(const Duration(milliseconds: 500));
             },
             child: ListView.separated(
               padding: const EdgeInsets.all(YugmaSpacing.s4),

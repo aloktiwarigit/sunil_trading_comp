@@ -27,7 +27,6 @@ class GreetingManagementScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final strings = const AppStringsHi();
     final shopId = ref.read(shopIdProviderProvider).shopId;
 
     return Scaffold(

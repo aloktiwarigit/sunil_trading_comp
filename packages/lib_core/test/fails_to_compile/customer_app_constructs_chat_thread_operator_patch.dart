@@ -22,7 +22,6 @@ import 'package:lib_core/src/models/chat_thread_patch.dart'
 
 void expectThisFileFailsToCompile() {
   // Compiles cleanly — customer can construct its own participant patch.
-  // ignore: unused_local_variable
   const okParticipantPatch =
       ChatThreadParticipantPatch(unreadCountForCustomer: 0);
 

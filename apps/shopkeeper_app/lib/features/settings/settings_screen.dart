@@ -418,11 +418,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     String shopId,
   ) {
     final currentHex = tokens.primaryColorHex;
-    Color pickerColor = currentHex != null
-        ? Color(int.parse('FF${currentHex.replaceAll('#', '')}', radix: 16))
-        : YugmaColors.primary;
+    Color pickerColor =
+        Color(int.parse('FF${currentHex.replaceAll('#', '')}', radix: 16));
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(
