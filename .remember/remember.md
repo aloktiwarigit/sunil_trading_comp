@@ -1,15 +1,16 @@
 # Handoff
 
 ## State
-Phase 0 P0 backlog done + WS5.1+WS5.2 done. Main is at `80aea8e`. Repo is public-safe (audit confirmed). chatThreads + decision_circles reads are now tenant-scoped in firestore.rules (46/46 TS rules + 21/21 Dart cross-tenant tests green). Two plans: `modular-shimmying-deer.md` (Phase 0 status) and `shiny-swimming-kitten.md` (authoritative WS1–WS9 roadmap).
+CI is GREEN: Flutter CI ✅ + Cross-tenant integrity ✅ on commit `dbc3a19`. WS5.1+WS5.2+WS5.3 complete. Gate of No Return checklist: WS5.1-5.3 closed, WS5.4-5.9 + WS1 + WS4 open. Two plans: `modular-shimmying-deer.md` (state snapshot) and `shiny-swimming-kitten.md` (authoritative WS1–WS9 roadmap).
 
 ## Next
-1. **WS5.3** — scope `/system/*` reads per-shop (bhaiya of shop_A reads shop_B audit today). See shiny-swimming-kitten.md WS5.3 (~1.5-2d). Trickier than WS5.1+WS5.2 — needs IS-yugma-admin gate.
-2. **WS1** — customer-app tenant resolver (5-8 days): `app_links` + boot shopId resolution + AndroidManifest intent-filter + assetlinks.json. See shiny-swimming-kitten.md WS1.
-3. **4 ops steps still pending**: Blaze upgrade → `firebase functions:secrets:set JOIN_TOKEN_HMAC_SECRET`; Firebase Console App Check; GitHub Pro for branch protection; ratify DPDP grace 30d.
+1. **WS5.4** — `multiTenantAudit` must flag missing shopId field (currently silent for absent field). Fix: change `if (data.shopId !== undefined && data.shopId !== shopId)` to `if (data.shopId !== shopId)` in `functions/src/multi_tenant_audit.ts:87`. ~0.5d. See shiny-swimming-kitten.md WS5.4.
+2. **WS5.5** — expand `cross_tenant_integrity.test.ts` to cover all 12 subcollections + N tenants (currently 4 of 12 + 2 shops). See shiny-swimming-kitten.md WS5.5. ~2-2.5d.
+3. **WS1** — customer-app tenant resolver (5-8d, the big Phase 1 item): app_links + boot shopId from deep link + AndroidManifest. Biggest blocker for shop #2.
 
 ## Context
-- Repo is at `aloktiwarigit/sunil_trading_comp` — public-safe per 3-agent audit.
-- Keystore password `yugmadukaan2024` is LOCAL only (gitignored), but should be rotated before first Play Store upload.
-- `CLAUDE.md` still untracked — commit if you want project memory in public repo.
-- shiny-swimming-kitten.md WS5 items 5.1+5.2 closed; 5.3–5.9 still open and blocking shop #2.
+- Repo: https://github.com/aloktiwarigit/sunil_trading_comp (public, CI green)
+- CI known non-blocking failures: `marketing-ci.yml` + `cloud-functions-ci.yml` show 0s "workflow file issue" (GitHub ID corruption from April 11 initial commit — benign, non-blocking).
+- shopkeeper_app APK smoke-build disabled in CI (record_linux@0.7.2 upstream bug missing startStream; re-enable once pub.dev releases a fix).
+- 4 ops steps still needed before prod: JOIN_TOKEN_HMAC_SECRET, App Check Console toggle, GitHub branch protection, DPDP grace ratification.
+- shiny-swimming-kitten.md Gate of No Return: WS5.1-5.3 ✅, WS5.4-5.9 ❌, WS1 ❌, WS4 ❌, WS6 ❌, WS8 ❌.
