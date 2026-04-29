@@ -238,6 +238,50 @@ class ShopThemeTokens with _$ShopThemeTokens {
         updatedAt: DateTime(2026, 4, 11),
       );
 
+  // ─── Generic fallback for unknown shops ─────────────────────────────
+  //
+  // Used by OnboardingController when Firestore is unreachable and the
+  // shopId is not a known compile-time tenant.
+
+  /// Returns tenant-specific compile-time defaults for known shops;
+  /// generic Yugma Dukaan branding for any unknown shopId.
+  static ShopThemeTokens fallbackForShopId(String shopId) {
+    if (shopId == 'sunil-trading-company') return sunilTradingCompanyDefault();
+    if (shopId == 'shop_0') return syntheticShop0();
+    return ShopThemeTokens(
+      shopId: shopId,
+      brandName: 'दुकान',
+      brandNameEnglish: 'Shop',
+      ownerName: 'भैया',
+      taglineDevanagari: '',
+      taglineEnglish: '',
+      primaryColorHex: '#6B3410',
+      primaryDeepColorHex: '#4A2308',
+      secondaryColorHex: '#8B4513',
+      accentColorHex: '#B8860B',
+      accentGlowColorHex: '#D4A547',
+      commitColorHex: '#7B1F1F',
+      backgroundColorHex: '#FAF3E7',
+      surfaceColorHex: '#FFFAF0',
+      textPrimaryColorHex: '#1F1611',
+      textOnPrimaryColorHex: '#FAF3E7',
+      fontFamilyDevanagariDisplay: 'Tiro Devanagari Hindi',
+      fontFamilyDevanagariBody: 'Mukta',
+      fontFamilyEnglishDisplay: 'Fraunces',
+      fontFamilyEnglishBody: 'EB Garamond',
+      shopkeeperFaceUrl: '',
+      greetingVoiceNoteId: '',
+      city: '',
+      marketArea: '',
+      establishedYear: 2024,
+      whatsappNumberE164: '',
+      upiVpa: '',
+      gstNumber: null,
+      version: 1,
+      updatedAt: DateTime.utc(2024),
+    );
+  }
+
   // ─── Synthetic shop_0 tenant — for cross-tenant integrity testing ───
   //
   // Per ADR-012: this tenant is maintained continuously from day one

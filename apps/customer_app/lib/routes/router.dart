@@ -81,6 +81,15 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
+      // WS1.8: guard against unresolved shopId (empty string).
+      // TenantResolver always returns a non-empty shopId (falls back to
+      // flagshipShopId), so this only fires if the provider override was
+      // accidentally skipped or set to ''.
+      final shopId = ref.read(shopIdProviderProvider).shopId;
+      if (shopId.isEmpty && state.matchedLocation != '/unresolved-shop') {
+        return '/unresolved-shop';
+      }
+
       final isLoading = onboarding.isLoading;
       final hasError = onboarding.hasError;
       final isReady = !isLoading && !hasError && onboarding.hasValue;
@@ -184,6 +193,50 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           );
         },
+      ),
+      // WS1.8: ShopId unresolved error screen — shown only if the
+      // ProviderScope override was misconfigured (shopId == '').
+      // In normal operation TenantResolver always supplies a non-empty shopId.
+      GoRoute(
+        path: '/unresolved-shop',
+        builder: (context, state) => const Scaffold(
+          backgroundColor: YugmaColors.background,
+          body: Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.store_mall_directory_outlined,
+                    size: 64,
+                    color: YugmaColors.textSecondary,
+                  ),
+                  SizedBox(height: 24),
+                  Text(
+                    'दुकान नहीं मिली',
+                    style: TextStyle(
+                      fontFamily: YugmaFonts.devaDisplay,
+                      fontSize: 22,
+                      color: YugmaColors.primary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Shop could not be resolved.\nPlease re-open via the shop link.',
+                    style: TextStyle(
+                      fontFamily: YugmaFonts.enBody,
+                      fontSize: 14,
+                      color: YugmaColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
       // ─────────────────────────────────────────────────────────────
       // ShellRoute — wraps ALL non-splash/non-landing routes with

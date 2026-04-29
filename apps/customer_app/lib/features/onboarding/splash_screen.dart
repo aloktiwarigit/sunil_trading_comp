@@ -78,9 +78,12 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     border: Border.all(color: YugmaColors.accent, width: 3),
                   ),
+                  // WS1.6: generic Yugma Dukaan initial — 'यु' from युगम.
+                  // Shown before shop theme loads; replaced by shop-specific
+                  // branding once OnboardingController completes.
                   child: const Center(
                     child: Text(
-                      'सु',
+                      'यु',
                       style: TextStyle(
                         fontFamily: YugmaFonts.devaDisplay,
                         fontSize: 32,
@@ -90,35 +93,16 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Shop name — compile-time constant, not from Firestore
-                Text(
-                  ShopThemeTokens.sunilTradingCompanyDefault().brandName,
-                  style: const TextStyle(
+                // Platform name — tenant-neutral until shop theme loads.
+                const Text(
+                  'युगम दुकान',
+                  style: TextStyle(
                     fontFamily: YugmaFonts.devaDisplay,
                     fontSize: 24,
                     color: YugmaColors.primary,
                     height: YugmaLineHeights.tight,
                   ),
                   textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                // Tagline — uses compile-time default. If empty (Sprint 0
-                // discipline), shows nothing.
-                Builder(
-                  builder: (context) {
-                    final tagline = ShopThemeTokens.sunilTradingCompanyDefault()
-                        .taglineDevanagari;
-                    if (tagline.isEmpty) return const SizedBox.shrink();
-                    return Text(
-                      tagline,
-                      style: const TextStyle(
-                        fontFamily: YugmaFonts.devaBody,
-                        fontSize: 14,
-                        color: YugmaColors.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    );
-                  },
                 ),
                 const SizedBox(height: 32),
                 // Devanagari-styled progress indicator (brass accent, not blue)

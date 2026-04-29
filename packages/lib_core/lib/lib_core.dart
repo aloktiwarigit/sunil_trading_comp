@@ -109,6 +109,7 @@ export 'src/routing/yugma_page_transition.dart';
 export 'src/services/phone_upgrade_coordinator.dart';
 export 'src/services/read_budget_meter.dart';
 export 'src/services/session_bootstrap.dart';
+export 'src/services/tenant_resolver.dart';
 export 'src/services/upi_intent_builder.dart';
 
 // ---------- Utilities ----------

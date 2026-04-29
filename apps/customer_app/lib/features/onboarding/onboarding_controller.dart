@@ -209,15 +209,20 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
   }
 
   /// Fallback Shop for when Firestore is unavailable or permission denied.
-  static Shop _fallbackShop(String shopId) => Shop(
-        shopId: shopId,
-        brandName: 'Sunil Trading Company',
-        brandNameDevanagari: 'सुनील ट्रेडिंग कंपनी',
-        ownerUid: '',
-        market: 'Harringtonganj',
-        createdAt: DateTime.now(),
-        activeFromDay: DateTime.now(),
-      );
+  /// Uses ShopThemeTokens.fallbackForShopId so branding matches the active
+  /// tenant rather than always returning Sunil Trading Company.
+  static Shop _fallbackShop(String shopId) {
+    final tokens = ShopThemeTokens.fallbackForShopId(shopId);
+    return Shop(
+      shopId: shopId,
+      brandName: tokens.brandNameEnglish,
+      brandNameDevanagari: tokens.brandName,
+      ownerUid: '',
+      market: tokens.marketArea,
+      createdAt: DateTime.now(),
+      activeFromDay: DateTime.now(),
+    );
+  }
 
   /// Normalize Firestore Timestamp → ISO8601 for Freezed JSON round-trip.
   static Object? _normalizeTimestamp(Object? value) {

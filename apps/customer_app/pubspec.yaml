@@ -42,6 +42,9 @@ dependencies:
   share_plus: ^10.0.0
   path_provider: ^2.1.5
 
+  # ---- Deep linking (WS1: tenant resolver) ----
+  app_links: ^6.3.4
+
   # ---- Persistence ----
   shared_preferences: ^2.3.3
 

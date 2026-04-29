@@ -54,6 +54,12 @@ dependencies:
   # ---- Shimmer (loading skeletons) ----
   shimmer: ^3.0.0
 
+  # ---- Deep linking (WS1: TenantResolver) ----
+  app_links: ^6.3.4
+
+  # ---- Persistence (WS1: TenantResolver) ----
+  shared_preferences: ^2.3.3
+
   # ---- Logging ----
   logging: ^1.2.0
 
