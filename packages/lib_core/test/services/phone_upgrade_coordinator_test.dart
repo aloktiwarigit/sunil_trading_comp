@@ -144,7 +144,9 @@ class _CollisionSimulatingAuthProvider implements AuthProvider {
   }
 
   @override
-  Future<Map<String, dynamic>> getTokenClaims({bool forceRefresh = false}) async => {};
+  Future<Map<String, dynamic>> getTokenClaims(
+          {bool forceRefresh = false}) async =>
+      {};
 }
 
 /// A FakeAuthProvider that simulates the happy path (no collision).
@@ -205,7 +207,9 @@ class _HappyPathAuthProvider implements AuthProvider {
   Future<void> signOut() async => _currentUser = null;
 
   @override
-  Future<Map<String, dynamic>> getTokenClaims({bool forceRefresh = false}) async => {};
+  Future<Map<String, dynamic>> getTokenClaims(
+          {bool forceRefresh = false}) async =>
+      {};
 }
 
 void main() {
