@@ -1,5 +1,5 @@
-// =============================================================================
-// OrderListScreen — C3.10 AC #1–2: customer's "मेरे ऑर्डर" tab.
+﻿// =============================================================================
+// OrderListScreen â€” C3.10 AC #1â€“2: customer's "à¤®à¥‡à¤°à¥‡ à¤‘à¤°à¥à¤¡à¤°" tab.
 //
 // Shows all projects for the current customer (filtered by customerUid).
 // Each card: state badge in Devanagari, total amount, last updated,
@@ -16,7 +16,7 @@ import 'package:lib_core/lib_core.dart';
 
 import '../../main.dart' show authProviderInstanceProvider;
 
-/// Normalize Firestore Timestamp → ISO8601 for Freezed JSON parsing.
+/// Normalize Firestore Timestamp â†’ ISO8601 for Freezed JSON parsing.
 Object? _normalizeTimestamp(Object? value) {
   if (value == null) return null;
   if (value is Timestamp) return value.toDate().toIso8601String();
@@ -57,7 +57,7 @@ final customerProjectsProvider =
           }).toList());
 });
 
-/// C3.10 — Customer's order list.
+/// C3.10 â€” Customer's order list.
 class OrderListScreen extends ConsumerWidget {
   const OrderListScreen({super.key, required this.strings});
 
@@ -103,7 +103,7 @@ class OrderListScreen extends ConsumerWidget {
             backgroundColor: theme.shopSurface,
             onRefresh: () async {
               ref.invalidate(customerProjectsProvider);
-              await Future.delayed(const Duration(milliseconds: 500));
+              await Future<void>.delayed(const Duration(milliseconds: 500));
             },
             child: ListView.separated(
               padding: const EdgeInsets.all(YugmaSpacing.s4),
@@ -182,7 +182,7 @@ class _OrderCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '₹${formatInr(project.totalAmount)}',
+                  'â‚¹${formatInr(project.totalAmount)}',
                   style: theme.monoNumeral.copyWith(
                     fontSize: YugmaTypeScale.bodyLarge,
                     fontWeight: FontWeight.w700,
@@ -217,7 +217,7 @@ class _OrderCard extends StatelessWidget {
     );
   }
 
-  /// C3.10 AC #2: state badge — locale-aware via AppStrings.
+  /// C3.10 AC #2: state badge â€” locale-aware via AppStrings.
   static String _stateLabel(ProjectState state, AppStrings strings) =>
       switch (state) {
         ProjectState.draft => strings.stateBadgeDraft,

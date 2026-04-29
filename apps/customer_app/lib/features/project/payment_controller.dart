@@ -1,12 +1,12 @@
-// =============================================================================
-// PaymentController — Riverpod controller managing the C3.5 UPI payment flow.
+﻿// =============================================================================
+// PaymentController â€” Riverpod controller managing the C3.5 UPI payment flow.
 //
-// State machine: idle → launching → awaitingReturn → recording → paid | error
+// State machine: idle â†’ launching â†’ awaitingReturn â†’ recording â†’ paid | error
 //
 // Per C3.5:
 //   AC #1: UPI primary CTA + "other ways" secondary link
 //   AC #2: UPI deep link via url_launcher
-//   AC #5: committed → paid Firestore transaction (Triple Zero re-verified)
+//   AC #5: committed â†’ paid Firestore transaction (Triple Zero re-verified)
 //   AC #8: Triple Zero UPI invariant (am= == totalAmount, pa= == shop.upiVpa)
 // =============================================================================
 
@@ -18,23 +18,21 @@ import 'package:lib_core/lib_core.dart';
 import 'package:logging/logging.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:customer_app/main.dart';
-
 /// Stages of the payment flow.
 enum PaymentFlowStage {
-  /// Ready — UPI button visible.
+  /// Ready â€” UPI button visible.
   idle,
 
   /// UPI intent launching.
   launching,
 
-  /// UPI app opened — waiting for the customer to return.
+  /// UPI app opened â€” waiting for the customer to return.
   awaitingReturn,
 
   /// Recording payment in Firestore.
   recording,
 
-  /// Payment succeeded — Project is now paid.
+  /// Payment succeeded â€” Project is now paid.
   paid,
 
   /// Something failed.
@@ -104,7 +102,7 @@ class PaymentController extends FamilyAsyncNotifier<PaymentFlowState, String> {
       project: state.valueOrNull?.project,
     ));
 
-    // Build the UPI URI — Triple Zero invariant enforced by the builder.
+    // Build the UPI URI â€” Triple Zero invariant enforced by the builder.
     final upiUri = UpiIntentBuilder.build(
       shopVpa: shopVpa,
       shopName: shopName,
@@ -131,7 +129,7 @@ class PaymentController extends FamilyAsyncNotifier<PaymentFlowState, String> {
       // After launching, we transition to awaitingReturn.
       // When the customer returns to the app, they tap "I paid" to
       // trigger the Firestore transition. (Full UPI callback parsing
-      // is a depth-story enhancement — WS uses manual confirmation.)
+      // is a depth-story enhancement â€” WS uses manual confirmation.)
       state = AsyncData(PaymentFlowState(
         stage: PaymentFlowStage.awaitingReturn,
         project: state.valueOrNull?.project,
@@ -146,7 +144,7 @@ class PaymentController extends FamilyAsyncNotifier<PaymentFlowState, String> {
     }
   }
 
-  /// Customer selects COD. Transition committed → delivering (C3.6).
+  /// Customer selects COD. Transition committed â†’ delivering (C3.6).
   Future<void> selectCod() async {
     state = AsyncData(PaymentFlowState(
       stage: PaymentFlowStage.recording,
@@ -187,7 +185,7 @@ class PaymentController extends FamilyAsyncNotifier<PaymentFlowState, String> {
     }
   }
 
-  /// Customer self-reports bank transfer. Transition committed → awaiting_verification (C3.7).
+  /// Customer self-reports bank transfer. Transition committed â†’ awaiting_verification (C3.7).
   Future<void> selectBankTransfer() async {
     state = AsyncData(PaymentFlowState(
       stage: PaymentFlowStage.recording,

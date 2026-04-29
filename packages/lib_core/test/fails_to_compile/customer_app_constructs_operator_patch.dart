@@ -1,5 +1,5 @@
-// =============================================================================
-// Negative compilation test — PRD I6.12 AC #5(a).
+﻿// =============================================================================
+// Negative compilation test â€” PRD I6.12 AC #5(a).
 //
 // This file is NOT meant to compile cleanly. It exists to PROVE that a
 // customer-app code path cannot accidentally construct a `ProjectOperatorPatch`
@@ -16,13 +16,13 @@
 //
 // The errors this file intentionally triggers:
 //
-//   1. `undefined_identifier` — the `ProjectOperatorPatch` constructor is
+//   1. `undefined_identifier` â€” the `ProjectOperatorPatch` constructor is
 //      invoked without importing the `project_patch.dart` file that would
 //      expose it. Conceptually this mirrors the customer_app's import
 //      posture: the customer_app only imports the customer patch class,
 //      so the operator class is out of scope.
 //
-// If you're looking at this file and wondering "why doesn't it compile?" —
+// If you're looking at this file and wondering "why doesn't it compile?" â€”
 // that is the point. Do not add the missing import. Do not "fix" the error.
 // This file failing to compile IS the test passing.
 // =============================================================================
@@ -36,8 +36,7 @@ import 'package:lib_core/src/models/project_patch.dart'
     show ProjectCustomerPatch;
 
 void expectThisFileFailsToCompile() {
-  // This line should compile cleanly — customer can construct its own patch.
-  // ignore: unused_local_variable
+  // This line should compile cleanly â€” customer can construct its own patch.
   const okCustomerPatch = ProjectCustomerPatch(occasion: 'shaadi');
 
   // The following lines are DELIBERATELY broken to trigger a compile error.
@@ -59,7 +58,7 @@ void expectThisFileFailsToCompile() {
   // ---- End uncomment block
   //
   // In normal CI runs these lines stay commented. The presence of the
-  // `show` restriction on the import IS the enforcement — any future engineer
+  // `show` restriction on the import IS the enforcement â€” any future engineer
   // who un-restricts the import to get `ProjectOperatorPatch` in scope will
   // trigger the CI import-audit script `tools/audit_project_patch_imports.sh`
   // which fails the build on that change.

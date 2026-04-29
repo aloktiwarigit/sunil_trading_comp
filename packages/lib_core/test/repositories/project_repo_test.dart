@@ -1,8 +1,8 @@
-// =============================================================================
-// ProjectRepo tests — commit transaction + Triple Zero invariant (C3.4 AC #4).
+﻿// =============================================================================
+// ProjectRepo tests â€” commit transaction + Triple Zero invariant (C3.4 AC #4).
 //
 // Tests applyCustomerCommitPatch against fake_cloud_firestore to verify:
-//   1. Happy path: draft → committed transition
+//   1. Happy path: draft â†’ committed transition
 //   2. Triple Zero invariant: amountReceivedByShop == totalAmount
 //   3. State precondition: rejects non-draft/negotiating states
 //   4. Total amount computed from server-side line items
@@ -11,7 +11,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lib_core/src/models/project.dart';
 import 'package:lib_core/src/models/project_patch.dart';
 import 'package:lib_core/src/repositories/project_repo.dart';
 import 'package:lib_core/src/shop_id_provider.dart';
@@ -56,24 +55,24 @@ void main() {
   }
 
   // ===========================================================================
-  // applyCustomerCommitPatch — happy path
+  // applyCustomerCommitPatch â€” happy path
   // ===========================================================================
 
   group('applyCustomerCommitPatch', () {
-    test('transitions draft → committed with correct totalAmount', () async {
+    test('transitions draft â†’ committed with correct totalAmount', () async {
       final projectId = await seedDraftProject(
         lineItems: [
           {
             'lineItemId': 'li-1',
             'skuId': 'sku-1',
-            'skuName': 'शीशम अलमीरा',
+            'skuName': 'à¤¶à¥€à¤¶à¤® à¤…à¤²à¤®à¥€à¤°à¤¾',
             'quantity': 2,
             'unitPriceInr': 15000,
           },
           {
             'lineItemId': 'li-2',
             'skuId': 'sku-2',
-            'skuName': 'सागवान डबल डोर',
+            'skuName': 'à¤¸à¤¾à¤—à¤µà¤¾à¤¨ à¤¡à¤¬à¤² à¤¡à¥‹à¤°',
             'quantity': 1,
             'unitPriceInr': 22000,
           },
@@ -98,7 +97,7 @@ void main() {
     });
 
     // =========================================================================
-    // C3.4 AC #4 — Triple Zero invariant (machine-verifiable)
+    // C3.4 AC #4 â€” Triple Zero invariant (machine-verifiable)
     // =========================================================================
 
     test('Triple Zero invariant: amountReceivedByShop == totalAmount at commit',
@@ -108,7 +107,7 @@ void main() {
           {
             'lineItemId': 'li-1',
             'skuId': 'sku-1',
-            'skuName': 'शीशम अलमीरा',
+            'skuName': 'à¤¶à¥€à¤¶à¤® à¤…à¤²à¤®à¥€à¤°à¤¾',
             'quantity': 1,
             'unitPriceInr': 18000,
           },
@@ -123,7 +122,7 @@ void main() {
       final snap = await projectsCol.doc(projectId).get();
       final data = snap.data()!;
 
-      // THE invariant — zero commission, zero platform fee.
+      // THE invariant â€” zero commission, zero platform fee.
       expect(data['amountReceivedByShop'], data['totalAmount']);
       expect(data['amountReceivedByShop'], 18000);
       expect(data['totalAmount'], 18000);
@@ -228,7 +227,7 @@ void main() {
   });
 
   // ===========================================================================
-  // applyCustomerPaymentPatch — C3.5
+  // applyCustomerPaymentPatch â€” C3.5
   // ===========================================================================
 
   group('applyCustomerPaymentPatch', () {
@@ -246,7 +245,7 @@ void main() {
         'state': 'committed',
         'totalAmount': totalAmount,
         'amountReceivedByShop': amountReceivedByShop ?? totalAmount,
-        'lineItems': [],
+        'lineItems': <Map<String, dynamic>>[],
         'unreadCountForCustomer': 0,
         'unreadCountForShopkeeper': 0,
         'createdAt': Timestamp.fromDate(DateTime(2026, 4, 12)),
@@ -254,7 +253,7 @@ void main() {
       return ref.id;
     }
 
-    test('transitions committed → paid', () async {
+    test('transitions committed â†’ paid', () async {
       final projectId = await seedCommittedProject();
 
       await repo.applyCustomerPaymentPatch(
@@ -287,7 +286,7 @@ void main() {
       // Artificially break the invariant.
       final projectId = await seedCommittedProject(
         totalAmount: 22000,
-        amountReceivedByShop: 21000, // != totalAmount — violation
+        amountReceivedByShop: 21000, // != totalAmount â€” violation
       );
 
       expect(
@@ -329,7 +328,7 @@ void main() {
         'state': 'paid',
         'totalAmount': 5000,
         'amountReceivedByShop': 5000,
-        'lineItems': [],
+        'lineItems': <Map<String, dynamic>>[],
         'createdAt': Timestamp.fromDate(DateTime(2026, 4, 12)),
       });
 

@@ -1,5 +1,5 @@
-// =============================================================================
-// DeactivationBanner — C3.12 widget tests.
+﻿// =============================================================================
+// DeactivationBanner â€” C3.12 widget tests.
 //
 // Tests:
 //   1. Hidden when shopLifecycle == active
@@ -22,11 +22,6 @@ void main() {
 
   group('DeactivationBanner', () {
     test('hidden when shopLifecycle is active', () {
-      final widget = DeactivationBanner(
-        shopLifecycle: ShopLifecycle.active,
-        dpdpRetentionUntil: null,
-        strings: strings,
-      );
 
       // The build method returns SizedBox.shrink for active.
       // We verify by checking the build logic directly.
@@ -47,7 +42,7 @@ void main() {
       ));
 
       // Banner text should contain key phrases
-      expect(find.textContaining('बंद हो रही है'), findsOneWidget);
+      expect(find.textContaining('à¤¬à¤‚à¤¦ à¤¹à¥‹ à¤°à¤¹à¥€ à¤¹à¥ˆ'), findsOneWidget);
       // FAQ link
       expect(find.text(strings.shopDeactivationFaqTitle), findsOneWidget);
       // Export CTA
@@ -67,7 +62,7 @@ void main() {
       ));
 
       // Purge banner text
-      expect(find.textContaining('हटा दिया जाएगा'), findsOneWidget);
+      expect(find.textContaining('à¤¹à¤Ÿà¤¾ à¤¦à¤¿à¤¯à¤¾ à¤œà¤¾à¤à¤—à¤¾'), findsOneWidget);
     });
 
     testWidgets('hidden when shopLifecycle is purged', (tester) async {
@@ -79,9 +74,9 @@ void main() {
         ),
       ));
 
-      // Should render SizedBox.shrink — no text visible
-      expect(find.textContaining('बंद'), findsNothing);
-      expect(find.textContaining('हटा'), findsNothing);
+      // Should render SizedBox.shrink â€” no text visible
+      expect(find.textContaining('à¤¬à¤‚à¤¦'), findsNothing);
+      expect(find.textContaining('à¤¹à¤Ÿà¤¾'), findsNothing);
     });
 
     testWidgets('FAQ and export buttons hidden when no callbacks', (tester) async {
@@ -111,9 +106,9 @@ void main() {
       ));
 
       expect(find.text(strings.shopDeactivationFaqTitle), findsOneWidget);
-      expect(find.textContaining('दुकान क्यों बंद'), findsOneWidget);
-      expect(find.textContaining('मेरे पैसे'), findsOneWidget);
-      expect(find.textContaining('150 दिन तक'), findsOneWidget);
+      expect(find.textContaining('à¤¦à¥à¤•à¤¾à¤¨ à¤•à¥à¤¯à¥‹à¤‚ à¤¬à¤‚à¤¦'), findsOneWidget);
+      expect(find.textContaining('à¤®à¥‡à¤°à¥‡ à¤ªà¥ˆà¤¸à¥‡'), findsOneWidget);
+      expect(find.textContaining('150 à¤¦à¤¿à¤¨ à¤¤à¤•'), findsOneWidget);
     });
   });
 }
