@@ -70,3 +70,4 @@ scripts:
   clean:
     description: Clean all Flutter build artifacts
     run: melos exec -- "flutter clean"
+
