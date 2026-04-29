@@ -129,7 +129,7 @@ async function seedShop(shop: SyntheticShop): Promise<void> {
   }
   await auth.setCustomUserClaims(shop.ownerUid, {
     shopId: shop.shopId,
-    role: 'shopkeeper',
+    role: 'bhaiya',
   });
 
   const shopRef = db.collection('shops').doc(shop.shopId);
@@ -172,7 +172,7 @@ async function seedShop(shop: SyntheticShop): Promise<void> {
   batch.set(db.collection('operators').doc(shop.ownerUid), {
     uid: shop.ownerUid,
     shopId: shop.shopId,
-    role: 'shopkeeper',
+    role: 'bhaiya',
     displayName: `${shop.brandName} Owner`,
     email: shop.ownerEmail,
     createdAt: new Date(),
