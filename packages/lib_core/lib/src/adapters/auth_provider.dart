@@ -287,4 +287,10 @@ abstract class AuthProvider {
 
   /// Sign out and clear locally-cached refresh token.
   Future<void> signOut();
+
+  /// Returns the current user's ID token claims, force-refreshing when
+  /// [forceRefresh] is true. Returns an empty map when no user is signed in.
+  /// Ops app uses this to read the `role` custom claim set by the backend
+  /// (matches what Firestore security rules see on `request.auth.token.role`).
+  Future<Map<String, dynamic>> getTokenClaims({bool forceRefresh = false});
 }

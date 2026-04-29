@@ -328,6 +328,20 @@ class AuthProviderFirebase implements AuthProvider {
   }
 
   // ---------------------------------------------------------------------------
+  // Token claims
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<Map<String, dynamic>> getTokenClaims({
+    bool forceRefresh = false,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return {};
+    final result = await user.getIdTokenResult(forceRefresh);
+    return result.claims ?? {};
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 

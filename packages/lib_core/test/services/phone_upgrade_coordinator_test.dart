@@ -142,6 +142,9 @@ class _CollisionSimulatingAuthProvider implements AuthProvider {
     _currentUser = null;
     await _anonymousMockAuth.signOut();
   }
+
+  @override
+  Future<Map<String, dynamic>> getTokenClaims({bool forceRefresh = false}) async => {};
 }
 
 /// A FakeAuthProvider that simulates the happy path (no collision).
@@ -200,6 +203,9 @@ class _HappyPathAuthProvider implements AuthProvider {
 
   @override
   Future<void> signOut() async => _currentUser = null;
+
+  @override
+  Future<Map<String, dynamic>> getTokenClaims({bool forceRefresh = false}) async => {};
 }
 
 void main() {

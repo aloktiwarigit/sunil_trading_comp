@@ -120,12 +120,30 @@ class OpsAuthController extends AsyncNotifier<OpsAuthState> {
   }
 
   /// Look up the operator doc and start watching for live changes.
+  /// Role is resolved from ID-token claims (matching Firestore rule layer);
+  /// the Operator doc provides displayName, email, joinedAt, permissions.
   Future<OpsAuthState> _resolveOperator(AppUser user) async {
+    final authProvider = ref.read(shopkeeperAuthProviderInstance);
     final shopIdProvider = ref.read(shopIdProviderProvider);
     final firestore = FirebaseFirestore.instance;
     final operatorRepo = OperatorRepo(
       firestore: firestore,
       shopIdProvider: shopIdProvider,
+    );
+
+    // Resolve role from token claims — this is what Firestore security rules
+    // see on `request.auth.token.role`, so it is the authoritative source.
+    final claims = await authProvider.getTokenClaims(forceRefresh: true);
+    final roleStr = claims['role'] as String? ?? '';
+    final role = OperatorRole.values.firstWhere(
+      (r) => r.name == roleStr,
+      orElse: () {
+        _log.warning(
+          'token claim "role" missing or unrecognised '
+          '(got: "$roleStr") for uid=${user.uid} — falling back to beta',
+        );
+        return OperatorRole.beta;
+      },
     );
 
     try {
@@ -140,7 +158,7 @@ class OpsAuthController extends AsyncNotifier<OpsAuthState> {
       }
 
       _log.info(
-        'operator resolved: uid=${user.uid} role=${op.role.name}',
+        'operator resolved: uid=${user.uid} role=${role.name} (from claims)',
       );
 
       // Touch lastActiveAt for burnout telemetry (non-blocking).
@@ -152,7 +170,9 @@ class OpsAuthController extends AsyncNotifier<OpsAuthState> {
       return OpsAuthState(
         status: OpsAuthStatus.authorized,
         user: user,
-        operator: op,
+        // Role from token claims; rest (displayName, email, joinedAt,
+        // permissions) from the Operator doc.
+        operator: op.copyWith(role: role),
       );
     } on OperatorRepoException catch (e) {
       if (e.code == 'permission-denied') {

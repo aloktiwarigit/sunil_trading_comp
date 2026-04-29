@@ -76,4 +76,8 @@ class AuthProviderMsg91 implements AuthProvider {
 
   @override
   Future<void> signOut() => _firebase.signOut();
+
+  @override
+  Future<Map<String, dynamic>> getTokenClaims({bool forceRefresh = false}) =>
+      _firebase.getTokenClaims(forceRefresh: forceRefresh);
 }
