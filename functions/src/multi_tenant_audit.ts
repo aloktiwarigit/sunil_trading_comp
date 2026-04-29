@@ -84,7 +84,7 @@ export const multiTenantAudit = onSchedule(
 
           for (const subDoc of subSnap.docs) {
             const data = subDoc.data();
-            if (data.shopId !== undefined && data.shopId !== shopId) {
+            if (data.shopId !== shopId) {
               violations.push({
                 shopId,
                 type: 'shopId_mismatch',

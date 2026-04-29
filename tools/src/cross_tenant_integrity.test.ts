@@ -860,4 +860,71 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
   });
+
+  // -------------------------------------------------------------------------
+  // WS5.4 — multiTenantAudit missing-shopId detection
+  // The CF's violation-detection condition must flag docs whose shopId field
+  // is entirely absent (undefined), not only docs with a wrong shopId value.
+  // The scheduled CF is not directly invocable from the emulator context, so
+  // we verify the condition logic: once by running it against a seeded doc,
+  // once as a pure-logic regression to document the old-vs-new behaviour.
+  // -------------------------------------------------------------------------
+
+  describe('WS5.4 — multiTenantAudit missing-shopId detection', () => {
+    test('doc without shopId field is flagged by the fixed audit condition', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .collection('shops')
+          .doc('shop_1')
+          .collection('udhaarLedger')
+          .doc('udh-missing-shopid')
+          .set({
+            customerId: 'cust-x',
+            recordedAmount: 5000,
+            runningBalance: 5000,
+            // shopId intentionally omitted — the silent-bug scenario
+          });
+      });
+
+      const violations: string[] = [];
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        const snap = await ctx
+          .firestore()
+          .collection('shops')
+          .doc('shop_1')
+          .collection('udhaarLedger')
+          .get();
+
+        const shopId = 'shop_1';
+        for (const doc of snap.docs) {
+          const data = doc.data();
+          // Fixed condition: undefined !== shopId → violation flagged
+          if (data.shopId !== shopId) {
+            violations.push(doc.id);
+          }
+        }
+      });
+
+      expect(violations).toContain('udh-missing-shopid');
+    });
+
+    test('old broken condition silently misses docs with no shopId field', () => {
+      // Pure logic regression — no emulator I/O needed.
+      const data: Record<string, unknown> = {
+        customerId: 'cust-x',
+        recordedAmount: 5000,
+        runningBalance: 5000,
+        // shopId absent → data.shopId === undefined
+      };
+      const shopId = 'shop_1';
+
+      const brokenCondition =
+        data.shopId !== undefined && data.shopId !== shopId;
+      const fixedCondition = data.shopId !== shopId;
+
+      expect(brokenCondition).toBe(false); // bug: violation silently missed
+      expect(fixedCondition).toBe(true);   // fix: violation correctly detected
+    });
+  });
 });
