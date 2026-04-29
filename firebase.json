@@ -26,7 +26,7 @@
   ],
   "hosting": [
     {
-      "target": "marketing",
+      "target": "marketing-sunil-trading-company",
       "public": "apps/marketing_site/dist",
       "ignore": [
         "firebase.json",

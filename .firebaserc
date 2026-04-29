@@ -9,21 +9,21 @@
   "targets": {
     "yugma-dukaan-dev": {
       "hosting": {
-        "marketing": [
+        "marketing-sunil-trading-company": [
           "yugma-dukaan-dev"
         ]
       }
     },
     "yugma-dukaan-staging": {
       "hosting": {
-        "marketing": [
+        "marketing-sunil-trading-company": [
           "yugma-dukaan-staging"
         ]
       }
     },
     "yugma-dukaan-prod": {
       "hosting": {
-        "marketing": [
+        "marketing-sunil-trading-company": [
           "yugma-dukaan-prod"
         ]
       }

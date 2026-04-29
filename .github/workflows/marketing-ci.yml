@@ -99,7 +99,8 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
-          target: marketing
+          # For shop #2, add marketing-{slug} to firebase.json + .firebaserc
+          target: marketing-${{ steps.shop.outputs.shop_id }}
           projectId: yugma-dukaan-dev
 
   notify-on-failure:
