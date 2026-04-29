@@ -54,7 +54,7 @@ Map<String, String> _renderAllStrings(AppStrings s) {
     'shortlistTitleShaadi': s.shortlistTitleShaadi,
     'shortlistTitleNayaGhar': s.shortlistTitleNayaGhar,
     'shortlistTitlePuranaBadlne': s.shortlistTitlePuranaBadlne,
-    'shortlistTitleDahej': s.shortlistTitleDahej,
+    'shortlistTitleBetiKaGhar': s.shortlistTitleBetiKaGhar,
     'shortlistTitleBudget': s.shortlistTitleBudget,
     'shortlistTitleLadies': s.shortlistTitleLadies,
 

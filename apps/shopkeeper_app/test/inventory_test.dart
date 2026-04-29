@@ -24,6 +24,16 @@ import 'package:shopkeeper_app/features/inventory/create_sku_screen.dart';
 import 'package:shopkeeper_app/features/inventory/inventory_list_screen.dart';
 import 'package:shopkeeper_app/features/dashboard/home_dashboard.dart';
 
+/// Mirrors `app.dart`'s production theme so widgets that read
+/// `context.yugmaTheme` (HomeDashboard et al.) can build inside tests.
+ThemeData _testTheme() => ThemeData(
+      extensions: <ThemeExtension<dynamic>>[
+        YugmaThemeExtension.fromTokens(
+          ShopThemeTokens.sunilTradingCompanyDefault(),
+        ),
+      ],
+    );
+
 void main() {
   // =========================================================================
   // AppStrings §18 — inventory strings
@@ -545,12 +555,14 @@ void main() {
       // First SKU
       expect(find.text('स्टील अलमारी 6x3'), findsOneWidget);
       expect(find.text('₹22,000'), findsOneWidget);
-      expect(find.text('In stock'), findsOneWidget);
+      // Hindi-ified per inventory_list_screen.dart:319 (sku.inStock ?
+      // 'स्टॉक में' : 'खत्म'). Test was authored when label was English.
+      expect(find.text('स्टॉक में'), findsOneWidget);
 
       // Second SKU
       expect(find.text('शीशम अलमारी'), findsOneWidget);
       expect(find.text('₹45,000'), findsOneWidget);
-      expect(find.text('Out'), findsOneWidget);
+      expect(find.text('खत्म'), findsOneWidget);
     });
 
     testWidgets('Indian number formatting for large prices', (tester) async {
@@ -626,7 +638,7 @@ void main() {
               ),
             ),
           ],
-          child: const MaterialApp(home: HomeDashboard()),
+          child: MaterialApp(theme: _testTheme(), home: const HomeDashboard()),
         ),
       );
       await tester.pumpAndSettle();
@@ -672,7 +684,7 @@ void main() {
               ),
             ),
           ],
-          child: const MaterialApp(home: HomeDashboard()),
+          child: MaterialApp(theme: _testTheme(), home: const HomeDashboard()),
         ),
       );
       await tester.pumpAndSettle();

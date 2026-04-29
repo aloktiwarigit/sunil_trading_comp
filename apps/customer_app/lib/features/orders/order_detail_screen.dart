@@ -6,12 +6,18 @@
 // Cancelled projects show रद्द with reason (edge case #2).
 // =============================================================================
 
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:share_plus/share_plus.dart';
 
 import '../../main.dart' show authProviderInstanceProvider;
+import '../onboarding/onboarding_controller.dart';
 
 /// Normalize Firestore Timestamp → ISO8601 for Freezed JSON parsing.
 Object? _normalizeTimestamp(Object? value) {
@@ -84,45 +90,43 @@ class OrderDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = context.yugmaTheme;
     final projectAsync = ref.watch(customerProjectDetailProvider(projectId));
 
     return Scaffold(
-      backgroundColor: YugmaColors.background,
+      backgroundColor: theme.shopBackground,
       appBar: AppBar(
-        backgroundColor: YugmaColors.primary,
-        foregroundColor: YugmaColors.textOnPrimary,
+        backgroundColor: theme.shopPrimary,
+        foregroundColor: theme.shopTextOnPrimary,
         title: Text(
           strings.ordersTitle,
-          style: TextStyle(
-            fontFamily: YugmaFonts.devaDisplay,
+          style: theme.h2Deva.copyWith(
             fontSize: YugmaTypeScale.h3,
           ),
         ),
       ),
       body: projectAsync.when(
         loading: () => Center(
-          child: CircularProgressIndicator(color: YugmaColors.primary),
+          child: CircularProgressIndicator(color: theme.shopPrimary),
         ),
-        error: (err, _) => Center(
-          child: Text(err.toString(),
-              style: TextStyle(fontFamily: YugmaFonts.devaBody)),
-        ),
+        error: (err, _) => YugmaErrorBanner(error: err),
         data: (project) {
           if (project == null) {
             return Center(
               child: Text(
                 strings.emptyOrdersList,
-                style: TextStyle(fontFamily: YugmaFonts.devaBody),
+                style: theme.bodyDeva,
               ),
             );
           }
-          return _buildDetail(project);
+          return _buildDetail(context, ref, project);
         },
       ),
     );
   }
 
-  Widget _buildDetail(Project project) {
+  Widget _buildDetail(BuildContext context, WidgetRef ref, Project project) {
+    final theme = context.yugmaTheme;
     final shortId = project.projectId.length > 6
         ? project.projectId.substring(project.projectId.length - 6)
         : project.projectId;
@@ -136,7 +140,7 @@ class OrderDetailScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(YugmaSpacing.s4),
             decoration: BoxDecoration(
-              color: YugmaColors.surface,
+              color: theme.shopSurface,
               borderRadius: BorderRadius.circular(YugmaRadius.lg),
               boxShadow: YugmaShadows.card,
             ),
@@ -147,21 +151,20 @@ class OrderDetailScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '₹${_formatInr(project.totalAmount)}',
-                        style: TextStyle(
-                          fontFamily: YugmaFonts.mono,
+                        '₹${formatInr(project.totalAmount)}',
+                        style: theme.monoNumeral.copyWith(
                           fontSize: YugmaTypeScale.display,
                           fontWeight: FontWeight.w700,
-                          color: YugmaColors.textPrimary,
+                          color: theme.shopTextPrimary,
                         ),
                       ),
                       const SizedBox(height: YugmaSpacing.s1),
                       Text(
-                        '${project.lineItems.length} सामान · #$shortId',
+                        '${strings.orderItemCount(project.lineItems.length)} · #$shortId',
                         style: TextStyle(
-                          fontFamily: YugmaFonts.enBody,
+                          fontFamily: theme.fontFamilyEnglishBody,
                           fontSize: YugmaTypeScale.caption,
-                          color: YugmaColors.textSecondary,
+                          color: theme.shopTextSecondary,
                         ),
                       ),
                     ],
@@ -174,30 +177,50 @@ class OrderDetailScreen extends ConsumerWidget {
 
           // State timeline (AC #3)
           Text(
-            'स्थिति',
-            style: TextStyle(
-              fontFamily: YugmaFonts.devaBody,
+            strings.orderStatusLabel,
+            style: theme.bodyDeva.copyWith(
               fontSize: YugmaTypeScale.bodyLarge,
               fontWeight: FontWeight.w700,
-              color: YugmaColors.textPrimary,
+              color: theme.shopTextPrimary,
             ),
           ),
           const SizedBox(height: YugmaSpacing.s2),
-          _buildTimeline(project),
+          _buildTimeline(context, project),
+
+          // B-6: Download receipt button — visible only for closed/delivering.
+          if (project.state == ProjectState.closed ||
+              project.state == ProjectState.delivering) ...[
+            const SizedBox(height: YugmaSpacing.s3),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: () => _generateAndShareInvoice(context, project),
+                icon: const Icon(Icons.receipt_long, semanticLabel: 'Download receipt'),
+                label: Text(strings.orderDownloadReceipt),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: theme.shopPrimary,
+                  side: BorderSide(color: theme.shopPrimary),
+                  textStyle: theme.bodyDeva.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: YugmaSpacing.s4),
 
           // Line items
           Text(
             strings.lineItemsHeader,
-            style: TextStyle(
-              fontFamily: YugmaFonts.devaBody,
+            style: theme.bodyDeva.copyWith(
               fontSize: YugmaTypeScale.bodyLarge,
               fontWeight: FontWeight.w700,
-              color: YugmaColors.textPrimary,
+              color: theme.shopTextPrimary,
             ),
           ),
           const SizedBox(height: YugmaSpacing.s2),
-          _buildLineItems(project),
+          _buildLineItems(context, project),
         ],
       ),
     );
@@ -205,13 +228,14 @@ class OrderDetailScreen extends ConsumerWidget {
 
   /// C3.10 AC #3: vertical state timeline.
   /// Only visited states show (edge case #1).
-  Widget _buildTimeline(Project project) {
+  Widget _buildTimeline(BuildContext context, Project project) {
     final entries = _buildTimelineEntries(project);
 
+    final theme = context.yugmaTheme;
     return Container(
       padding: const EdgeInsets.all(YugmaSpacing.s4),
       decoration: BoxDecoration(
-        color: YugmaColors.surface,
+        color: theme.shopSurface,
         borderRadius: BorderRadius.circular(YugmaRadius.lg),
         boxShadow: YugmaShadows.card,
       ),
@@ -222,6 +246,7 @@ class OrderDetailScreen extends ConsumerWidget {
               entry: entries[i],
               isFirst: i == 0,
               isLast: i == entries.length - 1,
+              strings: strings,
             ),
           ],
         ],
@@ -238,7 +263,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // Committed
     if (project.committedAt != null) {
       entries.add(_TimelineEntry(
-        label: 'पुष्टि की गयी',
+        label: strings.timelineCommitted,
         timestamp: project.committedAt,
         isActive: true,
         isCurrent: currentState == ProjectState.committed,
@@ -248,8 +273,8 @@ class OrderDetailScreen extends ConsumerWidget {
     // Paid or Udhaar started
     if (project.paidAt != null) {
       final label = project.udhaarLedgerId != null
-          ? 'उधार खाता शुरू'
-          : 'भुगतान हुआ';
+          ? strings.timelineUdhaarStarted
+          : strings.timelinePaid;
       entries.add(_TimelineEntry(
         label: label,
         timestamp: project.paidAt,
@@ -262,7 +287,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // CR F4: handle awaitingVerification state in timeline.
     if (currentState == ProjectState.awaitingVerification) {
       entries.add(_TimelineEntry(
-        label: 'बैंक ट्रांसफ़र — जाँच बाकी',
+        label: strings.timelineBankTransferPending,
         timestamp: null,
         isActive: true,
         isCurrent: true,
@@ -274,7 +299,7 @@ class OrderDetailScreen extends ConsumerWidget {
         project.deliveredAt != null ||
         currentState == ProjectState.closed) {
       entries.add(_TimelineEntry(
-        label: 'डिलीवरी में',
+        label: strings.timelineDelivering,
         timestamp: null,
         isActive: project.deliveredAt != null ||
             currentState == ProjectState.closed,
@@ -285,7 +310,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // Delivered
     if (project.deliveredAt != null) {
       entries.add(_TimelineEntry(
-        label: 'डिलीवर हुआ',
+        label: strings.timelineDelivered,
         timestamp: project.deliveredAt,
         isActive: true,
         isCurrent: currentState == ProjectState.closed &&
@@ -296,7 +321,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // Closed
     if (project.closedAt != null) {
       entries.add(_TimelineEntry(
-        label: 'बंद हुआ',
+        label: strings.timelineClosed,
         timestamp: project.closedAt,
         isActive: true,
         isCurrent: currentState == ProjectState.closed,
@@ -306,7 +331,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // Cancelled (edge case #2)
     if (currentState == ProjectState.cancelled) {
       entries.add(_TimelineEntry(
-        label: 'रद्द',
+        label: strings.timelineCancelled,
         timestamp: project.closedAt ?? project.updatedAt,
         isActive: true,
         isCurrent: true,
@@ -316,7 +341,7 @@ class OrderDetailScreen extends ConsumerWidget {
     // If no entries (draft only), show the draft state
     if (entries.isEmpty) {
       entries.add(_TimelineEntry(
-        label: 'ड्राफ़्ट',
+        label: strings.timelineDraft,
         timestamp: project.createdAt,
         isActive: true,
         isCurrent: true,
@@ -326,17 +351,18 @@ class OrderDetailScreen extends ConsumerWidget {
     return entries;
   }
 
-  Widget _buildLineItems(Project project) {
+  Widget _buildLineItems(BuildContext context, Project project) {
+    final theme = context.yugmaTheme;
     return Container(
       decoration: BoxDecoration(
-        color: YugmaColors.surface,
+        color: theme.shopSurface,
         borderRadius: BorderRadius.circular(YugmaRadius.lg),
         boxShadow: YugmaShadows.card,
       ),
       child: Column(
         children: [
           for (var i = 0; i < project.lineItems.length; i++) ...[
-            if (i > 0) Divider(color: YugmaColors.divider, height: 1),
+            if (i > 0) Divider(color: theme.shopDivider, height: 1),
             Padding(
               padding: const EdgeInsets.all(YugmaSpacing.s3),
               child: Row(
@@ -344,29 +370,25 @@ class OrderDetailScreen extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       project.lineItems[i].skuName,
-                      style: TextStyle(
-                        fontFamily: YugmaFonts.devaBody,
-                        fontSize: YugmaTypeScale.body,
-                        color: YugmaColors.textPrimary,
+                      style: theme.bodyDeva.copyWith(
+                        color: theme.shopTextPrimary,
                       ),
                     ),
                   ),
                   Text(
                     '×${project.lineItems[i].quantity}',
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.mono,
+                    style: theme.monoNumeral.copyWith(
                       fontSize: YugmaTypeScale.caption,
-                      color: YugmaColors.textSecondary,
+                      color: theme.shopTextSecondary,
                     ),
                   ),
                   const SizedBox(width: YugmaSpacing.s2),
                   Text(
-                    '₹${_formatInr(project.lineItems[i].effectivePrice)}',
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.mono,
+                    '₹${formatInr(project.lineItems[i].effectivePrice)}',
+                    style: theme.monoNumeral.copyWith(
                       fontSize: YugmaTypeScale.body,
                       fontWeight: FontWeight.w600,
-                      color: YugmaColors.textPrimary,
+                      color: theme.shopTextPrimary,
                     ),
                   ),
                 ],
@@ -378,21 +400,89 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    if (amount < 0) return '-${_formatInr(-amount)}';
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
+  /// B-6: Generate invoice PDF and share via platform sheet.
+  Future<void> _generateAndShareInvoice(
+    BuildContext context,
+    Project project,
+  ) async {
+    try {
+      // Show loading indicator.
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              strings.receiptGenerating,
+              style: context.yugmaTheme.bodyDeva,
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
-      buffer.write(rest[i]);
+
+      // Load fonts for the PDF.
+      // TODO(F021): Bundle a Devanagari TTF (e.g. NotoSansDevanagari) in
+      // assets/fonts/ and load via rootBundle.load() so Hindi text renders
+      // correctly in the invoice PDF. Helvetica cannot render Devanagari
+      // glyphs — customers will see empty boxes for Hindi strings until
+      // this is resolved. Tracking: F021 in gap register.
+      final devaDisplay = pw.Font.helvetica();
+      final devaBody = pw.Font.helvetica();
+      final devaBodyItalic = pw.Font.helveticaOblique();
+      final mono = pw.Font.courier();
+
+      final template = InvoiceTemplate(
+        devaDisplayFont: devaDisplay,
+        devaBodyFont: devaBody,
+        devaBodyFontItalic: devaBodyItalic,
+        monoFont: mono,
+      );
+
+      // Assemble the payload. Read shop tokens from onboarding state.
+      // The onboardingControllerProvider is available via ProviderScope.
+      final container = ProviderScope.containerOf(context);
+      final onboardingState =
+          container.read(onboardingControllerProvider).valueOrNull;
+      if (onboardingState == null) return;
+
+      final customerName =
+          onboardingState.user.displayName ?? strings.receiptCustomerFallback;
+
+      final payload = InvoicePayload(
+        project: project,
+        shopTokens: onboardingState.themeTokens,
+        customerDisplayName: customerName,
+      );
+
+      // Generate PDF bytes.
+      final pdfBytes = await template.generate(payload);
+
+      // Save to temp directory.
+      final tempDir = await getTemporaryDirectory();
+      final date = project.committedAt ?? project.createdAt;
+      final fileName = InvoiceTemplate.fileName(project.projectId, date);
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(pdfBytes);
+
+      // Share via platform sheet.
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: strings.receiptShareSubject(project.projectId),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              strings.receiptGenerationError('$e'),
+              style: context.yugmaTheme.bodyDeva,
+            ),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
     }
-    return '$buffer,$lastThree';
   }
+
 }
 
 /// A single row in the vertical timeline.
@@ -401,16 +491,19 @@ class _TimelineRow extends StatelessWidget {
     required this.entry,
     required this.isFirst,
     required this.isLast,
+    required this.strings,
   });
 
   final _TimelineEntry entry;
   final bool isFirst;
   final bool isLast;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = entry.isActive ? YugmaColors.primary : YugmaColors.divider;
-    final textColor = entry.isActive ? YugmaColors.textPrimary : YugmaColors.textMuted;
+    final theme = context.yugmaTheme;
+    final activeColor = entry.isActive ? theme.shopPrimary : theme.shopDivider;
+    final textColor = entry.isActive ? theme.shopTextPrimary : theme.shopTextMuted;
 
     return IntrinsicHeight(
       child: Row(
@@ -452,9 +545,7 @@ class _TimelineRow extends StatelessWidget {
                 children: [
                   Text(
                     entry.label,
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.devaBody,
-                      fontSize: YugmaTypeScale.body,
+                    style: theme.bodyDeva.copyWith(
                       fontWeight:
                           entry.isCurrent ? FontWeight.w700 : FontWeight.w500,
                       color: textColor,
@@ -463,11 +554,10 @@ class _TimelineRow extends StatelessWidget {
                   if (entry.timestamp != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      _formatDate(entry.timestamp!),
-                      style: TextStyle(
-                        fontFamily: YugmaFonts.mono,
+                      _formatDate(entry.timestamp!, strings),
+                      style: theme.monoNumeral.copyWith(
                         fontSize: YugmaTypeScale.caption,
-                        color: YugmaColors.textMuted,
+                        color: theme.shopTextMuted,
                       ),
                     ),
                   ],
@@ -480,25 +570,11 @@ class _TimelineRow extends StatelessWidget {
     );
   }
 
-  /// Format date in Devanagari: "11 अप्रैल 2026, 2:30 PM"
-  static String _formatDate(DateTime date) {
-    const months = <int, String>{
-      1: 'जनवरी',
-      2: 'फ़रवरी',
-      3: 'मार्च',
-      4: 'अप्रैल',
-      5: 'मई',
-      6: 'जून',
-      7: 'जुलाई',
-      8: 'अगस्त',
-      9: 'सितंबर',
-      10: 'अक्टूबर',
-      11: 'नवंबर',
-      12: 'दिसंबर',
-    };
+  /// Format date locale-aware: "11 अप्रैल 2026, 2:30 PM" / "11 April 2026, 2:30 PM"
+  static String _formatDate(DateTime date, AppStrings strings) {
     final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
     final amPm = date.hour >= 12 ? 'PM' : 'AM';
     final min = date.minute.toString().padLeft(2, '0');
-    return '${date.day} ${months[date.month]} ${date.year}, $hour:$min $amPm';
+    return '${date.day} ${strings.monthName(date.month)} ${date.year}, $hour:$min $amPm';
   }
 }

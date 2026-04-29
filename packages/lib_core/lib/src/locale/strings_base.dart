@@ -112,6 +112,27 @@ abstract class AppStrings {
   /// Golden Hour toggle — switch BACK to beautiful view.
   String get goldenHourToggleBeautiful;
 
+  /// Golden Hour capture screen title.
+  String get goldenHourTitle;
+
+  /// Golden Hour light guide instruction.
+  String get goldenHourLightGuide;
+
+  /// Golden Hour capture button label.
+  String get goldenHourCaptureButton;
+
+  /// Golden Hour hero photo tier label.
+  String get goldenHourHeroLabel;
+
+  /// Golden Hour working photo tier label.
+  String get goldenHourWorkingLabel;
+
+  /// Golden Hour retake button.
+  String get goldenHourRetake;
+
+  /// Golden Hour save button.
+  String get goldenHourSave;
+
   // =========================================================================
   // §2 — Curated shortlists (UX Spec §5.5 #3–5)
   // =========================================================================
@@ -125,9 +146,9 @@ abstract class AppStrings {
   /// Shortlist title — replacement occasion.
   String get shortlistTitlePuranaBadlne;
 
-  /// Shortlist title — dowry occasion.
-  /// Not in UX Spec §5.5 explicit row but called out in PRD B1.4 AC #1.
-  String get shortlistTitleDahej;
+  /// Shortlist title — daughter's-new-home occasion (replaces former `dahej`
+  /// term per Maya's reframe). Called out in PRD B1.4 AC #1.
+  String get shortlistTitleBetiKaGhar;
 
   /// Shortlist title — budget-friendly picks.
   /// Called out in PRD B1.4 AC #1.
@@ -264,6 +285,9 @@ abstract class AppStrings {
 
   /// OTP code expired error.
   String get otpCodeExpired;
+
+  /// OTP resend cooldown countdown text with remaining seconds.
+  String otpResendCountdown(int seconds);
 
   /// Post-commit confirmation title.
   String get commitSuccessTitle;
@@ -478,7 +502,7 @@ abstract class AppStrings {
   /// Shop-closure option in ops app Settings (bhaiya-only).
   String get shopClosureSettingsOption;
 
-  /// 24-hour reversibility footer on the 3rd tap.
+  /// 30-day reversibility footer on the 3rd tap (§15.1.D — grace period).
   String get shopClosureReversibilityFooter;
 
   // =========================================================================
@@ -552,6 +576,7 @@ abstract class AppStrings {
   String get skuDescriptionLabel;
   String get skuSaveButton;
   String get skuGoldenHourPhotoButton;
+  String get skuSaveBeforePhoto;
   String get skuStockCountLabel;
   String get skuDuplicateNameWarning;
   String get skuSavedSuccess;
@@ -706,4 +731,382 @@ abstract class AppStrings {
 
   /// "New customer — first time" placeholder (B1.11 edge #2).
   String get memoryNewCustomerPlaceholder;
+
+  // =========================================================================
+  // §24 — D-2: Order detail timeline labels (hardcoded Devanagari migration)
+  // =========================================================================
+
+  /// Items count label for order card/detail. "X सामान"
+  String orderItemCount(int count);
+
+  /// "Status" section header on order detail.
+  String get orderStatusLabel;
+
+  /// "Download receipt" button label.
+  String get orderDownloadReceipt;
+
+  /// Timeline: committed state.
+  String get timelineCommitted;
+
+  /// Timeline: udhaar khaata started.
+  String get timelineUdhaarStarted;
+
+  /// Timeline: paid.
+  String get timelinePaid;
+
+  /// Timeline: bank transfer awaiting verification.
+  String get timelineBankTransferPending;
+
+  /// Timeline: delivering.
+  String get timelineDelivering;
+
+  /// Timeline: delivered.
+  String get timelineDelivered;
+
+  /// Timeline: closed.
+  String get timelineClosed;
+
+  /// Timeline: cancelled.
+  String get timelineCancelled;
+
+  /// Timeline: draft state.
+  String get timelineDraft;
+
+  /// Receipt generating snackbar.
+  String get receiptGenerating;
+
+  /// Receipt share subject with project ID.
+  String receiptShareSubject(String projectId);
+
+  /// Receipt generation error with detail.
+  String receiptGenerationError(String detail);
+
+  /// Month name by number (1–12).
+  String monthName(int month);
+
+  // =========================================================================
+  // §25 — D-2: Order list state badge labels
+  // =========================================================================
+
+  /// State badge: draft.
+  String get stateBadgeDraft;
+
+  /// State badge: negotiating.
+  String get stateBadgeNegotiating;
+
+  /// State badge: committed.
+  String get stateBadgeCommitted;
+
+  /// State badge: paid.
+  String get stateBadgePaid;
+
+  /// State badge: delivering.
+  String get stateBadgeDelivering;
+
+  /// State badge: awaiting verification.
+  String get stateBadgeAwaitingVerification;
+
+  /// State badge: closed.
+  String get stateBadgeClosed;
+
+  /// State badge: cancelled.
+  String get stateBadgeCancelled;
+
+  // =========================================================================
+  // §26 — D-2: Analytics dashboard labels
+  // =========================================================================
+
+  /// "Orders" metric label.
+  String get analyticsOrders;
+
+  /// "Revenue" metric label.
+  String get analyticsRevenue;
+
+  /// "Open orders" metric label.
+  String get analyticsOpenOrders;
+
+  /// "Udhaar pending" metric label.
+  String get analyticsUdhaarPending;
+
+  /// "New customers" metric label.
+  String get analyticsNewCustomers;
+
+  /// "Last 7 days" period label.
+  String get analyticsLast7Days;
+
+  /// "No orders yet" empty state for analytics.
+  String get analyticsNoOrdersYet;
+
+  // =========================================================================
+  // §27 — D-2: Voice recorder widget labels
+  // =========================================================================
+
+  /// Microphone permission needed message.
+  String get micPermissionNeeded;
+
+  /// "Go back" button label.
+  String get voiceGoBack;
+
+  /// "At least 5 seconds" minimum duration warning.
+  String get voiceMinDuration;
+
+  /// "Recording..." in-progress label.
+  String get voiceRecordingInProgress;
+
+  /// "Cancel" button on recorder.
+  String get voiceCancel;
+
+  /// "Re-record" button label.
+  String get voiceReRecord;
+
+  /// Short "Cancel" for compact UI.
+  String get voiceCancelShort;
+
+  // =========================================================================
+  // §28 — D-2: Presence toggle screen labels
+  // =========================================================================
+
+  /// Status: at the shop.
+  String get presenceAtShop;
+
+  /// Status: away.
+  String get presenceAway;
+
+  /// Status: busy with customer.
+  String get presenceBusyWithCustomer;
+
+  /// Status: at wedding/event.
+  String get presenceAtEvent;
+
+  /// "My availability" screen title.
+  String get presenceMyAvailability;
+
+  /// "When will you be back?" prompt.
+  String get presenceReturnTimePrompt;
+
+  /// Default return time "6 PM".
+  String get presenceReturnTimeDefault;
+
+  /// "Let the customer hear your voice" prompt.
+  String get presenceVoicePrompt;
+
+  /// "Voice recorded — X seconds" confirmation.
+  String presenceVoiceRecorded(int seconds);
+
+  /// "Remove" voice note button.
+  String get presenceRemoveVoice;
+
+  /// "Update" button.
+  String get presenceUpdateButton;
+
+  /// "Availability updated" confirmation.
+  String get presenceUpdated;
+
+  // =========================================================================
+  // §29 — D-2: Curation screen labels
+  // =========================================================================
+
+  /// "My picks" curation screen title.
+  String get curationMyPicks;
+
+  /// Empty state: "Nothing selected yet — add from below".
+  String get curationEmptyPrompt;
+
+  /// "+ Add" button.
+  String get curationAddButton;
+
+  // =========================================================================
+  // §30 — D-2: Home dashboard section labels
+  // =========================================================================
+
+  /// "My picks" section label on home dashboard.
+  String get homeSectionMyPicks;
+
+  /// "Dashboard" section label on home.
+  String get homeSectionDashboard;
+
+  /// "Settings" section label.
+  String get homeSectionSettings;
+
+  /// "Udhaar khaata" section label.
+  String get homeSectionUdhaar;
+
+  // =========================================================================
+  // §31 — D-2: Settings screen labels
+  // =========================================================================
+
+  /// "Settings" screen title.
+  String get settingsTitle;
+
+  /// "Shop info" section header.
+  String get settingsShopInfo;
+
+  /// "Tagline (Hindi)" field label.
+  String get settingsTaglineHindi;
+
+  /// "GST number" field label.
+  String get settingsGst;
+
+  /// "WhatsApp number" field label.
+  String get settingsWhatsapp;
+
+  /// "Branding" section header.
+  String get settingsBranding;
+
+  /// "Change greeting message" action label.
+  String get settingsChangeGreeting;
+
+  /// "Features" section header.
+  String get settingsFeatures;
+
+  /// "Decision Circle (family)" feature label.
+  String get settingsDecisionCircle;
+
+  /// Remote Config info note.
+  String get settingsRemoteConfigNote;
+
+  /// "Operators" section header.
+  String get settingsOperators;
+
+  /// "Save" button label.
+  String get settingsSave;
+
+  /// "Settings saved" confirmation.
+  String get settingsSaved;
+
+  // =========================================================================
+  // §32 — D-10: Settings enhancements
+  // =========================================================================
+
+  /// "Shop color" picker tile label.
+  String get settingsColorPicker;
+
+  /// "Face photo" upload tile label.
+  String get settingsFaceUpload;
+
+  /// "Add operator" button.
+  String get settingsAddOperator;
+
+  /// "Remove" operator button.
+  String get settingsRemoveOperator;
+
+  /// Confirmation message for removing an operator.
+  String get settingsRemoveOperatorConfirm;
+
+  // =========================================================================
+  // §33 — Customer Udhaar Screen
+  // =========================================================================
+
+  /// Screen title: "उधार खाता"
+  String get udhaarScreenTitle;
+
+  /// Empty state: "अभी कोई उधार खाता नहीं है"
+  String get udhaarNoLedgers;
+
+  /// Open ledgers tab header: "चालू उधार"
+  String get udhaarOpenLedgers;
+
+  /// Closed ledgers tab header: "बंद हुए खाते"
+  String get udhaarClosedLedgers;
+
+  /// Summary label: "कुल बाकी"
+  String get udhaarTotalBaaki;
+
+  /// Settled badge: "चुकता"
+  String get udhaarSettledBadge;
+
+  /// Remaining balance label: "बाकी"
+  String get udhaarBaakiLabel;
+
+  /// Open accounts count: "N चालू खाते"
+  String udhaarOpenAccountsCount(int count);
+
+  /// Original amount prefix: "मूल राशि: ₹..."
+  String get udhaarOriginalAmountPrefix;
+
+  /// Partial payments count: "N किस्त चुकाई"
+  String udhaarPartialPaymentCount(int count);
+
+  /// Reminders sent count: "N रिमाइंडर भेजे गए"
+  String udhaarRemindersSentCount(int count);
+
+  // =========================================================================
+  // §34 — Persona Toggle
+  // =========================================================================
+
+  /// Sheet title: "कौन देख रहा है?"
+  String get personaSheetTitle;
+
+  /// Custom label hint: "नाम लिखिए"
+  String get personaCustomLabelHint;
+
+  // =========================================================================
+  // §35 — Large Text Toggle
+  // =========================================================================
+
+  /// Toggle label: "बड़ा अक्षर"
+  String get largeTextToggleLabel;
+
+  // =========================================================================
+  // §36 — Presence Banner
+  // =========================================================================
+
+  /// Return time suffix: ", [time] तक वापस"
+  String presenceReturnBy(String time);
+
+  /// Voice button tooltip: "आवाज़ सुनिए"
+  String get presenceListenVoice;
+
+  // =========================================================================
+  // §37 — Read Tracking
+  // =========================================================================
+
+  /// Seen label: "देखा गया"
+  String get readStatusSeen;
+
+  /// Seen by count: "देखा गया · N लोग"
+  String readStatusSeenByCount(int count);
+
+  // =========================================================================
+  // §38 — Shopkeeper Udhaar List
+  // =========================================================================
+
+  /// Toggle label for open ledgers: "खुले"
+  String get shopUdhaarToggleOpen;
+
+  /// Toggle label for closed ledgers: "बंद"
+  String get shopUdhaarToggleClosed;
+
+  /// Empty state for open ledgers: "कोई खुला उधार खाता नहीं"
+  String get shopUdhaarNoOpen;
+
+  /// Empty state for closed ledgers: "कोई बंद खाता नहीं"
+  String get shopUdhaarNoClosed;
+
+  // =========================================================================
+  // §39 — Shopkeeper Search
+  // =========================================================================
+
+  /// Search hint for orders: "खोजें — नाम, फ़ोन, रकम"
+  String get searchHintOrders;
+
+  // =========================================================================
+  // §40 — Shopkeeper Inventory Voice
+  // =========================================================================
+
+  /// Voice note button label: "🎤 आवाज़ नोट"
+  String get voiceNoteButtonLabel;
+
+  /// Voice note attached snackbar: "आवाज़ नोट जुड़ गया"
+  String get voiceNoteAttached;
+
+  // =========================================================================
+  // §41 — Payment success navigation
+  // =========================================================================
+
+  /// "View Order" button on payment success screen.
+  String get paymentSuccessViewOrder;
+
+  /// "Back to Home" button on payment success screen.
+  String get paymentSuccessBackHome;
 }

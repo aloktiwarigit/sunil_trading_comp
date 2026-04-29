@@ -16,6 +16,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
 
 import 'features/onboarding/onboarding_controller.dart';
+import 'features/pariwar/elder_tier_provider.dart';
+import 'features/pariwar/large_text_toggle.dart';
 import 'routes/router.dart';
 
 class CustomerApp extends ConsumerWidget {
@@ -23,25 +25,37 @@ class CustomerApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    debugPrint('[APP] CustomerApp.build() called');
     final router = ref.watch(routerProvider);
+    debugPrint('[APP] routerProvider watched');
     final onboarding = ref.watch(onboardingControllerProvider);
+    debugPrint('[APP] onboardingProvider watched — isLoading=${onboarding.isLoading}, hasError=${onboarding.hasError}, hasValue=${onboarding.hasValue}');
+
+    // P2.3 + P2.8: Elder tier activation via persona OR large text toggle.
+    // Both providers default to false when onboarding hasn't loaded yet.
+    final isElder = ref.watch(isElderTierProvider);
+    final isLargeText = ref.watch(largeTextProvider);
+    final elderTierActive = isElder || isLargeText;
 
     // Build theme from loaded tokens or use compile-time defaults
     final themeData = onboarding.whenOrNull(
-      data: (data) => _buildTheme(data.themeTokens),
+      data: (data) => _buildTheme(data.themeTokens, elderTierActive),
     );
 
     return MaterialApp.router(
       title: 'Sunil Trading Company',
       debugShowCheckedModeBanner: false,
       theme: themeData ?? _buildDefaultTheme(),
+      // P2.3 AC #2: 300ms animated transition when elder tier toggles.
+      themeAnimationDuration: const Duration(milliseconds: 300),
       routerConfig: router,
     );
   }
 
   /// Build the full theme with YugmaThemeExtension from loaded tokens.
-  ThemeData _buildTheme(ShopThemeTokens tokens) {
-    final ext = YugmaThemeExtension.fromTokens(tokens);
+  /// [isElderTier] activates 1.4× text, 56dp taps, slower motion per P2.3.
+  ThemeData _buildTheme(ShopThemeTokens tokens, bool isElderTier) {
+    final ext = YugmaThemeExtension.fromTokens(tokens, isElderTier: isElderTier);
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(

@@ -57,7 +57,7 @@ class LargeTextToggle extends ConsumerWidget {
           const SizedBox(width: YugmaSpacing.s2),
           Expanded(
             child: Text(
-              'बड़ा अक्षर',
+              const AppStringsHi().largeTextToggleLabel,
               style: TextStyle(
                 fontFamily: YugmaFonts.devaBody,
                 fontSize: YugmaTypeScale.body,

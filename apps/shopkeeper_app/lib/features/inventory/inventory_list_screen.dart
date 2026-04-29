@@ -54,11 +54,28 @@ Object? _normalizeTimestamp(Object? value) {
 }
 
 /// The inventory list screen — shows all active SKUs with a + FAB.
-class InventoryListScreen extends ConsumerWidget {
+class InventoryListScreen extends ConsumerStatefulWidget {
   const InventoryListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InventoryListScreen> createState() =>
+      _InventoryListScreenState();
+}
+
+class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
+  String _searchQuery = '';
+
+  List<InventorySku> _filterSkus(List<InventorySku> skus) {
+    if (_searchQuery.isEmpty) return skus;
+    final q = _searchQuery.toLowerCase();
+    return skus.where((sku) {
+      return sku.nameDevanagari.toLowerCase().contains(q) ||
+          sku.name.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final strings = const AppStringsHi();
     final inventoryAsync = ref.watch(inventoryListProvider);
 
@@ -83,9 +100,7 @@ class InventoryListScreen extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
       body: inventoryAsync.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(color: YugmaColors.primary),
-        ),
+        loading: () => const YugmaListSkeleton(),
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(YugmaSpacing.s4),
@@ -130,25 +145,88 @@ class InventoryListScreen extends ConsumerWidget {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.only(
-              top: YugmaSpacing.s4,
-              bottom: YugmaSpacing.s16, // space for FAB
-            ),
-            itemCount: skus.length,
-            separatorBuilder: (_, __) => Divider(
-              height: 1,
-              color: YugmaColors.divider,
-              indent: YugmaSpacing.s4,
-              endIndent: YugmaSpacing.s4,
-            ),
-            itemBuilder: (context, index) {
-              final sku = skus[index];
-              return GestureDetector(
-                onTap: () => context.push('/inventory/${sku.skuId}'),
-                child: _SkuListTile(sku: sku),
-              );
-            },
+          final filtered = _filterSkus(skus);
+
+          return Column(
+            children: [
+              // Search field
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  YugmaSpacing.s4,
+                  YugmaSpacing.s3,
+                  YugmaSpacing.s4,
+                  YugmaSpacing.s1,
+                ),
+                child: TextField(
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  style: TextStyle(
+                    fontFamily: YugmaFonts.devaBody,
+                    fontSize: YugmaTypeScale.body,
+                    color: YugmaColors.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'खोजें...',
+                    hintStyle: TextStyle(
+                      fontFamily: YugmaFonts.devaBody,
+                      fontSize: YugmaTypeScale.body,
+                      color: YugmaColors.textMuted,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: YugmaColors.textMuted,
+                    ),
+                    filled: true,
+                    fillColor: YugmaColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: YugmaSpacing.s4,
+                      vertical: YugmaSpacing.s2,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(YugmaRadius.md),
+                      borderSide: BorderSide(color: YugmaColors.divider),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(YugmaRadius.md),
+                      borderSide: BorderSide(color: YugmaColors.divider),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(YugmaRadius.md),
+                      borderSide: BorderSide(color: YugmaColors.primary),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  color: YugmaColors.accent,
+                  backgroundColor: YugmaColors.surface,
+                  onRefresh: () async {
+                    ref.invalidate(inventoryListProvider);
+                    await Future.delayed(const Duration(milliseconds: 500));
+                  },
+                  child: ListView.separated(
+                    padding: const EdgeInsets.only(
+                      top: YugmaSpacing.s4,
+                      bottom: YugmaSpacing.s16, // space for FAB
+                    ),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => Divider(
+                      height: 1,
+                      color: YugmaColors.divider,
+                      indent: YugmaSpacing.s4,
+                      endIndent: YugmaSpacing.s4,
+                    ),
+                    itemBuilder: (context, index) {
+                      final sku = filtered[index];
+                      return GestureDetector(
+                        onTap: () => context.push('/inventory/${sku.skuId}'),
+                        child: _SkuListTile(sku: sku),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -217,7 +295,7 @@ class _SkuListTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '\u20b9${_formatInr(sku.basePrice)}',
+                '\u20b9${formatInr(sku.basePrice)}',
                 style: TextStyle(
                   fontFamily: YugmaFonts.mono,
                   fontSize: YugmaTypeScale.bodyLarge,
@@ -238,7 +316,7 @@ class _SkuListTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(YugmaRadius.sm),
                 ),
                 child: Text(
-                  sku.inStock ? 'In stock' : 'Out',
+                  sku.inStock ? 'स्टॉक में' : 'खत्म',
                   style: TextStyle(
                     fontFamily: YugmaFonts.enBody,
                     fontSize: YugmaTypeScale.label,
@@ -254,48 +332,33 @@ class _SkuListTile extends StatelessWidget {
     );
   }
 
+  // SU002 fix: Hindi category and material labels for Sunil-bhaiya.
   static String _categoryLabel(SkuCategory c) {
     switch (c) {
       case SkuCategory.steelAlmirah:
-        return 'Steel Almirah';
+        return 'स्टील अलमारी';
       case SkuCategory.woodenWardrobe:
-        return 'Wooden Wardrobe';
+        return 'लकड़ी की अलमारी';
       case SkuCategory.modular:
-        return 'Modular';
+        return 'मॉड्यूलर';
       case SkuCategory.dressing:
-        return 'Dressing Table';
+        return 'ड्रेसिंग टेबल';
       case SkuCategory.sideCabinet:
-        return 'Side Cabinet';
+        return 'साइड कैबिनेट';
     }
   }
 
   static String _materialLabel(SkuMaterial m) {
     switch (m) {
       case SkuMaterial.steel:
-        return 'Steel';
+        return 'स्टील';
       case SkuMaterial.woodSheesham:
-        return 'Sheesham';
+        return 'शीशम';
       case SkuMaterial.woodTeak:
-        return 'Teak';
+        return 'सागौन';
       case SkuMaterial.plyLaminate:
-        return 'Ply / Laminate';
+        return 'प्लाई / लेमिनेट';
     }
   }
 
-  /// Indian number formatting for prices.
-  static String _formatInr(int amount) {
-    if (amount < 1000) return amount.toString();
-    final str = amount.toString();
-    if (str.length <= 3) return str;
-    final lastThree = str.substring(str.length - 3);
-    final rest = str.substring(0, str.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }

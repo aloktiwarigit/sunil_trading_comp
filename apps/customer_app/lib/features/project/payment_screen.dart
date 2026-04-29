@@ -14,7 +14,9 @@
 // =============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
 import 'package:customer_app/features/project/payment_controller.dart';
@@ -58,10 +60,10 @@ class PaymentScreen extends ConsumerWidget {
           return switch (flowState.stage) {
             PaymentFlowStage.idle => _buildPaymentOptions(
                 context, ref, theme, flowState),
-            PaymentFlowStage.launching => _buildLoading(theme),
+            PaymentFlowStage.launching => _buildLoading(theme, strings),
             PaymentFlowStage.awaitingReturn => _buildAwaitingReturn(
                 context, ref, theme, flowState),
-            PaymentFlowStage.recording => _buildLoading(theme),
+            PaymentFlowStage.recording => _buildLoading(theme, strings),
             PaymentFlowStage.paid => _buildSuccess(
                 context, theme, flowState),
             PaymentFlowStage.error => _buildError(
@@ -105,7 +107,7 @@ class PaymentScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: YugmaSpacing.s2),
                 Text(
-                  '₹${_formatInr(total)}',
+                  '₹${formatInr(total)}',
                   style: theme.monoNumeral.copyWith(
                     fontSize: theme.isElderTier ? 36.0 : 28.0,
                     fontWeight: FontWeight.w700,
@@ -205,6 +207,7 @@ class PaymentScreen extends ConsumerWidget {
             Icons.check_circle_outline,
             size: 64,
             color: theme.shopAccent,
+            semanticLabel: 'Payment processing',
           ),
           const SizedBox(height: YugmaSpacing.s4),
           Text(
@@ -221,6 +224,7 @@ class PaymentScreen extends ConsumerWidget {
             height: theme.tapTargetMin,
             child: ElevatedButton(
               onPressed: () {
+                HapticFeedback.mediumImpact();
                 ref
                     .read(paymentControllerProvider(projectId).notifier)
                     .confirmPayment();
@@ -266,7 +270,7 @@ class PaymentScreen extends ConsumerWidget {
   // Stage: loading
   // ---------------------------------------------------------------------------
 
-  Widget _buildLoading(YugmaThemeExtension theme) {
+  Widget _buildLoading(YugmaThemeExtension theme, AppStrings strings) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -288,16 +292,31 @@ class PaymentScreen extends ConsumerWidget {
     YugmaThemeExtension theme,
     PaymentFlowState flowState,
   ) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      HapticFeedback.heavyImpact();
+    });
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(YugmaSpacing.s6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.check_circle,
-              size: 80,
-              color: theme.shopCommit,
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: 1.0),
+              duration: YugmaMotion.normal,
+              curve: Curves.easeOutBack,
+              builder: (context, value, child) {
+                return Transform.scale(
+                  scale: value,
+                  child: child,
+                );
+              },
+              child: Icon(
+                Icons.check_circle,
+                size: 80,
+                color: theme.shopCommit,
+                semanticLabel: 'Payment successful',
+              ),
             ),
             const SizedBox(height: YugmaSpacing.s4),
             Text(
@@ -308,12 +327,60 @@ class PaymentScreen extends ConsumerWidget {
             const SizedBox(height: YugmaSpacing.s2),
             if (flowState.project != null)
               Text(
-                '₹${_formatInr(flowState.project!.totalAmount)}',
+                '₹${formatInr(flowState.project!.totalAmount)}',
                 style: theme.monoNumeral.copyWith(
                   fontSize: theme.isElderTier ? 28.0 : 22.0,
                   fontWeight: FontWeight.w700,
                 ),
               ),
+            const SizedBox(height: YugmaSpacing.s8),
+            // "View Order" button
+            SizedBox(
+              width: double.infinity,
+              height: theme.tapTargetMin,
+              child: ElevatedButton(
+                onPressed: () {
+                  context.go('/orders/$projectId');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.shopCommit,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  ),
+                  textStyle: TextStyle(
+                    fontFamily: theme.fontFamilyDevanagariBody,
+                    fontSize: theme.isElderTier ? 18.0 : 15.0,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                child: Text(strings.paymentSuccessViewOrder),
+              ),
+            ),
+            const SizedBox(height: YugmaSpacing.s3),
+            // "Back to Home" button
+            SizedBox(
+              width: double.infinity,
+              height: theme.tapTargetMin,
+              child: OutlinedButton(
+                onPressed: () {
+                  context.go('/landing');
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: theme.shopPrimary,
+                  side: BorderSide(color: theme.shopPrimary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  ),
+                  textStyle: TextStyle(
+                    fontFamily: theme.fontFamilyDevanagariBody,
+                    fontSize: theme.isElderTier ? 18.0 : 15.0,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                child: Text(strings.paymentSuccessBackHome),
+              ),
+            ),
           ],
         ),
       ),
@@ -345,6 +412,7 @@ class PaymentScreen extends ConsumerWidget {
             Icons.error_outline,
             size: 64,
             color: theme.shopCommit,
+            semanticLabel: 'Payment error',
           ),
           const SizedBox(height: YugmaSpacing.s4),
           Text(
@@ -461,7 +529,7 @@ class PaymentScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '₹${_formatInr(total)}',
+                '₹${formatInr(total)}',
                 style: theme.monoNumeral.copyWith(
                   fontSize: theme.isElderTier ? 28.0 : 22.0,
                   fontWeight: FontWeight.w700,
@@ -590,24 +658,6 @@ class PaymentScreen extends ConsumerWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }
 
 /// Tile for an alternative payment method in the bottom sheet.
@@ -639,7 +689,7 @@ class _OtherMethodTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, color: theme.shopPrimary, size: 24),
+              Icon(icon, color: theme.shopPrimary, size: 24, semanticLabel: ''),
               const SizedBox(width: YugmaSpacing.s3),
               Expanded(
                 child: Text(label, style: theme.bodyDeva),
@@ -648,6 +698,7 @@ class _OtherMethodTile extends StatelessWidget {
                 Icons.chevron_right,
                 color: theme.shopTextMuted,
                 size: 20,
+                semanticLabel: '',
               ),
             ],
           ),
@@ -675,8 +726,15 @@ class _BankDetailRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: YugmaSpacing.s2),
       child: GestureDetector(
         onLongPress: () {
-          // Copy to clipboard on long-press (C3.7 edge case #2).
-          // Full clipboard wiring is a depth polish item.
+          Clipboard.setData(ClipboardData(text: value));
+          HapticFeedback.mediumImpact();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Copied', style: theme.bodyDeva.copyWith(color: theme.shopTextOnPrimary)),
+              backgroundColor: theme.shopPrimary,
+              duration: const Duration(seconds: 2),
+            ),
+          );
         },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

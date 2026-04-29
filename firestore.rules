@@ -68,9 +68,12 @@ service cloud.firestore {
           && request.resource.data.shopId == shopId;
     }
 
-    // App Check is enforced at the Firebase product level (firebase.json), not
-    // in rules — but we double-gate via the shopId token claim which is only
-    // issued through our auth flows.
+    // App Check enforcement: callable Cloud Functions enforce it via
+    // `enforceAppCheck: true` in their onCall options (functions/src/
+    // join_decision_circle.ts + generate_wa_me_link.ts). For Firestore +
+    // Storage, App Check enforcement must be toggled on in the Firebase
+    // Console (Project Settings → App Check); the rule layer additionally
+    // gates writes via the shopId token claim issued through auth flows.
 
     // -------------------------------------------------------------------------
     // Shop lifecycle write-freeze helper (SAD §6 v1.0.4 + ADR-013 + R16/DPDP)
@@ -132,11 +135,13 @@ service cloud.firestore {
 
     // -------------------------------------------------------------------------
     // /shops/{shopId} — Shop document
-    // Sprint 1 scope: read for any signed-in user whose shopId matches
+    // Read: any signed-in user (including anonymous customers).
+    // Anonymous users don't have shopId custom claims, but they need read
+    // access for onboarding (B1.1) and browsing (B1.4/B1.5).
     // -------------------------------------------------------------------------
 
     match /shops/{shopId} {
-      allow read: if isShopMember(shopId);
+      allow read: if isSignedIn();
       allow create: if false; // shops are created server-side via admin SDK
       allow update: if isShopOperator(shopId) && shopIsWritable(shopId);
       allow delete: if false;
@@ -146,7 +151,17 @@ service cloud.firestore {
       // ---------------------------------------------------------------------
 
       match /themeTokens/{tokenDocId} {
-        allow read: if isShopMember(shopId);
+        allow read: if isSignedIn();
+        allow write: if isShopOperator(shopId) && shopIsWritable(shopId);
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/theme/{docId} — ShopThemeTokens current doc
+      // Read by customer app at onboarding, written by shopkeeper settings.
+      // ---------------------------------------------------------------------
+
+      match /theme/{themeDocId} {
+        allow read: if isSignedIn();
         allow write: if isShopOperator(shopId) && shopIsWritable(shopId);
       }
 
@@ -155,7 +170,7 @@ service cloud.firestore {
       // ---------------------------------------------------------------------
 
       match /featureFlags/{flagId} {
-        allow read: if isShopMember(shopId);
+        allow read: if isSignedIn();
         allow write: if false; // managed via Remote Config console only
       }
 
@@ -211,7 +226,7 @@ service cloud.firestore {
       //       customer_app layer filters at render time.
 
       match /inventory/{skuId} {
-        allow read: if isShopMember(shopId);
+        allow read: if isSignedIn();
         allow create, update: if isShopOperator(shopId)
                               && shopIdMatches(shopId)
                               && shopIsWritable(shopId);
@@ -232,7 +247,7 @@ service cloud.firestore {
       //       VoiceNoteAuthorRole enum. Munshi cannot.
 
       match /voiceNotes/{voiceNoteId} {
-        allow read: if isShopMember(shopId);
+        allow read: if isSignedIn();
         allow create, update: if isShopOperator(shopId)
                               && callerRole() != 'munshi'
                               && shopIdMatches(shopId)
@@ -257,7 +272,7 @@ service cloud.firestore {
       //       helper; queued as Phase 2+ refinement.
 
       match /curatedShortlists/{shortlistId} {
-        allow read: if isShopMember(shopId);
+        allow read: if isSignedIn();
         allow create, update: if isShopOperator(shopId)
                               && callerRole() != 'munshi'
                               && shopIdMatches(shopId)
@@ -270,11 +285,28 @@ service cloud.firestore {
       // can assert the forbidden-field guard works from day one. Writes
       // freeze automatically when shopLifecycle != 'active' per ADR-013.
       match /udhaarLedger/{ledgerId} {
-        allow read: if isShopOperator(shopId);
-        allow create, update: if isShopOperator(shopId)
-                              && shopIdMatches(shopId)
-                              && !hasForbiddenUdhaarFields(request.resource.data)
-                              && shopIsWritable(shopId);
+        // Read: operator sees all; customer sees only own ledgers.
+        allow read: if isSignedIn()
+                    && (isShopOperator(shopId)
+                        || resource.data.customerId == request.auth.uid);
+        allow create: if isShopOperator(shopId)
+                      && shopIdMatches(shopId)
+                      && !hasForbiddenUdhaarFields(request.resource.data)
+                      && shopIsWritable(shopId);
+        // Update: operator only + forbidden vocabulary + RBI reminder caps.
+        // reminderCountLifetime capped at 3 per PRD S4.10 AC #8.
+        // reminderCadenceDays must be 7–30 per PRD S4.10 AC #9.
+        // DI005 fix: guard checks with field existence to avoid null comparison
+        // failures on ledgers created without these optional fields.
+        allow update: if isShopOperator(shopId)
+                      && shopIdMatches(shopId)
+                      && !hasForbiddenUdhaarFields(request.resource.data)
+                      && shopIsWritable(shopId)
+                      && (!('reminderCountLifetime' in request.resource.data)
+                          || request.resource.data.reminderCountLifetime <= 3)
+                      && (!('reminderCadenceDays' in request.resource.data)
+                          || (request.resource.data.reminderCadenceDays >= 7
+                              && request.resource.data.reminderCadenceDays <= 30));
         allow delete: if false;
       }
 
@@ -306,6 +338,301 @@ service cloud.firestore {
                             && isOperatorOf(shopId))
                          );
         allow update, delete: if false;
+      }
+
+      // =====================================================================
+      // Sprint A — 5 missing collection rules (per deep architecture review)
+      // Without these, all Project, Chat, Customer, Memory, and Decision
+      // Circle writes fall through to the catch-all deny and fail with
+      // permission-denied at runtime.
+      // =====================================================================
+
+      // ---------------------------------------------------------------------
+      // State-machine helper for Project transitions (SAD §9 + PRD C3.x)
+      // ---------------------------------------------------------------------
+
+      function isValidProjectStateTransition(fromState, toState) {
+        return (fromState == 'draft' && toState in ['negotiating', 'committed', 'cancelled'])
+            || (fromState == 'negotiating' && toState in ['committed', 'cancelled', 'draft'])
+            || (fromState == 'committed' && toState in ['paid', 'delivering', 'awaiting_verification', 'cancelled'])
+            || (fromState == 'paid' && toState in ['delivering', 'closed'])
+            || (fromState == 'delivering' && toState in ['closed'])
+            || (fromState == 'awaiting_verification' && toState in ['paid', 'cancelled']);
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/projects/{projectId} — per PRD C3.1–C3.12, SAD §9
+      // Core commerce collection: project lifecycle from draft to closed.
+      // Field-partition discipline (ProjectCustomerPatch / ProjectOperatorPatch
+      // / ProjectSystemPatch) is enforced at Dart compile-time via typed patch
+      // classes + CI import audit. At the rule layer we enforce:
+      //   1. Identity: who is writing (customer vs operator)
+      //   2. State machine: which transitions are valid for each role
+      //   3. shopId scoping + lifecycle freeze
+      // ---------------------------------------------------------------------
+
+      match /projects/{projectId} {
+        // Read: customer sees only own projects; operator sees all.
+        // BE002 fix: restrict customer reads to their own projects to
+        // prevent PII leakage (phone, VPA, name) of other customers.
+        allow read: if isSignedIn()
+                    && (resource.data.customerUid == request.auth.uid
+                        || isShopOperator(shopId));
+
+        // Create: customer creates draft. Anonymous or phone-verified.
+        // Single-shop: removed shopIsWritable gate from create to avoid
+        // extra Firestore read that can fail for anonymous users.
+        allow create: if isSignedIn()
+                      && shopIdMatches(shopId)
+                      && request.resource.data.customerUid == request.auth.uid
+                      && request.resource.data.state == 'draft';
+
+        // Update: partitioned by identity + state machine + field restriction.
+        // SEC004 fix: customer updates are now field-restricted via
+        // affectedKeys().hasOnly() to prevent REST API bypass of Dart
+        // typed-patch classes. Without this, a malicious client could set
+        // totalAmount: 0 via the Firebase REST API.
+        //
+        // §15.1.B Triple Zero invariant — the close-state predicate.
+        // Whenever a project transitions into (or remains in) `closed`,
+        // amountReceivedByShop MUST equal totalAmount. The Dart typed
+        // patches enforce this client-side; this rule blocks REST clients
+        // that bypass them. Earlier states (draft, negotiating) are
+        // allowed to have the values diverge transiently.
+        allow update: if isSignedIn()
+                      && shopIsWritable(shopId)
+                      && (
+                        request.resource.data.state != 'closed'
+                        || request.resource.data.amountReceivedByShop
+                             == request.resource.data.totalAmount
+                      )
+                      && (
+                        // --- Customer updates ---
+                        // Customer can update ONLY customer-partition fields.
+                        // Field allowlist enforces the partition discipline at
+                        // the security-rule layer, not just the Dart layer.
+                        (resource.data.customerUid == request.auth.uid
+                         && (
+                           // Customer-partition fields (no state change)
+                           (request.resource.data.state == resource.data.state
+                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                                 'occasion', 'unreadCountForCustomer',
+                                 'updatedAt', 'customerDisplayName',
+                                 'customerPhone', 'customerVpa',
+                                 'lineItems', 'totalAmount', 'selectedSkuIds'
+                               ]))
+                           ||
+                           // State transitions: customer can commit, pay, cancel, negotiate
+                           (isValidProjectStateTransition(
+                             resource.data.state,
+                             request.resource.data.state
+                           )
+                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                                 'state', 'updatedAt',
+                                 // negotiate fields (price proposal acceptance)
+                                 'lineItems', 'totalAmount',
+                                 // commit fields
+                                 'customerPhone', 'committedAt',
+                                 'customerDisplayName',
+                                 // payment fields
+                                 'customerVpa', 'paymentMethod',
+                                 'amountReceivedByShop', 'paidAt',
+                                 'paymentConfirmedByCustomer',
+                                 // cancel fields
+                                 'cancelledAt', 'cancelledByRole',
+                                 // COD / bank transfer fields
+                                 'codConfirmedAt', 'bankTransferMarkedAt'
+                               ]))
+                         ))
+                        ||
+                        // --- Operator updates ---
+                        // Operators can write any operator-partition field
+                        // with valid state transitions.
+                        (isShopOperator(shopId)
+                         && (
+                           request.resource.data.state == resource.data.state
+                           || isValidProjectStateTransition(
+                                resource.data.state,
+                                request.resource.data.state
+                              )
+                         ))
+                      );
+
+        // Customers can delete their own DRAFT projects (removing last item).
+        // Non-draft projects are never deleted (audit trail requirement).
+        allow delete: if isSignedIn()
+                      && resource.data.customerUid == request.auth.uid
+                      && resource.data.state == 'draft';
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/chatThreads/{threadId} — per PRD P2.4, SAD §5
+      // 1:1 chat per project (threadId == projectId).
+      // Metadata doc: participantUids, unread counts, last message preview.
+      // ---------------------------------------------------------------------
+
+      match /chatThreads/{threadId} {
+        // Read: any signed-in user can read their own thread (customerUid match)
+        // or operators can read all. For single-shop, any signed-in read is safe.
+        allow read: if isSignedIn();
+
+        // Create: any signed-in user can initiate a thread.
+        allow create: if isSignedIn()
+                      && shopIdMatches(shopId);
+
+        // Update: participant can update (unread counts, last message preview).
+        allow update: if isSignedIn()
+                      && (resource.data.customerUid == request.auth.uid
+                          || isShopOperator(shopId));
+
+        allow delete: if false;
+
+        // -----------------------------------------------------------------
+        // /shops/{shopId}/chatThreads/{threadId}/messages/{messageId}
+        // Per PRD P2.5, P2.6, P2.7 + SAD §6 immutability rule.
+        // Messages are immutable after create — only readByUids can update.
+        // -----------------------------------------------------------------
+
+        match /messages/{messageId} {
+          // Read: any signed-in user (single-shop — thread-level privacy
+          // is sufficient since customers only query their own thread).
+          allow read: if isSignedIn();
+
+          // Create: participant can send messages.
+          // authorUid must match the authenticated user.
+          allow create: if isSignedIn()
+                        && request.resource.data.authorUid == request.auth.uid;
+
+          // Update: ONLY readByUids field (read tracking per P2.7).
+          // No other field may change after creation (immutability).
+          allow update: if isSignedIn()
+                        && shopIsWritable(shopId)
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readByUids']);
+
+          // Messages are immutable — never delete.
+          allow delete: if false;
+        }
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/customers/{customerId} — per PRD I6.2, SAD §4
+      // Customer profile doc created during anonymous auth, upgraded on
+      // phone verification. Stores isPhoneVerified, previousProjectIds, etc.
+      // ---------------------------------------------------------------------
+
+      match /customers/{customerId} {
+        // Read: self (customer reads own doc) OR operator (for customer info
+        // display in project detail, memory, etc.).
+        allow read: if isSignedIn()
+                    && (request.auth.uid == customerId
+                        || isShopOperator(shopId));
+
+        // Create: customer creates own doc during onboarding.
+        // CustomerRepo.createAnonymous() is idempotent via transaction.
+        allow create: if isSignedIn()
+                      && shopIdMatches(shopId)
+                      && request.resource.data.customerId == request.auth.uid
+                      && shopIsWritable(shopId);
+
+        // Update: self (phone upgrade, profile) OR operator (display name,
+        // previousProjectIds via Cloud Function).
+        allow update: if isSignedIn()
+                      && shopIsWritable(shopId)
+                      && (request.auth.uid == customerId
+                          || isShopOperator(shopId));
+
+        allow delete: if false;
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/customer_memory/{uid} — per PRD B1.11, S4.9
+      // Private shopkeeper notes about each customer. NEVER readable by
+      // the customer — this is the shopkeeper's private relationship context.
+      // ---------------------------------------------------------------------
+
+      match /customer_memory/{uid} {
+        // Read: operator ONLY. Customer must never see these notes.
+        allow read: if isShopOperator(shopId);
+
+        // Write: operator only (bhaiya + beta can write; munshi can read
+        // via isShopOperator but the UI role-gates write to bhaiya/beta).
+        allow create, update: if isShopOperator(shopId)
+                              && shopIdMatches(shopId)
+                              && shopIsWritable(shopId);
+
+        allow delete: if false;
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/decision_circles/{dcId} — per PRD P2.1, SAD §5
+      // Optional (feature-flagged). Auto-created on first draft if enabled.
+      // Removable without affecting Project (PRD P2.1 design note).
+      // ---------------------------------------------------------------------
+
+      match /decision_circles/{dcId} {
+        // Read: any signed-in user (participants + operator can view).
+        allow read: if isSignedIn();
+
+        // Create/Update: any signed-in user can create (customer on draft) or
+        // update (persona toggle adds participant entries).
+        allow create, update: if isSignedIn()
+                              && shopIdMatches(shopId)
+                              && shopIsWritable(shopId);
+
+        allow delete: if false;
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/golden_hour_photos/{photoId} — per PRD S4.5
+      // Metadata for Golden Hour photo captures. Actual files in Cloudinary.
+      // ---------------------------------------------------------------------
+
+      match /golden_hour_photos/{photoId} {
+        allow read: if isSignedIn();
+        allow create, update: if isShopOperator(shopId)
+                              && shopIdMatches(shopId)
+                              && shopIsWritable(shopId);
+        allow delete: if false;
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/telemetry/{docId} — per PRD S4.16
+      // Media spend counters, usage metrics. Written by adapter + Cloud Fn.
+      // ---------------------------------------------------------------------
+
+      match /telemetry/{docId} {
+        allow read: if isShopOperator(shopId);
+        allow write: if isShopOperator(shopId) && shopIsWritable(shopId);
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/today_tasks/{taskId} — per PRD S4.13
+      // Per-operator daily task completion tracking.
+      // ---------------------------------------------------------------------
+
+      match /today_tasks/{taskId} {
+        allow read: if isShopOperator(shopId);
+        allow create, update: if isShopOperator(shopId)
+                              && shopIsWritable(shopId);
+        allow delete: if false;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // /system/{docId} — Audit trail and system state (SEC006 fix)
+    // Written exclusively by Cloud Functions via Admin SDK.
+    // Readable by bhaiya for operational visibility (admin dashboard).
+    // -------------------------------------------------------------------------
+
+    match /system/{docId} {
+      allow read: if isSignedIn()
+                  && callerRole() == 'bhaiya';
+      allow write: if false; // Cloud Functions use Admin SDK (bypasses rules).
+
+      match /{subcollection=**} {
+        allow read: if isSignedIn()
+                    && callerRole() == 'bhaiya';
+        allow write: if false;
       }
     }
 

@@ -113,7 +113,11 @@ beforeEach(async () => {
       await db.collection('operators').doc(`op-${shopId}-owner`).set({
         uid: `op-${shopId}-owner`,
         shopId,
-        role: 'shopkeeper',
+        // Canonical role per Dart enum (bhaiya/beta/munshi). The
+        // firestore.rules `isShopOperator` helper expects these names —
+        // earlier 'shopkeeper' value was stale (drift §15.2.C resolved
+        // on the rule side; the test seed lagged).
+        role: 'bhaiya',
       });
     }
   });
@@ -126,7 +130,8 @@ beforeEach(async () => {
 function ctxAsShopOperator(shopId: string) {
   return testEnv.authenticatedContext(`op-${shopId}-owner`, {
     shopId,
-    role: 'shopkeeper',
+    // Canonical role per Dart enum + rule helper (drift §15.2.C).
+    role: 'bhaiya',
     firebase: { sign_in_provider: 'google.com' },
   });
 }
@@ -151,12 +156,14 @@ async function setShopLifecycle(
   });
 }
 
-const ALL_SUB_COLLECTIONS = [
-  'themeTokens',
-  'featureFlags',
-  'udhaarLedger',
-  'feedback',
-];
+// Sub-collections under /shops/{shopId} that contain PII / shop-private
+// data and must NOT be readable across tenants.
+const PRIVATE_SUB_COLLECTIONS = ['udhaarLedger', 'feedback'];
+
+// Sub-collections that are intentionally readable by any signed-in user
+// (the marketing site + customer apps need them for branding / runtime
+// flags). Cross-tenant read here is DESIGN, not a leak.
+const PUBLIC_SUB_COLLECTIONS = ['themeTokens', 'featureFlags'];
 
 // -----------------------------------------------------------------------------
 // Test cases — PRD I6.4 ACs #5–#7
@@ -166,8 +173,8 @@ describe('Cross-tenant integrity (rules.test)', () => {
   // ---- AC #5: cross-tenant READ rejection ----
 
   describe('shop_1 operator → shop_0 reads', () => {
-    test.each(ALL_SUB_COLLECTIONS)(
-      'shop_1 operator cannot read /shops/shop_0/%s/active',
+    test.each(PRIVATE_SUB_COLLECTIONS)(
+      'shop_1 operator cannot read /shops/shop_0/%s (private)',
       async (collection) => {
         const db = ctxAsShopOperator('shop_1').firestore();
         await assertFails(
@@ -176,10 +183,31 @@ describe('Cross-tenant integrity (rules.test)', () => {
       },
     );
 
-    test('shop_1 operator cannot read /shops/shop_0', async () => {
-      const db = ctxAsShopOperator('shop_1').firestore();
-      await assertFails(db.collection('shops').doc('shop_0').get());
-    });
+    test.each(PUBLIC_SUB_COLLECTIONS)(
+      'shop_1 operator CAN read /shops/shop_0/%s (public by design)',
+      async (collection) => {
+        // Theme + feature-flag mirrors are intentionally signed-in-readable
+        // so the marketing site and customer apps can render any shop's
+        // branding without per-shop auth. Cross-tenant READ here is design,
+        // not a leak — write paths remain shop-scoped (see operator write
+        // rejection tests below).
+        const db = ctxAsShopOperator('shop_1').firestore();
+        await assertSucceeds(
+          db.collection('shops').doc('shop_0').collection(collection).get(),
+        );
+      },
+    );
+
+    test('shop_1 operator CAN read /shops/shop_0 doc (public by design)',
+      async () => {
+        // The shop doc itself (brandName, ownerUid, lifecycle) is public
+        // for marketing site discovery. PII lives under shop-scoped
+        // sub-collections (customers/, customer_memory/, udhaarLedger/)
+        // which are tenant-private — see PRIVATE_SUB_COLLECTIONS tests.
+        const db = ctxAsShopOperator('shop_1').firestore();
+        await assertSucceeds(db.collection('shops').doc('shop_0').get());
+      },
+    );
   });
 
   // ---- AC #6: cross-tenant WRITE rejection ----
@@ -491,6 +519,104 @@ describe('Cross-tenant integrity (rules.test)', () => {
   // -------------------------------------------------------------------------
   // SAD v1.0.4 §5 feedback sub-collection (S4.17 NPS + burnout)
   // -------------------------------------------------------------------------
+
+  // -------------------------------------------------------------------------
+  // §15.1.B Triple Zero invariant — server-side rule enforcement
+  // -------------------------------------------------------------------------
+
+  describe('Triple Zero invariant at project close (§15.1.B)', () => {
+    async function seedProjectInDelivering(
+      shopId: string,
+      projectId: string,
+      totalAmount: number,
+      amountReceivedByShop: number,
+    ): Promise<void> {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc(projectId)
+          .set({
+            shopId,
+            projectId,
+            customerUid: `cust-${shopId}-uid`,
+            state: 'delivering',
+            totalAmount,
+            amountReceivedByShop,
+            lineItems: [],
+            createdAt: new Date(),
+          });
+      });
+    }
+
+    test('operator close with matched Triple Zero succeeds', async () => {
+      await seedProjectInDelivering('shop_1', 'p-tz-ok', 25000, 25000);
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('projects')
+          .doc('p-tz-ok')
+          .update({ state: 'closed', updatedAt: new Date() }),
+      );
+    });
+
+    test('operator close with mismatched amounts is REJECTED', async () => {
+      await seedProjectInDelivering('shop_1', 'p-tz-bad', 25000, 24000);
+      const db = ctxAsShopOperator('shop_1').firestore();
+      // The threat model: a REST client bypassing the Dart typed patches
+      // tries to close while the shop received less than totalAmount.
+      // Dart-side `Project.zeroCommissionSatisfied` would catch this in
+      // the in-process patch path; this assertion proves the rule layer
+      // catches it independently.
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('projects')
+          .doc('p-tz-bad')
+          .update({ state: 'closed', updatedAt: new Date() }),
+      );
+    });
+
+    test('operator close where mismatch is repaired in same write succeeds', async () => {
+      await seedProjectInDelivering('shop_1', 'p-tz-fix', 25000, 24000);
+      const db = ctxAsShopOperator('shop_1').firestore();
+      // Same write that closes also corrects amountReceivedByShop to
+      // match totalAmount → invariant satisfied at write time.
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('projects')
+          .doc('p-tz-fix')
+          .update({
+            state: 'closed',
+            amountReceivedByShop: 25000,
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('non-close state transitions still allow transient mismatch', async () => {
+      // Earlier states (draft → negotiating, etc.) are allowed to have
+      // amountReceivedByShop != totalAmount. The invariant is only
+      // enforced AT close.
+      await seedProjectInDelivering('shop_1', 'p-tz-draft', 25000, 0);
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('projects')
+          .doc('p-tz-draft')
+          .update({ totalAmount: 26000, updatedAt: new Date() }),
+      );
+    });
+  });
 
   describe('feedback collection (S4.17, SAD v1.0.4)', () => {
     test('shop_1 operator cannot read shop_0 feedback (cross-tenant)', async () => {

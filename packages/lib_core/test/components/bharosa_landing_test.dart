@@ -208,32 +208,42 @@ void main() {
       expect(find.text('नए घर के लिए'), findsOneWidget);
     });
 
-    testWidgets('first tile shows curated badge, second does not', (t) async {
-      await t.pumpWidget(_wrap(
-        BharosaLanding(
-          onShortlistTap: (_) {},
-          onGreetingPlay: () {},
-          autoPlayGreeting: false,
-          onPresenceVoiceNote: () {},
-          previewShortlists: const [
-            CuratedShortlistPreview(
-              occasionTag: 'shaadi',
-              occasionLabel: 'शादी के लिए',
-              skuCount: 6,
-            ),
-            CuratedShortlistPreview(
-              occasionTag: 'naya_ghar',
-              occasionLabel: 'नए घर के लिए',
-              skuCount: 4,
-            ),
-          ],
-          strings: const AppStringsHi(),
-        ),
-      ));
+    testWidgets(
+      'first tile shows curated badge, second does not',
+      (t) async {
+        await t.pumpWidget(_wrap(
+          BharosaLanding(
+            onShortlistTap: (_) {},
+            onGreetingPlay: () {},
+            autoPlayGreeting: false,
+            onPresenceVoiceNote: () {},
+            previewShortlists: const [
+              CuratedShortlistPreview(
+                occasionTag: 'shaadi',
+                occasionLabel: 'शादी के लिए',
+                skuCount: 6,
+              ),
+              CuratedShortlistPreview(
+                occasionTag: 'naya_ghar',
+                occasionLabel: 'नए घर के लिए',
+                skuCount: 4,
+              ),
+            ],
+            strings: const AppStringsHi(),
+          ),
+        ));
 
-      // "चुनी हुई" badge appears exactly once (first tile only)
-      expect(find.text('चुनी हुई'), findsOneWidget);
-    });
+        // "चुनी हुई" badge appears exactly once (first tile only)
+        expect(find.text('चुनी हुई'), findsOneWidget);
+      },
+      // P0.5 SKIPPED: the v0.2.0 landing redesign (commit 196868f —
+      // Meesho/Flipkart/Myntra-inspired) replaced the explicit curated
+      // badge with category-circle differentiation. The test's design
+      // intent — "first tile is differentiated" — is no longer encoded
+      // by a text badge. Sally to decide whether to reintroduce a
+      // differentiator (and if so, what test should assert it).
+      skip: true,
+    );
   });
 
   // ===========================================================================

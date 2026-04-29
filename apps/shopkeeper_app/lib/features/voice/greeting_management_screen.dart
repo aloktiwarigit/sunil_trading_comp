@@ -20,6 +20,8 @@ import '../auth/auth_controller.dart';
 import 'voice_recorder_widget.dart';
 
 /// B1.8 — Greeting voice note management screen.
+///
+/// B-11: adds playback of current greeting + reset-to-default button.
 class GreetingManagementScreen extends ConsumerWidget {
   const GreetingManagementScreen({super.key});
 
@@ -105,6 +107,44 @@ class GreetingManagementScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+                // B-11: playback of current greeting
+                if (currentVoiceNoteId.isNotEmpty) ...[
+                  const SizedBox(height: YugmaSpacing.s4),
+                  _GreetingPlaybackCard(
+                    shopId: shopId,
+                    voiceNoteId: currentVoiceNoteId,
+                  ),
+                ],
+
+                // B-11: reset to default
+                if (currentVoiceNoteId.isNotEmpty) ...[
+                  const SizedBox(height: YugmaSpacing.s3),
+                  SizedBox(
+                    width: double.infinity,
+                    height: YugmaSpacing.s12,
+                    child: OutlinedButton(
+                      onPressed: () => _confirmReset(
+                        context,
+                        shopId,
+                        version,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: YugmaColors.commit,
+                        side: BorderSide(color: YugmaColors.commit),
+                        textStyle: TextStyle(
+                          fontFamily: YugmaFonts.devaBody,
+                          fontSize: YugmaTypeScale.body,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(YugmaRadius.md),
+                        ),
+                      ),
+                      child: const Text('पहले वाला वापस लाएँ'),
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: YugmaSpacing.s4),
 
                 // AC #2: Replace button → opens voice recorder
@@ -138,6 +178,80 @@ class GreetingManagementScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// B-11 AC #7: confirm and reset greeting voice note to default (empty).
+  void _confirmReset(
+    BuildContext context,
+    String shopId,
+    int currentVersion,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'पुराना संदेश वापस लाएँ?',
+          style: TextStyle(
+            fontFamily: YugmaFonts.devaDisplay,
+            fontSize: YugmaTypeScale.bodyLarge,
+          ),
+        ),
+        content: Text(
+          'आपका रिकॉर्ड किया हुआ स्वागत संदेश हट जाएगा और डिफ़ॉल्ट संदेश लग जाएगा।',
+          style: TextStyle(
+            fontFamily: YugmaFonts.devaBody,
+            fontSize: YugmaTypeScale.body,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'रद्द करें',
+              style: TextStyle(fontFamily: YugmaFonts.devaBody),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              try {
+                await FirebaseFirestore.instance
+                    .collection('shops')
+                    .doc(shopId)
+                    .collection('theme')
+                    .doc('current')
+                    .set(<String, dynamic>{
+                  'greetingVoiceNoteId': '',
+                  'greetingVoiceNoteDuration': 0,
+                  'version': currentVersion + 1,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                }, SetOptions(merge: true));
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('डिफ़ॉल्ट संदेश वापस आ गया')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString())),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: YugmaColors.commit,
+              foregroundColor: YugmaColors.textOnPrimary,
+            ),
+            child: Text(
+              'हाँ, हटाइए',
+              style: TextStyle(fontFamily: YugmaFonts.devaBody),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -203,6 +317,7 @@ class GreetingManagementScreen extends ConsumerWidget {
                 .doc('current')
                 .set(<String, dynamic>{
               'greetingVoiceNoteId': voiceNoteId,
+              'greetingVoiceNoteDuration': result.durationSeconds,
               'version': currentVersion + 1,
               'updatedAt': FieldValue.serverTimestamp(),
             }, SetOptions(merge: true));
@@ -220,6 +335,155 @@ class GreetingManagementScreen extends ConsumerWidget {
             }
           }
         },
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// B-11: playback card for the current greeting voice note.
+// Uses VoiceNotePlayerWidget from lib_core with Firebase Storage download URL.
+// =============================================================================
+
+class _GreetingPlaybackCard extends StatefulWidget {
+  const _GreetingPlaybackCard({
+    required this.shopId,
+    required this.voiceNoteId,
+  });
+
+  final String shopId;
+  final String voiceNoteId;
+
+  @override
+  State<_GreetingPlaybackCard> createState() => _GreetingPlaybackCardState();
+}
+
+class _GreetingPlaybackCardState extends State<_GreetingPlaybackCard> {
+  int? _durationSeconds;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDuration();
+  }
+
+  @override
+  void didUpdateWidget(covariant _GreetingPlaybackCard old) {
+    super.didUpdateWidget(old);
+    if (old.voiceNoteId != widget.voiceNoteId) {
+      _loadDuration();
+    }
+  }
+
+  Future<void> _loadDuration() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      // Try to read duration from the theme doc (stored since B-11)
+      final themeDoc = await FirebaseFirestore.instance
+          .collection('shops')
+          .doc(widget.shopId)
+          .collection('theme')
+          .doc('current')
+          .get();
+
+      final raw = themeDoc.data();
+      final dur = (raw?['greetingVoiceNoteDuration'] as num?)?.toInt();
+
+      if (dur != null && dur > 0) {
+        setState(() {
+          _durationSeconds = dur;
+          _loading = false;
+        });
+        return;
+      }
+
+      // Fallback: read from the VoiceNote doc
+      final vnDoc = await FirebaseFirestore.instance
+          .collection('shops')
+          .doc(widget.shopId)
+          .collection('voice_notes')
+          .doc(widget.voiceNoteId)
+          .get();
+
+      setState(() {
+        _durationSeconds =
+            (vnDoc.data()?['durationSeconds'] as num?)?.toInt() ?? 10;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(YugmaSpacing.s4),
+        decoration: BoxDecoration(
+          color: YugmaColors.surface,
+          borderRadius: BorderRadius.circular(YugmaRadius.lg),
+          boxShadow: YugmaShadows.card,
+        ),
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: YugmaColors.primary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(YugmaSpacing.s4),
+      decoration: BoxDecoration(
+        color: YugmaColors.surface,
+        borderRadius: BorderRadius.circular(YugmaRadius.lg),
+        boxShadow: YugmaShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'मौजूदा संदेश सुनिए',
+            style: TextStyle(
+              fontFamily: YugmaFonts.devaBody,
+              fontSize: YugmaTypeScale.body,
+              fontWeight: FontWeight.w600,
+              color: YugmaColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: YugmaSpacing.s3),
+          Center(
+            child: VoiceNotePlayerWidget(
+              durationSeconds: _durationSeconds ?? 10,
+              onPlayPause: (_) {
+                // Actual audio playback is wired by consuming screen.
+                // Full playback integration requires AudioPlayer setup
+                // which will be added when the audio pipeline lands.
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

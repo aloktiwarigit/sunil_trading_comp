@@ -30,11 +30,9 @@ enum ShortlistOccasion {
   @JsonValue('naya_ghar')
   nayaGhar,
 
-  /// दहेज के लिए — for the dowry contribution. Intentionally called out by
-  /// name per Brief §3 ("not euphemized as gift") — the market uses the
-  /// word, the app respects the market.
-  @JsonValue('dahej')
-  dahej,
+  /// बेटी का नया घर — for daughter's new home.
+  @JsonValue('beti_ka_ghar')
+  betiKaGhar,
 
   /// पुराना बदलने के लिए — to replace the old one (Persona C: replacement
   /// buyer). Honest framing per Maya's reframe.

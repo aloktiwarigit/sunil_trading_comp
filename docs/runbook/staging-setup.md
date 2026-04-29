@@ -83,7 +83,7 @@ firebase firestore:rules --project yugma-dukaan-staging
 # Should print the current firestore.rules version with Sprint 1.4 + 2.x fixes
 ```
 
-**Known pre-existing drift (flagged Phase 1.2):** `firestore.rules` lines 50-52 use `'shopkeeper' / 'son' / 'munshi'` for `callerRole()` whereas SAD §5 + PRD canonical use `'bhaiya' / 'beta' / 'munshi'`. This drift will propagate to staging on deploy. Fix is queued for Sprint 4 P2.4 when chat rules extend to cover the `operators` collection with role-specific checks.
+**Drift §15.2.C — RESOLVED:** the rule layer (lines 48-52) now uses canonical `'bhaiya' / 'beta' / 'munshi'` to match the Dart enum. This was confirmed during P0-B; the test seed + helper were the stale piece, and that has been corrected. The remaining piece (drift §15.2.L) is the `signupNewOperator` Cloud Function — when it lands, it must issue custom claims with these canonical role names, not the old `'shopkeeper'/'son'`.
 
 ---
 
@@ -120,6 +120,89 @@ When ready:
    ```bash
    firebase deploy --only storage --project yugma-dukaan-staging
    ```
+
+---
+
+## Step 5.5 — App Check enforcement (Console toggle, P0-C ops step)
+
+The customer + shopkeeper apps already activate App Check at boot (Play Integrity / DeviceCheck in release; debug provider in debug). The two callable Cloud Functions ship with `enforceAppCheck: true` in their onCall options. **For Firestore + Storage**, App Check enforcement must be toggled in the Firebase Console — there is no firebase.json directive for this.
+
+For each environment (`yugma-dukaan-dev`, `yugma-dukaan-staging`, `yugma-dukaan-prod`):
+
+1. Firebase Console → **App Check** → **Apps** tab.
+2. For each registered app (customer_app Android, customer_app iOS, shopkeeper_app Android, shopkeeper_app iOS), confirm the attestation provider is configured (Play Integrity for Android release, DeviceCheck for iOS — already done as part of the SDK init).
+3. Switch to the **APIs** tab.
+4. For **Cloud Firestore**: change "Enforcement" from `Unenforced` → `Enforced`.
+5. For **Cloud Storage for Firebase**: same toggle.
+6. (Cloud Functions: enforcement is per-function via `enforceAppCheck: true` — already in code, no Console step.)
+
+**Do this AFTER the apps have been released for at least one full release cycle.** Switching to Enforced before all clients ship App Check tokens will lock out legitimate users.
+
+Drift §15.1.C is fully resolved only after this Console toggle lands per environment.
+
+---
+
+## Step 5.55 — JOIN_TOKEN_HMAC_SECRET (P0-A ops step)
+
+The `joinDecisionCircle` and `generateWaMeLink` Cloud Functions both declare a Firebase Secret Manager dependency:
+
+```typescript
+secrets: ['JOIN_TOKEN_HMAC_SECRET']
+```
+
+This secret is the HMAC-SHA256 key used to sign + verify Decision-Circle join tokens (drift §15.1.A / ADR-009 v1.0.3). Without it set, `firebase deploy --only functions` succeeds but the first invocation throws `JOIN_TOKEN_HMAC_SECRET is not set or is too short`.
+
+For each environment, generate a 64-character random secret and bind it once:
+
+```bash
+# Generate a secret value (saved nowhere — feed it directly to firebase).
+openssl rand -hex 32 | xargs -I {} firebase functions:secrets:set JOIN_TOKEN_HMAC_SECRET --project yugma-dukaan-{env} --data-file <(echo -n "{}")
+```
+
+Or interactively (Firebase prompts for the value, accepts paste):
+
+```bash
+firebase functions:secrets:set JOIN_TOKEN_HMAC_SECRET --project yugma-dukaan-{env}
+# (paste 64+ random hex chars when prompted)
+```
+
+Then redeploy the affected functions so they pick up the new secret binding:
+
+```bash
+firebase deploy --only functions:joinDecisionCircle,functions:generateWaMeLink \
+  --project yugma-dukaan-{env}
+```
+
+**Secret rotation:** if the secret is suspected compromised, generate a new one with the same command (Firebase versions secrets — old tokens will fail to verify, which is the desired behavior). Allow a 7-day overlap if you can — that's the default token TTL, and any in-flight wa.me link minted under the old secret will be unverifiable post-rotation. For the v1 single-shop flagship, instant rotation is fine.
+
+**Local emulator:** when running the functions emulator, set the secret via `.secret.local`:
+
+```bash
+echo "JOIN_TOKEN_HMAC_SECRET=$(openssl rand -hex 32)" >> functions/.secret.local
+```
+
+(`.secret.local` is gitignored.)
+
+Drift §15.1.A is fully resolved only after this secret is set per environment.
+
+---
+
+## Step 5.6 — Codex review gate branch protection (P0-Q ops step)
+
+`.github/workflows/codex-review-gate.yml` exists and runs on every PR — but for it to actually block merges, the GitHub branch protection rule needs to require it.
+
+For the `main` branch:
+
+1. GitHub repo → **Settings** → **Branches**.
+2. Add or edit the protection rule for `main`.
+3. Tick **"Require status checks to pass before merging"**.
+4. In the search box, look up `Codex review gate / verify-marker` and add it to the required checks list.
+5. (Recommended also) tick **"Require branches to be up to date before merging"** so the marker check sees the merge commit's diff, not stale base.
+6. Save.
+
+Now any PR without a fresh `.codex-review-passed` marker (added or refreshed within the PR's commit range) cannot be merged. Drift §15.2.Q is fully resolved only after this branch-protection step lands.
+
+Repeat the same for any other long-lived branches (none today).
 
 ---
 

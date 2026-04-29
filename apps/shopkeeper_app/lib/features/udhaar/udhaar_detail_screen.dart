@@ -125,7 +125,7 @@ class UdhaarDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: YugmaSpacing.s1),
                 Text(
-                  '₹${_formatInr(ledger.runningBalance)}',
+                  '₹${formatInr(ledger.runningBalance)}',
                   style: TextStyle(
                     fontFamily: YugmaFonts.mono,
                     fontSize: YugmaTypeScale.display,
@@ -137,7 +137,7 @@ class UdhaarDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: YugmaSpacing.s1),
                 Text(
-                  'कुल: ₹${_formatInr(ledger.recordedAmount)}',
+                  'कुल: ₹${formatInr(ledger.recordedAmount)}',
                   style: TextStyle(
                     fontFamily: YugmaFonts.mono,
                     fontSize: YugmaTypeScale.caption,
@@ -391,21 +391,6 @@ class UdhaarDetailScreen extends ConsumerWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    if (amount < 0) return '-${_formatInr(-amount)}';
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }
 
 /// S4.10 AC #9: Cadence stepper (7–30 days).

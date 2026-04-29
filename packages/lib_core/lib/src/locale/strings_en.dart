@@ -21,6 +21,7 @@
 //   - Non-apologetic empty states, no "Unfortunately..." / "Sorry..." (per §5.7)
 // =============================================================================
 
+import '../utils/format_inr.dart';
 import 'strings_base.dart';
 
 /// English implementation of [AppStrings]. Activated when the Hindi
@@ -83,6 +84,20 @@ class AppStringsEn extends AppStrings {
 
   @override
   String get goldenHourToggleBeautiful => 'Beautiful view';
+  @override
+  String get goldenHourTitle => 'Golden Hour Photo';
+  @override
+  String get goldenHourLightGuide => 'Sunlight should fall at an angle';
+  @override
+  String get goldenHourCaptureButton => 'Take photo';
+  @override
+  String get goldenHourHeroLabel => 'Hero photo';
+  @override
+  String get goldenHourWorkingLabel => 'Working photo';
+  @override
+  String get goldenHourRetake => 'Retake';
+  @override
+  String get goldenHourSave => 'Save';
 
   // ---- §2 Curated shortlists ----
 
@@ -96,7 +111,7 @@ class AppStringsEn extends AppStrings {
   String get shortlistTitlePuranaBadlne => 'To replace the old one';
 
   @override
-  String get shortlistTitleDahej => 'For dahej';
+  String get shortlistTitleBetiKaGhar => "For daughter's new home";
 
   @override
   String get shortlistTitleBudget => 'Budget picks';
@@ -178,7 +193,7 @@ class AppStringsEn extends AppStrings {
       "Sunil-bhaiya's offer — $skuName";
 
   @override
-  String proposalPriceLine(int amount) => '₹${_formatInr(amount)}';
+  String proposalPriceLine(int amount) => '₹${formatInr(amount)}';
 
   @override
   String get proposalAcceptButton => 'Accept';
@@ -188,7 +203,7 @@ class AppStringsEn extends AppStrings {
 
   @override
   String proposalAcceptedSystemMessage(int amount, String skuName) =>
-      '$skuName confirmed at ₹${_formatInr(amount)}';
+      '$skuName confirmed at ₹${formatInr(amount)}';
 
   @override
   String get proposalOriginalPriceLabel => 'Original price';
@@ -219,6 +234,9 @@ class AppStringsEn extends AppStrings {
 
   @override
   String get otpCodeExpired => 'OTP expired — please resend';
+
+  @override
+  String otpResendCountdown(int seconds) => 'Resend in ${seconds}s';
 
   @override
   String get commitSuccessTitle => 'Order confirmed!';
@@ -313,14 +331,14 @@ class AppStringsEn extends AppStrings {
 
   @override
   String udhaarBalance(int amount) =>
-      'Remaining with Sunil-bhaiya: ₹${_formatInr(amount)}';
+      'Remaining with Sunil-bhaiya: ₹${formatInr(amount)}';
 
   @override
   String get deliveryConfirmed => 'Sunil-bhaiya has delivered the order';
 
   @override
   String udhaarReminderPush(int amount) =>
-      'Your account: ₹${_formatInr(amount)} remaining with Sunil-bhaiya';
+      'Your account: ₹${formatInr(amount)} remaining with Sunil-bhaiya';
 
   // ---- §7 Empty states ----
 
@@ -390,7 +408,7 @@ class AppStringsEn extends AppStrings {
   String get receiptCancelledWatermark => 'CANCELLED';
 
   @override
-  String receiptUdhaarBaaki(int amount) => 'Remaining: ₹${_formatInr(amount)}';
+  String receiptUdhaarBaaki(int amount) => 'Remaining: ₹${formatInr(amount)}';
 
   @override
   String get receiptCustomerFallback => 'Customer';
@@ -430,7 +448,7 @@ class AppStringsEn extends AppStrings {
 
   @override
   String get shopClosureReversibilityFooter =>
-      'If you tapped by mistake, you can reverse this in the next 24 hours';
+      'If you tapped by mistake, you can reverse this in the next 30 days';
 
   // ---- §15 S4.16 Media spend tile ----
 
@@ -510,6 +528,8 @@ class AppStringsEn extends AppStrings {
   String get skuSaveButton => 'Add item';
   @override
   String get skuGoldenHourPhotoButton => 'Capture Golden Hour photo';
+  @override
+  String get skuSaveBeforePhoto => 'Save the item first, then take photo';
   @override
   String get skuStockCountLabel => 'How many';
   @override
@@ -628,25 +648,365 @@ class AppStringsEn extends AppStrings {
   @override
   String get memoryNewCustomerPlaceholder => 'New customer — first time';
 
-  // ---------------------------------------------------------------------------
-  // Internal helpers
-  // ---------------------------------------------------------------------------
+  // ---- §24 D-2: Order detail timeline labels ----
 
-  /// Format INR rupee amount with Indian lakh/thousand separators.
-  /// Indian numerical format — shared with strings_hi.dart for consistency.
-  static String _formatInr(int amount) {
-    if (amount < 1000) return amount.toString();
-    final str = amount.toString();
-    if (str.length <= 3) return str;
-    final lastThree = str.substring(str.length - 3);
-    final rest = str.substring(0, str.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
+  @override
+  String orderItemCount(int count) => '$count items';
+
+  @override
+  String get orderStatusLabel => 'Status';
+
+  @override
+  String get orderDownloadReceipt => 'Download receipt';
+
+  @override
+  String get timelineCommitted => 'Confirmed';
+
+  @override
+  String get timelineUdhaarStarted => 'Udhaar khaata started';
+
+  @override
+  String get timelinePaid => 'Paid';
+
+  @override
+  String get timelineBankTransferPending => 'Bank transfer — verification pending';
+
+  @override
+  String get timelineDelivering => 'Out for delivery';
+
+  @override
+  String get timelineDelivered => 'Delivered';
+
+  @override
+  String get timelineClosed => 'Closed';
+
+  @override
+  String get timelineCancelled => 'Cancelled';
+
+  @override
+  String get timelineDraft => 'Draft';
+
+  @override
+  String get receiptGenerating => 'Generating receipt…';
+
+  @override
+  String receiptShareSubject(String projectId) => 'Receipt — $projectId';
+
+  @override
+  String receiptGenerationError(String detail) =>
+      'Receipt generation failed: $detail';
+
+  @override
+  String monthName(int month) => const <int, String>{
+        1: 'January',
+        2: 'February',
+        3: 'March',
+        4: 'April',
+        5: 'May',
+        6: 'June',
+        7: 'July',
+        8: 'August',
+        9: 'September',
+        10: 'October',
+        11: 'November',
+        12: 'December',
+      }[month] ?? '';
+
+  // ---- §25 D-2: Order list state badge labels ----
+
+  @override
+  String get stateBadgeDraft => 'Draft';
+
+  @override
+  String get stateBadgeNegotiating => 'Negotiating';
+
+  @override
+  String get stateBadgeCommitted => 'Confirmed';
+
+  @override
+  String get stateBadgePaid => 'Paid';
+
+  @override
+  String get stateBadgeDelivering => 'Delivering';
+
+  @override
+  String get stateBadgeAwaitingVerification => 'Pending payment';
+
+  @override
+  String get stateBadgeClosed => 'Closed';
+
+  @override
+  String get stateBadgeCancelled => 'Cancelled';
+
+  // ---- §26 D-2: Analytics dashboard labels ----
+
+  @override
+  String get analyticsOrders => 'Orders';
+
+  @override
+  String get analyticsRevenue => 'Revenue';
+
+  @override
+  String get analyticsOpenOrders => 'Open orders';
+
+  @override
+  String get analyticsUdhaarPending => 'Udhaar pending';
+
+  @override
+  String get analyticsNewCustomers => 'New customers';
+
+  @override
+  String get analyticsLast7Days => 'Last 7 days';
+
+  @override
+  String get analyticsNoOrdersYet => 'No orders yet';
+
+  // ---- §27 D-2: Voice recorder widget labels ----
+
+  @override
+  String get micPermissionNeeded =>
+      'Microphone permission needed — please allow in settings';
+
+  @override
+  String get voiceGoBack => 'Go back';
+
+  @override
+  String get voiceMinDuration => 'At least 5 seconds';
+
+  @override
+  String get voiceRecordingInProgress => 'Recording...';
+
+  @override
+  String get voiceCancel => 'Cancel';
+
+  @override
+  String get voiceReRecord => 'Re-record';
+
+  @override
+  String get voiceCancelShort => 'Cancel';
+
+  // ---- §28 D-2: Presence toggle screen labels ----
+
+  @override
+  String get presenceAtShop => 'At the shop';
+
+  @override
+  String get presenceAway => 'Away';
+
+  @override
+  String get presenceBusyWithCustomer => 'With a customer';
+
+  @override
+  String get presenceAtEvent => 'At a wedding / event';
+
+  @override
+  String get presenceMyAvailability => 'My availability';
+
+  @override
+  String get presenceReturnTimePrompt => 'When will you be back?';
+
+  @override
+  String get presenceReturnTimeDefault => '6 PM';
+
+  @override
+  String get presenceVoicePrompt => 'Let the customer hear your voice';
+
+  @override
+  String presenceVoiceRecorded(int seconds) =>
+      'Voice recorded — $seconds seconds';
+
+  @override
+  String get presenceRemoveVoice => 'Remove';
+
+  @override
+  String get presenceUpdateButton => 'Update';
+
+  @override
+  String get presenceUpdated => 'Availability updated';
+
+  // ---- §29 D-2: Curation screen labels ----
+
+  @override
+  String get curationMyPicks => 'My picks';
+
+  @override
+  String get curationEmptyPrompt => 'Nothing selected yet — add from below';
+
+  @override
+  String get curationAddButton => '+ Add';
+
+  // ---- §30 D-2: Home dashboard section labels ----
+
+  @override
+  String get homeSectionMyPicks => 'My picks';
+
+  @override
+  String get homeSectionDashboard => 'Dashboard';
+
+  @override
+  String get homeSectionSettings => 'Settings';
+
+  @override
+  String get homeSectionUdhaar => 'Udhaar khaata';
+
+  // ---- §31 D-2: Settings screen labels ----
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsShopInfo => 'Shop info';
+
+  @override
+  String get settingsTaglineHindi => 'Tagline (Hindi)';
+
+  @override
+  String get settingsGst => 'GST number';
+
+  @override
+  String get settingsWhatsapp => 'WhatsApp number';
+
+  @override
+  String get settingsBranding => 'Branding';
+
+  @override
+  String get settingsChangeGreeting => 'Change greeting message';
+
+  @override
+  String get settingsFeatures => 'Features';
+
+  @override
+  String get settingsDecisionCircle => 'Decision Circle (Family)';
+
+  @override
+  String get settingsRemoteConfigNote =>
+      'Features are managed via Remote Config — contact Yugma Labs';
+
+  @override
+  String get settingsOperators => 'Operators';
+
+  @override
+  String get settingsSave => 'Save';
+
+  @override
+  String get settingsSaved => 'Settings saved';
+
+  // ---- §32 D-10: Settings enhancements ----
+
+  @override
+  String get settingsColorPicker => 'Change shop color';
+
+  @override
+  String get settingsFaceUpload => 'Upload your photo';
+
+  @override
+  String get settingsAddOperator => 'Add operator';
+
+  @override
+  String get settingsRemoveOperator => 'Remove';
+  @override
+  String get settingsRemoveOperatorConfirm =>
+      'Are you sure you want to remove this person? Their access will be revoked immediately.';
+
+  // ---- §33 Customer Udhaar Screen ----
+
+  @override
+  String get udhaarScreenTitle => 'Udhaar Account';
+
+  @override
+  String get udhaarNoLedgers => 'No udhaar accounts yet';
+
+  @override
+  String get udhaarOpenLedgers => 'Open Udhaar';
+
+  @override
+  String get udhaarClosedLedgers => 'Closed Accounts';
+
+  @override
+  String get udhaarTotalBaaki => 'Total Remaining';
+
+  @override
+  String get udhaarSettledBadge => 'Settled';
+
+  @override
+  String get udhaarBaakiLabel => 'Remaining';
+
+  @override
+  String udhaarOpenAccountsCount(int count) => '$count open accounts';
+
+  @override
+  String get udhaarOriginalAmountPrefix => 'Original amount';
+
+  @override
+  String udhaarPartialPaymentCount(int count) =>
+      '$count partial ${count == 1 ? 'payment' : 'payments'} made';
+
+  @override
+  String udhaarRemindersSentCount(int count) =>
+      '$count ${count == 1 ? 'reminder' : 'reminders'} sent';
+
+  // ---- §34 Persona Toggle ----
+
+  @override
+  String get personaSheetTitle => 'Who is browsing?';
+
+  @override
+  String get personaCustomLabelHint => 'Enter name';
+
+  // ---- §35 Large Text Toggle ----
+
+  @override
+  String get largeTextToggleLabel => 'Large Text';
+
+  // ---- §36 Presence Banner ----
+
+  @override
+  String presenceReturnBy(String time) => ', back by $time';
+
+  @override
+  String get presenceListenVoice => 'Listen to voice message';
+
+  // ---- §37 Read Tracking ----
+
+  @override
+  String get readStatusSeen => 'Seen';
+
+  @override
+  String readStatusSeenByCount(int count) => 'Seen by $count people';
+
+  // ---- §38 Shopkeeper Udhaar List ----
+
+  @override
+  String get shopUdhaarToggleOpen => 'Open';
+
+  @override
+  String get shopUdhaarToggleClosed => 'Closed';
+
+  @override
+  String get shopUdhaarNoOpen => 'No open udhaar accounts';
+
+  @override
+  String get shopUdhaarNoClosed => 'No closed accounts';
+
+  // ---- §39 Shopkeeper Search ----
+
+  @override
+  String get searchHintOrders => 'Search — name, phone, amount';
+
+  // ---- §40 Shopkeeper Inventory Voice ----
+
+  @override
+  String get voiceNoteButtonLabel => 'Voice Note';
+
+  @override
+  String get voiceNoteAttached => 'Voice note attached';
+
+  // ---- §41 Payment success navigation ----
+
+  @override
+  String get paymentSuccessViewOrder => 'View Order';
+
+  @override
+  String get paymentSuccessBackHome => 'Back to Home';
+
 }

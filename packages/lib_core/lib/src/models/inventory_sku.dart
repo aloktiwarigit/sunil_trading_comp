@@ -134,8 +134,8 @@ class InventorySku with _$InventorySku {
 
     /// Occasion tags determining which curated shortlists this SKU
     /// belongs to. Values map to [ShortlistOccasion] in
-    /// `curated_shortlist.dart`. Example: `['shaadi', 'dahej']` means this
-    /// SKU appears in both the wedding and dowry shortlists.
+    /// `curated_shortlist.dart`. Example: `['shaadi', 'beti_ka_ghar']` means
+    /// this SKU appears in both the wedding and daughter's-new-home shortlists.
     @Default(<String>[]) List<String> occasionTags,
 
     required DateTime createdAt,

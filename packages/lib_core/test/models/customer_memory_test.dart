@@ -50,8 +50,8 @@ void main() {
     });
 
     test('PreferredOccasion enums serialize to domain names', () {
-      // Domain-grounded: shaadi, nayaGhar, dahej, puranaBadalne
-      // NOT: wedding, newHome, dowry, replacement
+      // Domain-grounded: shaadi, nayaGhar, beti_ka_ghar, puranaBadalne
+      // NOT: wedding, newHome, dowry, replacement, dahej (forbidden)
       final m = CustomerMemory(
         customerUid: 'test',
         shopId: 'test-shop',
@@ -62,12 +62,13 @@ void main() {
       final occasions = json['preferredOccasions'] as List;
       expect(occasions, contains('shaadi'));
       expect(occasions, contains('nayaGhar'));
-      expect(occasions, contains('dahej'));
+      expect(occasions, contains('beti_ka_ghar'));
       expect(occasions, contains('puranaBadalne'));
       expect(occasions, contains('budget'));
       expect(occasions, contains('ladies'));
       expect(occasions, contains('other'));
-      // No forbidden generic terms
+      // Forbidden words must never appear on the wire
+      expect(occasions, isNot(contains('dahej')));
       expect(occasions, isNot(contains('wedding')));
       expect(occasions, isNot(contains('newHome')));
     });

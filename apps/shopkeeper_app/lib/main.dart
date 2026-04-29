@@ -11,6 +11,7 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -24,11 +25,11 @@ import 'app.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
   _configureLogging();
 
   await runZonedGuarded<Future<void>>(
     () async {
+      WidgetsFlutterBinding.ensureInitialized();
       await FirebaseClient.initialize(
         options: DefaultFirebaseOptions.currentPlatform,
       );
@@ -94,8 +95,11 @@ final shopkeeperAuthProviderInstance = Provider<AuthProvider>((ref) {
 /// golden hour photo capture, and greeting management screens. Avoids ad-hoc
 /// MediaStoreCloudinaryFirebase construction per handoff §4 gotcha.
 final mediaStoreProvider = Provider<MediaStore>((ref) {
+  final cloudName = FirebaseRemoteConfig.instance
+      .getString(FeatureFlags.cloudinaryCloudName);
   return MediaStoreCloudinaryFirebase(
     firebaseStorage: FirebaseStorage.instance,
-    cloudinaryCloudName: '',
+    cloudinaryCloudName:
+        cloudName.isNotEmpty ? cloudName : 'yugma-dukaan-dev',
   );
 });

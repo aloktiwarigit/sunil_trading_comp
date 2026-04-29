@@ -19,16 +19,38 @@ part 'customer_memory.freezed.dart';
 part 'customer_memory.g.dart';
 
 /// Occasions that customers typically buy almirahs for.
-/// Domain-grounded: shaadi, naya_ghar, dahej, purana_badalne — NOT
+/// Domain-grounded: shaadi, naya_ghar, beti_ka_ghar, purana_badalne — NOT
 /// "wedding", "new_home", "dowry", "replacement".
 enum PreferredOccasion {
   shaadi,
   nayaGhar,
-  dahej,
+  @JsonValue('beti_ka_ghar')
+  betiKaGhar,
   puranaBadalne,
   budget,
   ladies,
   other,
+}
+
+extension PreferredOccasionWireValue on PreferredOccasion {
+  String get wireValue {
+    switch (this) {
+      case PreferredOccasion.shaadi:
+        return 'shaadi';
+      case PreferredOccasion.nayaGhar:
+        return 'nayaGhar';
+      case PreferredOccasion.betiKaGhar:
+        return 'beti_ka_ghar';
+      case PreferredOccasion.puranaBadalne:
+        return 'puranaBadalne';
+      case PreferredOccasion.budget:
+        return 'budget';
+      case PreferredOccasion.ladies:
+        return 'ladies';
+      case PreferredOccasion.other:
+        return 'other';
+    }
+  }
 }
 
 @freezed

@@ -18,6 +18,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,21 +78,36 @@ class DraftController extends AsyncNotifier<DraftState> {
     final firestore = FirebaseFirestore.instance;
 
     // Query for existing draft projects by this customer.
-    final query = await firestore
-        .collection('shops')
-        .doc(shopId)
-        .collection('projects')
-        .where('customerUid', isEqualTo: user.uid)
-        .where('state', isEqualTo: 'draft')
-        .orderBy('createdAt', descending: true)
-        .limit(1)
-        .get();
+    debugPrint('[DRAFT] querying drafts for uid=${user.uid}, shopId=$shopId');
+    late final QuerySnapshot<Map<String, dynamic>> query;
+    try {
+      query = await firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .where('customerUid', isEqualTo: user.uid)
+          .where('state', isEqualTo: 'draft')
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+      debugPrint('[DRAFT] query succeeded, docs=${query.docs.length}');
+    } catch (e, st) {
+      debugPrint('[DRAFT] query FAILED: $e');
+      debugPrint('[DRAFT] stack: $st');
+      rethrow;
+    }
 
     if (query.docs.isNotEmpty) {
       final doc = query.docs.first;
+      final raw = doc.data();
       final project = Project.fromJson(<String, dynamic>{
-        ...doc.data(),
+        ...raw,
         'projectId': doc.id,
+        'createdAt': _normalizeTimestamp(raw['createdAt']),
+        'updatedAt': _normalizeTimestamp(raw['updatedAt']),
+        'committedAt': _normalizeTimestamp(raw['committedAt']),
+        'paidAt': _normalizeTimestamp(raw['paidAt']),
+        'deliveredAt': _normalizeTimestamp(raw['deliveredAt']),
       });
       return DraftState(
         project: project,
@@ -373,5 +389,13 @@ class DraftController extends AsyncNotifier<DraftState> {
   /// Generate a Firestore-friendly unique ID.
   static String _generateId() {
     return FirebaseFirestore.instance.collection('_').doc().id;
+  }
+
+  /// Normalize Firestore Timestamp → ISO8601 string for Freezed fromJson.
+  static Object? _normalizeTimestamp(Object? value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate().toIso8601String();
+    if (value is DateTime) return value.toIso8601String();
+    return value;
   }
 }

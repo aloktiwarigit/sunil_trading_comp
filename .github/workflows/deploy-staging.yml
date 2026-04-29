@@ -22,7 +22,7 @@ on:
       - 'firestore.indexes.json'
       - 'storage.rules'
       - 'functions/**'
-      - 'sites/marketing/**'
+      - 'apps/marketing_site/**'
 
 concurrency:
   group: staging-deploy
@@ -75,14 +75,14 @@ jobs:
         run: firebase deploy --only functions --project staging
 
       - name: Build marketing site
-        if: ${{ hashFiles('sites/marketing/package.json') != '' }}
-        working-directory: sites/marketing
+        if: ${{ hashFiles('apps/marketing_site/package.json') != '' }}
+        working-directory: apps/marketing_site
         run: |
           npm ci
           npm run build
 
       - name: Deploy marketing hosting target
-        if: ${{ hashFiles('sites/marketing/package.json') != '' }}
+        if: ${{ hashFiles('apps/marketing_site/package.json') != '' }}
         run: firebase deploy --only hosting:marketing --project staging
 
       - name: Cleanup credentials

@@ -13,6 +13,7 @@
 // =============================================================================
 
 import 'package:customer_app/features/chat/chat_controller.dart';
+import 'package:customer_app/features/chat/read_tracking_controller.dart';
 import 'package:customer_app/features/project/draft_controller.dart';
 import 'package:customer_app/main.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ import 'package:lib_core/lib_core.dart';
 
 /// Customer-side chat screen — wraps [ChatScreen] from lib_core with
 /// customer-app-specific Riverpod wiring.
-class CustomerChatScreen extends ConsumerWidget {
+class CustomerChatScreen extends ConsumerStatefulWidget {
   /// Create the customer chat screen.
   const CustomerChatScreen({
     super.key,
@@ -37,9 +38,19 @@ class CustomerChatScreen extends ConsumerWidget {
   final AppStrings strings;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CustomerChatScreen> createState() =>
+      _CustomerChatScreenState();
+}
+
+class _CustomerChatScreenState extends ConsumerState<CustomerChatScreen> {
+  /// Guard to avoid redundant Firestore batch writes — markThreadAsRead is
+  /// idempotent (arrayUnion) but we avoid wasteful repeat calls.
+  bool _hasMarkedRead = false;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = context.yugmaTheme;
-    final chatAsync = ref.watch(chatControllerProvider(projectId));
+    final chatAsync = ref.watch(chatControllerProvider(widget.projectId));
     final authProvider = ref.read(authProviderInstanceProvider);
     final currentUser = authProvider.currentUser;
 
@@ -48,7 +59,7 @@ class CustomerChatScreen extends ConsumerWidget {
         backgroundColor: theme.shopBackground,
         body: Center(
           child: Text(
-            strings.opsAppNotAuthorized,
+            widget.strings.opsAppNotAuthorized,
             style: theme.bodyDeva,
           ),
         ),
@@ -56,11 +67,11 @@ class CustomerChatScreen extends ConsumerWidget {
     }
 
     // Generate order suffix from projectId — last 3 chars uppercase.
-    final orderSuffix = projectId.length >= 3
-        ? projectId.substring(projectId.length - 3).toUpperCase()
-        : projectId.toUpperCase();
+    final orderSuffix = widget.projectId.length >= 3
+        ? widget.projectId.substring(widget.projectId.length - 3).toUpperCase()
+        : widget.projectId.toUpperCase();
 
-    final threadTitle = strings.chatThreadTitleWithOrder(orderSuffix);
+    final threadTitle = widget.strings.chatThreadTitleWithOrder(orderSuffix);
 
     return chatAsync.when(
       loading: () => Scaffold(
@@ -81,11 +92,23 @@ class CustomerChatScreen extends ConsumerWidget {
           title: Text(threadTitle, style: theme.bodyDeva),
           iconTheme: IconThemeData(color: theme.shopPrimary),
         ),
-        body: Center(
-          child: Text(err.toString(), style: theme.bodyDeva),
-        ),
+        body: YugmaErrorBanner(error: err),
       ),
       data: (chatState) {
+        // P2.7: Mark all messages as read when the thread is first displayed.
+        // markThreadAsRead uses arrayUnion — idempotent, but the guard avoids
+        // redundant Firestore batch writes on every rebuild.
+        if (!_hasMarkedRead && chatState.messages.isNotEmpty) {
+          _hasMarkedRead = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(readTrackingProvider).markThreadAsRead(
+                  projectId: widget.projectId,
+                  currentUid: currentUser.uid,
+                  messages: chatState.messages,
+                );
+          });
+        }
+
         // Build delivery status map for optimistic UI.
         final deliveryStatuses = <String, MessageDeliveryStatus>{};
         for (final msg in chatState.messages) {
@@ -116,24 +139,24 @@ class CustomerChatScreen extends ConsumerWidget {
 
         return ChatScreen(
           threadTitle: threadTitle,
-          strings: strings,
+          strings: widget.strings,
           currentUserUid: currentUser.uid,
           messages: chatState.messages,
           deliveryStatuses: deliveryStatuses,
           isLoadingOlder: chatState.isLoadingOlder,
           onSendText: (text) {
-            ref.read(chatControllerProvider(projectId).notifier).sendText(text);
+            ref.read(chatControllerProvider(widget.projectId).notifier).sendText(text);
           },
           onLoadOlder: () {
             ref
-                .read(chatControllerProvider(projectId).notifier)
+                .read(chatControllerProvider(widget.projectId).notifier)
                 .loadOlderMessages();
           },
           onBack: () => context.pop(),
           // C3.3: wire proposal acceptance.
           onAcceptProposal: (messageId) {
             ref
-                .read(chatControllerProvider(projectId).notifier)
+                .read(chatControllerProvider(widget.projectId).notifier)
                 .acceptPriceProposal(messageId);
           },
           proposalMetadata: proposalMetadata,

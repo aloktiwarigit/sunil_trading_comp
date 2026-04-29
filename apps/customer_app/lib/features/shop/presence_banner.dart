@@ -20,6 +20,7 @@ class PresenceBanner extends StatelessWidget {
     this.returnTime,
     this.hasAwayVoiceNote = false,
     this.onPlayVoiceNote,
+    this.strings,
   });
 
   final String presenceStatus;
@@ -30,14 +31,19 @@ class PresenceBanner extends StatelessWidget {
   final bool hasAwayVoiceNote;
   final VoidCallback? onPlayVoiceNote;
 
+  /// Optional locale strings. Falls back to AppStringsHi() if null.
+  final AppStrings? strings;
+
   @override
   Widget build(BuildContext context) {
     if (presenceStatus == 'available' || presenceStatus.isEmpty) {
       return const SizedBox.shrink();
     }
 
+    final theme = context.yugmaTheme;
+    final resolvedStrings = strings ?? const AppStringsHi();
     final returnText = returnTime != null && returnTime!.isNotEmpty
-        ? ', $returnTime तक वापस'
+        ? resolvedStrings.presenceReturnBy(returnTime!)
         : '';
 
     return Container(
@@ -47,10 +53,10 @@ class PresenceBanner extends StatelessWidget {
         vertical: YugmaSpacing.s2,
       ),
       decoration: BoxDecoration(
-        color: YugmaColors.accent.withValues(alpha: 0.12),
+        color: theme.shopAccent.withValues(alpha: 0.12),
         border: Border(
           bottom: BorderSide(
-            color: YugmaColors.accent.withValues(alpha: 0.3),
+            color: theme.shopAccent.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -60,17 +66,15 @@ class PresenceBanner extends StatelessWidget {
           Icon(
             _statusIcon,
             size: 18,
-            color: YugmaColors.accent,
+            color: theme.shopAccent,
           ),
           const SizedBox(width: YugmaSpacing.s2),
           Expanded(
             child: Text(
               '$presenceMessage$returnText',
-              style: TextStyle(
-                fontFamily: YugmaFonts.devaBody,
-                fontSize: YugmaTypeScale.caption,
+              style: theme.captionDeva.copyWith(
                 fontWeight: FontWeight.w600,
-                color: YugmaColors.accent,
+                color: theme.shopAccent,
               ),
             ),
           ),
@@ -80,10 +84,10 @@ class PresenceBanner extends StatelessWidget {
               onPressed: onPlayVoiceNote,
               icon: Icon(
                 Icons.play_circle_outline,
-                color: YugmaColors.primary,
+                color: theme.shopPrimary,
                 size: 24,
               ),
-              tooltip: 'आवाज़ सुनिए',
+              tooltip: resolvedStrings.presenceListenVoice,
             ),
         ],
       ),

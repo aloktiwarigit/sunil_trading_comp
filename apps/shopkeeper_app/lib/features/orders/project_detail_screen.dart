@@ -255,7 +255,7 @@ class ProjectDetailScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '₹${_formatInr(project.totalAmount)}',
+                  '₹${formatInr(project.totalAmount)}',
                   style: TextStyle(
                     fontFamily: YugmaFonts.mono,
                     fontSize: YugmaTypeScale.display,
@@ -529,6 +529,55 @@ class ProjectDetailScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: YugmaSpacing.s2),
+        // Mark as Paid — visible only for committed projects.
+        if (project.state == ProjectState.committed) ...[
+          SizedBox(
+            height: YugmaSpacing.s12,
+            child: OutlinedButton.icon(
+              onPressed: () =>
+                  _confirmMarkPaid(context, ref, project, strings),
+              icon: const Icon(Icons.payments_outlined, size: 20),
+              label: const Text('भुगतान मिला'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: YugmaColors.primary,
+                side: BorderSide(color: YugmaColors.primary),
+                textStyle: TextStyle(
+                  fontFamily: YugmaFonts.devaBody,
+                  fontSize: YugmaTypeScale.body,
+                  fontWeight: FontWeight.w600,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: YugmaSpacing.s2),
+        ],
+        // Start Delivery — visible only for paid projects.
+        if (project.state == ProjectState.paid) ...[
+          SizedBox(
+            height: YugmaSpacing.s12,
+            child: OutlinedButton.icon(
+              onPressed: () => _confirmStartDelivery(context, ref, project, strings),
+              icon: const Icon(Icons.local_shipping_outlined, size: 20),
+              label: const Text('डिलीवरी शुरू'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: YugmaColors.primary,
+                side: BorderSide(color: YugmaColors.primary),
+                textStyle: TextStyle(
+                  fontFamily: YugmaFonts.devaBody,
+                  fontSize: YugmaTypeScale.body,
+                  fontWeight: FontWeight.w600,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: YugmaSpacing.s2),
+        ],
         // C3.11: Delivery confirmation — visible for paid/committed/delivering.
         if (project.state == ProjectState.paid ||
             project.state == ProjectState.committed ||
@@ -606,6 +655,147 @@ class ProjectDetailScreen extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+
+  /// Start Delivery — paid → delivering state transition.
+  /// Shows Hindi confirmation dialog before writing.
+  void _confirmStartDelivery(
+    BuildContext context,
+    WidgetRef ref,
+    Project project,
+    AppStrings strings,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'डिलीवरी शुरू',
+          style: TextStyle(
+            fontFamily: YugmaFonts.devaBody,
+            fontSize: YugmaTypeScale.bodyLarge,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'डिलीवरी शुरू करें — पक्का है?',
+          style: TextStyle(fontFamily: YugmaFonts.devaBody),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(strings.draftQtyHighCancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+
+              try {
+                final patchMap = const ProjectOperatorPatch(
+                  state: ProjectState.delivering,
+                ).toFirestoreMap();
+                patchMap['updatedAt'] = FieldValue.serverTimestamp();
+
+                await FirebaseFirestore.instance
+                    .collection('shops')
+                    .doc(ref.read(shopIdProviderProvider).shopId)
+                    .collection('projects')
+                    .doc(project.projectId)
+                    .set(patchMap, SetOptions(merge: true));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('डिलीवरी शुरू हो गई'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString())),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: YugmaColors.primary,
+              foregroundColor: YugmaColors.textOnPrimary,
+            ),
+            child: Text(strings.draftQtyHighConfirm),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Mark as Paid — committed → paid state transition.
+  /// Shows Hindi confirmation dialog before writing.
+  void _confirmMarkPaid(
+    BuildContext context,
+    WidgetRef ref,
+    Project project,
+    AppStrings strings,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'भुगतान मिला',
+          style: TextStyle(
+            fontFamily: YugmaFonts.devaBody,
+            fontSize: YugmaTypeScale.bodyLarge,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'भुगतान मिला — पक्का है?',
+          style: TextStyle(fontFamily: YugmaFonts.devaBody),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(strings.draftQtyHighCancel),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+
+              try {
+                final patchMap = const ProjectOperatorPatch(
+                  state: ProjectState.paid,
+                ).toFirestoreMap();
+                patchMap['paidAt'] = FieldValue.serverTimestamp();
+                patchMap['updatedAt'] = FieldValue.serverTimestamp();
+
+                await FirebaseFirestore.instance
+                    .collection('shops')
+                    .doc(ref.read(shopIdProviderProvider).shopId)
+                    .collection('projects')
+                    .doc(project.projectId)
+                    .set(patchMap, SetOptions(merge: true));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('भुगतान दर्ज हो गया'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString())),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: YugmaColors.primary,
+              foregroundColor: YugmaColors.textOnPrimary,
+            ),
+            child: Text(strings.draftQtyHighConfirm),
+          ),
+        ],
+      ),
     );
   }
 
@@ -923,20 +1113,6 @@ class ProjectDetailScreen extends ConsumerWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }
 
 /// Line item row in the detail view.
@@ -1149,7 +1325,7 @@ class _MemorySummary extends StatelessWidget {
   static String _occasionLabel(PreferredOccasion o) => switch (o) {
         PreferredOccasion.shaadi => 'शादी',
         PreferredOccasion.nayaGhar => 'नया घर',
-        PreferredOccasion.dahej => 'दहेज',
+        PreferredOccasion.betiKaGhar => 'बेटी का नया घर',
         PreferredOccasion.puranaBadalne => 'पुराना बदलने',
         PreferredOccasion.budget => 'बजट',
         PreferredOccasion.ladies => 'लेडीज',

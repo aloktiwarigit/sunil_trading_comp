@@ -40,6 +40,7 @@ class DeactivationBanner extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final theme = context.yugmaTheme;
     final now = DateTime.now();
     final retentionDays = dpdpRetentionUntil != null
         ? dpdpRetentionUntil!.difference(now).inDays.clamp(0, 999)
@@ -56,10 +57,10 @@ class DeactivationBanner extends StatelessWidget {
         vertical: YugmaSpacing.s3,
       ),
       decoration: BoxDecoration(
-        color: YugmaColors.commit.withValues(alpha: 0.12),
+        color: theme.shopCommit.withValues(alpha: 0.12),
         border: Border(
           bottom: BorderSide(
-            color: YugmaColors.commit.withValues(alpha: 0.3),
+            color: theme.shopCommit.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -70,11 +71,9 @@ class DeactivationBanner extends StatelessWidget {
           // Banner text
           Text(
             bannerText,
-            style: TextStyle(
-              fontFamily: YugmaFonts.devaBody,
-              fontSize: YugmaTypeScale.body,
+            style: theme.bodyDeva.copyWith(
               fontWeight: FontWeight.w600,
-              color: YugmaColors.commit,
+              color: theme.shopCommit,
             ),
           ),
           const SizedBox(height: YugmaSpacing.s2),
@@ -87,11 +86,9 @@ class DeactivationBanner extends StatelessWidget {
                   onTap: onFaqTap,
                   child: Text(
                     strings.shopDeactivationFaqTitle,
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.devaBody,
-                      fontSize: YugmaTypeScale.caption,
+                    style: theme.captionDeva.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: YugmaColors.primary,
+                      color: theme.shopPrimary,
                       decoration: TextDecoration.underline,
                     ),
                   ),
@@ -104,11 +101,9 @@ class DeactivationBanner extends StatelessWidget {
                   onTap: onExportTap,
                   child: Text(
                     strings.dataExportCta,
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.devaBody,
-                      fontSize: YugmaTypeScale.caption,
+                    style: theme.captionDeva.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: YugmaColors.primary,
+                      color: theme.shopPrimary,
                       decoration: TextDecoration.underline,
                     ),
                   ),
@@ -138,15 +133,15 @@ class DeactivationFaqScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.yugmaTheme;
     return Scaffold(
-      backgroundColor: YugmaColors.background,
+      backgroundColor: theme.shopBackground,
       appBar: AppBar(
-        backgroundColor: YugmaColors.primary,
-        foregroundColor: YugmaColors.textOnPrimary,
+        backgroundColor: theme.shopPrimary,
+        foregroundColor: theme.shopTextOnPrimary,
         title: Text(
           strings.shopDeactivationFaqTitle,
-          style: TextStyle(
-            fontFamily: YugmaFonts.devaDisplay,
+          style: theme.h2Deva.copyWith(
             fontSize: YugmaTypeScale.h3,
           ),
         ),
@@ -156,27 +151,27 @@ class DeactivationFaqScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _faqItem(
+            _faqItem(context,
               'दुकान क्यों बंद हो रही है?',
               'सुनील भैया ने दुकान बंद करने का फ़ैसला किया है। '
                   'यह उनका निजी फ़ैसला है।',
             ),
-            _faqItem(
+            _faqItem(context,
               'मेरे पैसे का क्या होगा?',
               'अगर आपने भुगतान किया है और ऑर्डर पूरा नहीं हुआ, '
                   'तो आपका पैसा वापस आ जाएगा।',
             ),
-            _faqItem(
+            _faqItem(context,
               'मेरे ऑर्डर का क्या होगा?',
               'चल रहे ऑर्डर रुक गए हैं। अगर सुनील भैया ने '
                   'पहले ही बना दिया है, तो डिलीवरी होगी।',
             ),
-            _faqItem(
+            _faqItem(context,
               'उधार खाता?',
               'आपका उधार खाता जैसा है वैसा रहेगा — रुका हुआ। '
                   'कोई नया भुगतान नहीं माँगा जाएगा।',
             ),
-            _faqItem(
+            _faqItem(context,
               'मेरा डेटा कब तक सुरक्षित है?',
               'आपका डेटा $retentionDays दिन तक सुरक्षित है। '
                   'उसके बाद हटा दिया जाएगा।',
@@ -191,11 +186,9 @@ class DeactivationFaqScreen extends StatelessWidget {
                   icon: const Icon(Icons.download_outlined, size: 20),
                   label: Text(strings.dataExportCta),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: YugmaColors.primary,
-                    foregroundColor: YugmaColors.textOnPrimary,
-                    textStyle: TextStyle(
-                      fontFamily: YugmaFonts.devaBody,
-                      fontSize: YugmaTypeScale.body,
+                    backgroundColor: theme.shopPrimary,
+                    foregroundColor: theme.shopTextOnPrimary,
+                    textStyle: theme.bodyDeva.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                     shape: RoundedRectangleBorder(
@@ -210,7 +203,8 @@ class DeactivationFaqScreen extends StatelessWidget {
     );
   }
 
-  Widget _faqItem(String question, String answer) {
+  Widget _faqItem(BuildContext context, String question, String answer) {
+    final theme = context.yugmaTheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: YugmaSpacing.s4),
       child: Column(
@@ -218,20 +212,16 @@ class DeactivationFaqScreen extends StatelessWidget {
         children: [
           Text(
             question,
-            style: TextStyle(
-              fontFamily: YugmaFonts.devaBody,
-              fontSize: YugmaTypeScale.body,
+            style: theme.bodyDeva.copyWith(
               fontWeight: FontWeight.w700,
-              color: YugmaColors.textPrimary,
+              color: theme.shopTextPrimary,
             ),
           ),
           const SizedBox(height: YugmaSpacing.s1),
           Text(
             answer,
-            style: TextStyle(
-              fontFamily: YugmaFonts.devaBody,
-              fontSize: YugmaTypeScale.body,
-              color: YugmaColors.textSecondary,
+            style: theme.bodyDeva.copyWith(
+              color: theme.shopTextSecondary,
             ),
           ),
         ],

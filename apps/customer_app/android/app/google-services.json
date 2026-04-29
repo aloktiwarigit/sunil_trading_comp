@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:934939527575:android:f6700e7b887be9c298dcd2",
+        "mobilesdk_app_id": "1:934939527575:android:d078974109f3774198dcd2",
         "android_client_info": {
-          "package_name": "com.yugmalabs.customer_app"
+          "package_name": "com.suniltrading.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "934939527575-k4mhdmh7efelba11l6o3fcibfbdaa93l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD9ISAvBP2PVJVSu9ggtDLeYw78gao7L_8"
@@ -20,7 +25,107 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "934939527575-k4mhdmh7efelba11l6o3fcibfbdaa93l.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "934939527575-28ef7om9pgns3ec9m52kjbfvjq1mgt7v.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.yugmalabs.shopkeeperApp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:934939527575:android:f6700e7b887be9c298dcd2",
+        "android_client_info": {
+          "package_name": "com.yugmalabs.customer_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "934939527575-obm208fd3ti72p9v5klgtj7opniskkv5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yugmalabs.customer_app",
+            "certificate_hash": "3df23e55392522dfc549d75e69c7c5aec5d2b8fa"
+          }
+        },
+        {
+          "client_id": "934939527575-v6rtmp8vrmg71lh9tp1q9vcneapfvvch.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yugmalabs.customer_app",
+            "certificate_hash": "ca357730b28fa16deab11eec676e1ad19600d1e4"
+          }
+        },
+        {
+          "client_id": "934939527575-k4mhdmh7efelba11l6o3fcibfbdaa93l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9ISAvBP2PVJVSu9ggtDLeYw78gao7L_8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "934939527575-k4mhdmh7efelba11l6o3fcibfbdaa93l.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "934939527575-28ef7om9pgns3ec9m52kjbfvjq1mgt7v.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.yugmalabs.shopkeeperApp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:934939527575:android:4d1d0fcee98640ae98dcd2",
+        "android_client_info": {
+          "package_name": "com.yugmalabs.shopkeeper_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "934939527575-k4mhdmh7efelba11l6o3fcibfbdaa93l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9ISAvBP2PVJVSu9ggtDLeYw78gao7L_8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "934939527575-k4mhdmh7efelba11l6o3fcibfbdaa93l.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "934939527575-28ef7om9pgns3ec9m52kjbfvjq1mgt7v.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.yugmalabs.shopkeeperApp"
+              }
+            }
+          ]
         }
       }
     }

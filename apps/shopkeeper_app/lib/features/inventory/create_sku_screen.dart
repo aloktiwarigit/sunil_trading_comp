@@ -24,6 +24,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
 import 'create_sku_controller.dart';
+import 'golden_hour_capture_screen.dart';
 
 /// SKU creation form screen.
 class CreateSkuScreen extends ConsumerStatefulWidget {
@@ -287,17 +288,29 @@ class _CreateSkuScreenState extends ConsumerState<CreateSkuScreen> {
               const SizedBox(height: YugmaSpacing.s4),
 
               // ── Golden Hour photo placeholder (S4.5) ──
+              // SK004 fix: defer Golden Hour capture until SKU is saved
+              // and has a real skuId. Show guidance to save first.
               OutlinedButton.icon(
                 onPressed: () {
-                  // Placeholder for S4.5 — photo capture deferred per AC edge case #2.
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'S4.5',
-                        style: TextStyle(
-                          fontFamily: YugmaFonts.enBody,
-                          fontSize: YugmaTypeScale.body,
+                  final savedSkuId = controllerState.savedSkuId;
+                  if (savedSkuId == null || savedSkuId.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          strings.skuSaveBeforePhoto,
+                          style: TextStyle(fontFamily: YugmaFonts.devaBody),
                         ),
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => GoldenHourCaptureScreen(
+                        skuId: savedSkuId,
+                        skuName: _nameDevanagariController.text.trim().isNotEmpty
+                            ? _nameDevanagariController.text.trim()
+                            : 'New SKU',
                       ),
                     ),
                   );
@@ -402,33 +415,32 @@ class _CreateSkuScreenState extends ConsumerState<CreateSkuScreen> {
         );
   }
 
-  /// Domain-grounded category display names (Devanagari).
+  // SU002 fix: Hindi category and material display names.
   String _categoryDisplayName(SkuCategory c) {
     switch (c) {
       case SkuCategory.steelAlmirah:
-        return 'Steel Almirah';
+        return 'स्टील अलमारी';
       case SkuCategory.woodenWardrobe:
-        return 'Wooden Wardrobe';
+        return 'लकड़ी की अलमारी';
       case SkuCategory.modular:
-        return 'Modular';
+        return 'मॉड्यूलर';
       case SkuCategory.dressing:
-        return 'Dressing Table';
+        return 'ड्रेसिंग टेबल';
       case SkuCategory.sideCabinet:
-        return 'Side Cabinet';
+        return 'साइड कैबिनेट';
     }
   }
 
-  /// Domain-grounded material display names.
   String _materialDisplayName(SkuMaterial m) {
     switch (m) {
       case SkuMaterial.steel:
-        return 'Steel';
+        return 'स्टील';
       case SkuMaterial.woodSheesham:
-        return 'Sheesham';
+        return 'शीशम';
       case SkuMaterial.woodTeak:
-        return 'Teak';
+        return 'सागौन';
       case SkuMaterial.plyLaminate:
-        return 'Ply / Laminate';
+        return 'प्लाई / लेमिनेट';
     }
   }
 }

@@ -9,6 +9,7 @@
 
 import 'package:customer_app/features/project/draft_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
 
@@ -59,12 +60,7 @@ class DraftListScreen extends ConsumerWidget {
         loading: () => Center(
           child: CircularProgressIndicator(color: theme.shopAccent),
         ),
-        error: (err, _) => Center(
-          child: Text(
-            err.toString(),
-            style: theme.bodyDeva,
-          ),
-        ),
+        error: (err, _) => YugmaErrorBanner(error: err),
         data: (draftState) {
           if (draftState.isEmpty) {
             return _buildEmptyState(context, theme);
@@ -82,21 +78,6 @@ class DraftListScreen extends ConsumerWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
-
   Widget _buildEmptyState(BuildContext context, YugmaThemeExtension theme) {
     return Center(
       child: Padding(
@@ -108,6 +89,7 @@ class DraftListScreen extends ConsumerWidget {
               Icons.list_alt_outlined,
               size: 64,
               color: theme.shopTextMuted,
+              semanticLabel: '',
             ),
             const SizedBox(height: YugmaSpacing.s4),
             Text(
@@ -175,9 +157,11 @@ class DraftListScreen extends ConsumerWidget {
                   child: Icon(
                     Icons.delete_outline,
                     color: theme.shopCommit,
+                    semanticLabel: 'Remove item',
                   ),
                 ),
                 onDismissed: (_) {
+                  HapticFeedback.mediumImpact();
                   final removedItem = item;
                   ref
                       .read(draftControllerProvider.notifier)
@@ -301,7 +285,7 @@ class DraftListScreen extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    '\u20B9${_formatInr(_computeTotal(draftState))}',
+                    '\u20B9${formatInr(_computeTotal(draftState))}',
                     style: theme.monoNumeral.copyWith(
                       fontSize: theme.isElderTier ? 20.0 : 17.0,
                       fontWeight: FontWeight.w700,
@@ -394,7 +378,7 @@ class _DraftLineItemTile extends StatelessWidget {
                 ),
                 const SizedBox(height: YugmaSpacing.s1),
                 Text(
-                  '\u20B9${_formatInr(item.unitPriceInr)}',
+                  '\u20B9${formatInr(item.unitPriceInr)}',
                   style: theme.monoNumeral.copyWith(
                     fontSize: theme.isElderTier ? 18.0 : 15.0,
                   ),
@@ -409,6 +393,7 @@ class _DraftLineItemTile extends StatelessWidget {
               _QuantityButton(
                 icon: Icons.remove,
                 theme: theme,
+                semanticLabel: 'Decrease quantity',
                 onTap: item.quantity > 1
                     ? () => onQuantityChanged(item.quantity - 1)
                     : null,
@@ -426,6 +411,7 @@ class _DraftLineItemTile extends StatelessWidget {
               _QuantityButton(
                 icon: Icons.add,
                 theme: theme,
+                semanticLabel: 'Increase quantity',
                 onTap: () => onQuantityChanged(item.quantity + 1),
               ),
             ],
@@ -436,6 +422,7 @@ class _DraftLineItemTile extends StatelessWidget {
               Icons.close,
               color: theme.shopTextMuted,
               size: 20,
+              semanticLabel: 'Remove item',
             ),
             onPressed: onRemove,
             constraints: BoxConstraints(
@@ -448,20 +435,6 @@ class _DraftLineItemTile extends StatelessWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }
 
 /// Small quantity +/- button.
@@ -470,11 +443,13 @@ class _QuantityButton extends StatelessWidget {
     required this.icon,
     required this.theme,
     this.onTap,
+    this.semanticLabel,
   });
 
   final IconData icon;
   final YugmaThemeExtension theme;
   final VoidCallback? onTap;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -484,15 +459,21 @@ class _QuantityButton extends StatelessWidget {
           : theme.shopDivider,
       borderRadius: BorderRadius.circular(YugmaRadius.sm),
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.selectionClick();
+                onTap!();
+              }
+            : null,
         borderRadius: BorderRadius.circular(YugmaRadius.sm),
         child: SizedBox(
-          width: 32,
-          height: 32,
+          width: 48,
+          height: 48,
           child: Icon(
             icon,
             size: 18,
             color: onTap != null ? theme.shopPrimary : theme.shopTextMuted,
+            semanticLabel: semanticLabel,
           ),
         ),
       ),

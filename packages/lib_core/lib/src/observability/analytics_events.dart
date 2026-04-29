@@ -38,4 +38,8 @@ class AnalyticsEvents {
   /// measure silent-sign-in rate empirically.
   static const String sessionRestoredFromRefreshToken =
       'session_restored_from_refresh_token';
+
+  // ---------- Read budget enforcement (SAD §3 — ≤30 reads/session) ----------
+  static const String readBudgetWarning = 'read_budget_warning';
+  static const String readBudgetExceeded = 'read_budget_exceeded';
 }

@@ -18,6 +18,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
 
+/// Resolves a customer display name from the project linked to a ledger.
+/// Falls back to the raw customerId if no project is found.
+final udhaarCustomerNameProvider =
+    FutureProvider.autoDispose.family<String, UdhaarLedger>((ref, ledger) async {
+  final firestore = FirebaseFirestore.instance;
+  final shopId = ref.read(shopIdProviderProvider).shopId;
+
+  // Look up the project that references this udhaar ledger.
+  final snap = await firestore
+      .collection('shops')
+      .doc(shopId)
+      .collection('projects')
+      .where('udhaarLedgerId', isEqualTo: ledger.ledgerId)
+      .limit(1)
+      .get();
+
+  if (snap.docs.isNotEmpty) {
+    final name = snap.docs.first.data()['customerDisplayName'] as String?;
+    if (name != null && name.isNotEmpty) return name;
+  }
+  return ledger.customerId;
+});
+
 /// Provider for all udhaar ledgers in the shop, sorted by runningBalance desc.
 final udhaarLedgersProvider =
     StreamProvider.autoDispose<List<UdhaarLedger>>((ref) {
@@ -61,7 +84,7 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
         backgroundColor: YugmaColors.primary,
         foregroundColor: YugmaColors.textOnPrimary,
         title: Text(
-          'उधार खाता',
+          strings.udhaarScreenTitle,
           style: TextStyle(
             fontFamily: YugmaFonts.devaDisplay,
             fontSize: YugmaTypeScale.h3,
@@ -72,7 +95,7 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
           TextButton(
             onPressed: () => setState(() => _showClosed = !_showClosed),
             child: Text(
-              _showClosed ? 'खुले' : 'बंद',
+              _showClosed ? strings.shopUdhaarToggleOpen : strings.shopUdhaarToggleClosed,
               style: TextStyle(
                 fontFamily: YugmaFonts.devaBody,
                 color: YugmaColors.textOnPrimary,
@@ -82,9 +105,7 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
         ],
       ),
       body: ledgersAsync.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(color: YugmaColors.primary),
-        ),
+        loading: () => const YugmaListSkeleton(),
         error: (err, _) => Center(
           child: Text(err.toString(),
               style: TextStyle(fontFamily: YugmaFonts.devaBody)),
@@ -100,8 +121,8 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
                 padding: const EdgeInsets.all(YugmaSpacing.s8),
                 child: Text(
                   _showClosed
-                      ? 'कोई बंद खाता नहीं'
-                      : 'कोई खुला उधार खाता नहीं',
+                      ? strings.shopUdhaarNoClosed
+                      : strings.shopUdhaarNoOpen,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: YugmaFonts.devaBody,
@@ -113,14 +134,22 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(YugmaSpacing.s4),
-            itemCount: filtered.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(height: YugmaSpacing.s2),
-            itemBuilder: (ctx, i) => _UdhaarCard(
-              ledger: filtered[i],
-              strings: strings,
+          return RefreshIndicator(
+            color: YugmaColors.accent,
+            backgroundColor: YugmaColors.surface,
+            onRefresh: () async {
+              ref.invalidate(udhaarLedgersProvider);
+              await Future.delayed(const Duration(milliseconds: 500));
+            },
+            child: ListView.separated(
+              padding: const EdgeInsets.all(YugmaSpacing.s4),
+              itemCount: filtered.length,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: YugmaSpacing.s2),
+              itemBuilder: (ctx, i) => _UdhaarCard(
+                ledger: filtered[i],
+                strings: strings,
+              ),
             ),
           );
         },
@@ -158,14 +187,19 @@ class _UdhaarCard extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    ledger.customerId, // TODO: denormalize customer display name
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.devaBody,
-                      fontSize: YugmaTypeScale.body,
-                      fontWeight: FontWeight.w600,
-                      color: YugmaColors.textPrimary,
-                    ),
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final nameAsync = ref.watch(udhaarCustomerNameProvider(ledger));
+                      return Text(
+                        nameAsync.valueOrNull ?? ledger.customerId,
+                        style: TextStyle(
+                          fontFamily: YugmaFonts.devaBody,
+                          fontSize: YugmaTypeScale.body,
+                          fontWeight: FontWeight.w600,
+                          color: YugmaColors.textPrimary,
+                        ),
+                      );
+                    },
                   ),
                 ),
                 // AC #8: reminder count badge
@@ -196,7 +230,7 @@ class _UdhaarCard extends ConsumerWidget {
               children: [
                 // Running balance
                 Text(
-                  '₹${_formatInr(ledger.runningBalance)}',
+                  '₹${formatInr(ledger.runningBalance)}',
                   style: TextStyle(
                     fontFamily: YugmaFonts.mono,
                     fontSize: YugmaTypeScale.bodyLarge,
@@ -208,7 +242,7 @@ class _UdhaarCard extends ConsumerWidget {
                 ),
                 const SizedBox(width: YugmaSpacing.s2),
                 Text(
-                  '/ ₹${_formatInr(ledger.recordedAmount)}',
+                  '/ ₹${formatInr(ledger.recordedAmount)}',
                   style: TextStyle(
                     fontFamily: YugmaFonts.mono,
                     fontSize: YugmaTypeScale.caption,
@@ -269,19 +303,4 @@ class _UdhaarCard extends ConsumerWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    if (amount < 0) return '-${_formatInr(-amount)}';
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }

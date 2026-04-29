@@ -16,6 +16,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/tokens.dart';
+import '../../utils/format_inr.dart';
 import '../../theme/yugma_theme_extension.dart';
 
 /// A single SKU card in a curated shortlist.
@@ -253,7 +254,7 @@ class CuratedShortlistCard extends StatelessWidget {
       textBaseline: TextBaseline.alphabetic,
       children: [
         Text(
-          '\u20B9${_formatInr(priceInr)}',
+          '\u20B9${formatInr(priceInr)}',
           style: TextStyle(
             fontFamily: YugmaFonts.mono,
             fontSize: theme.isElderTier ? 19.0 : 16.0,
@@ -277,19 +278,4 @@ class CuratedShortlistCard extends StatelessWidget {
     );
   }
 
-  /// Indian number formatting: 17,500 not 17500; 1,50,000 not 150000.
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }

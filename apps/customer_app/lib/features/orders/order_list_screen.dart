@@ -65,29 +65,24 @@ class OrderListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = context.yugmaTheme;
     final projectsAsync = ref.watch(customerProjectsProvider);
 
     return Scaffold(
-      backgroundColor: YugmaColors.background,
+      backgroundColor: theme.shopBackground,
       appBar: AppBar(
-        backgroundColor: YugmaColors.primary,
-        foregroundColor: YugmaColors.textOnPrimary,
+        backgroundColor: theme.shopPrimary,
+        foregroundColor: theme.shopTextOnPrimary,
         title: Text(
           strings.ordersTitle,
-          style: TextStyle(
-            fontFamily: YugmaFonts.devaDisplay,
+          style: theme.h2Deva.copyWith(
             fontSize: YugmaTypeScale.h3,
           ),
         ),
       ),
       body: projectsAsync.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(color: YugmaColors.primary),
-        ),
-        error: (err, _) => Center(
-          child: Text(err.toString(),
-              style: TextStyle(fontFamily: YugmaFonts.devaBody)),
-        ),
+        loading: () => const YugmaListSkeleton(),
+        error: (err, _) => YugmaErrorBanner(error: err),
         data: (projects) {
           if (projects.isEmpty) {
             return Center(
@@ -96,22 +91,28 @@ class OrderListScreen extends ConsumerWidget {
                 child: Text(
                   strings.noOrdersYet,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.devaBody,
-                    fontSize: YugmaTypeScale.body,
-                    color: YugmaColors.textMuted,
+                  style: theme.bodyDeva.copyWith(
+                    color: theme.shopTextMuted,
                   ),
                 ),
               ),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(YugmaSpacing.s4),
-            itemCount: projects.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(height: YugmaSpacing.s2),
-            itemBuilder: (ctx, i) =>
-                _OrderCard(project: projects[i], strings: strings),
+          return RefreshIndicator(
+            color: theme.shopAccent,
+            backgroundColor: theme.shopSurface,
+            onRefresh: () async {
+              ref.invalidate(customerProjectsProvider);
+              await Future.delayed(const Duration(milliseconds: 500));
+            },
+            child: ListView.separated(
+              padding: const EdgeInsets.all(YugmaSpacing.s4),
+              itemCount: projects.length,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: YugmaSpacing.s2),
+              itemBuilder: (ctx, i) =>
+                  _OrderCard(project: projects[i], strings: strings),
+            ),
           );
         },
       ),
@@ -128,7 +129,8 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stateLabel = _stateToDevanagari(project.state);
+    final theme = context.yugmaTheme;
+    final stateLabel = _stateLabel(project.state, strings);
     final shortId = project.projectId.length > 6
         ? project.projectId.substring(project.projectId.length - 6)
         : project.projectId;
@@ -139,7 +141,7 @@ class _OrderCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(YugmaSpacing.s4),
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
           boxShadow: YugmaShadows.card,
         ),
@@ -155,26 +157,23 @@ class _OrderCard extends StatelessWidget {
                     vertical: YugmaSpacing.s1,
                   ),
                   decoration: BoxDecoration(
-                    color: YugmaColors.accent.withValues(alpha: 0.15),
+                    color: theme.shopAccent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(YugmaRadius.sm),
                   ),
                   child: Text(
                     stateLabel,
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.devaBody,
-                      fontSize: YugmaTypeScale.caption,
+                    style: theme.captionDeva.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: YugmaColors.accent,
+                      color: theme.shopAccent,
                     ),
                   ),
                 ),
                 const Spacer(),
                 Text(
                   '#$shortId',
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.mono,
+                  style: theme.monoNumeral.copyWith(
                     fontSize: YugmaTypeScale.caption,
-                    color: YugmaColors.textMuted,
+                    color: theme.shopTextMuted,
                   ),
                 ),
               ],
@@ -183,21 +182,20 @@ class _OrderCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '₹${_formatInr(project.totalAmount)}',
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.mono,
+                  '₹${formatInr(project.totalAmount)}',
+                  style: theme.monoNumeral.copyWith(
                     fontSize: YugmaTypeScale.bodyLarge,
                     fontWeight: FontWeight.w700,
-                    color: YugmaColors.textPrimary,
+                    color: theme.shopTextPrimary,
                   ),
                 ),
                 const SizedBox(width: YugmaSpacing.s2),
                 Text(
-                  '${project.lineItems.length} सामान',
+                  strings.orderItemCount(project.lineItems.length),
                   style: TextStyle(
-                    fontFamily: YugmaFonts.enBody,
+                    fontFamily: theme.fontFamilyEnglishBody,
                     fontSize: YugmaTypeScale.caption,
-                    color: YugmaColors.textSecondary,
+                    color: theme.shopTextSecondary,
                   ),
                 ),
               ],
@@ -208,10 +206,8 @@ class _OrderCard extends StatelessWidget {
                 project.lastMessagePreview!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: YugmaFonts.devaBody,
-                  fontSize: YugmaTypeScale.caption,
-                  color: YugmaColors.textMuted,
+                style: theme.captionDeva.copyWith(
+                  color: theme.shopTextMuted,
                 ),
               ),
             ],
@@ -221,31 +217,18 @@ class _OrderCard extends StatelessWidget {
     );
   }
 
-  /// C3.10 AC #2: state badge in Devanagari.
-  static String _stateToDevanagari(ProjectState state) => switch (state) {
-        ProjectState.draft => 'ड्राफ़्ट',
-        ProjectState.negotiating => 'मोल भाव',
-        ProjectState.committed => 'पुष्टि की गयी',
-        ProjectState.paid => 'भुगतान हुआ',
-        ProjectState.delivering => 'डिलीवरी में',
-        ProjectState.awaitingVerification => 'भुगतान बाकी',
-        ProjectState.closed => 'बंद',
-        ProjectState.cancelled => 'रद्द',
+  /// C3.10 AC #2: state badge — locale-aware via AppStrings.
+  static String _stateLabel(ProjectState state, AppStrings strings) =>
+      switch (state) {
+        ProjectState.draft => strings.stateBadgeDraft,
+        ProjectState.negotiating => strings.stateBadgeNegotiating,
+        ProjectState.committed => strings.stateBadgeCommitted,
+        ProjectState.paid => strings.stateBadgePaid,
+        ProjectState.delivering => strings.stateBadgeDelivering,
+        ProjectState.awaitingVerification =>
+          strings.stateBadgeAwaitingVerification,
+        ProjectState.closed => strings.stateBadgeClosed,
+        ProjectState.cancelled => strings.stateBadgeCancelled,
       };
 
-  static String _formatInr(int amount) {
-    if (amount < 0) return '-${_formatInr(-amount)}';
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }

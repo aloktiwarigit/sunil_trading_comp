@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
 import 'package:logging/logging.dart';
 
+import 'package:shopkeeper_app/features/auth/role_gate.dart';
 import 'package:shopkeeper_app/main.dart';
 
 /// State for the shopkeeper chat screen.
@@ -62,6 +63,25 @@ class ShopkeeperChatController
 
   String get _projectId => arg;
 
+  /// Map operator role to message author role.
+  /// Falls back to bhaiya if operator data is unavailable (defensive).
+  MessageAuthorRole get _authorRole {
+    final op = ref.read(currentOperatorProvider);
+    if (op == null) return MessageAuthorRole.bhaiya;
+    return switch (op.role) {
+      OperatorRole.bhaiya => MessageAuthorRole.bhaiya,
+      OperatorRole.beta => MessageAuthorRole.beta,
+      OperatorRole.munshi => MessageAuthorRole.munshi,
+    };
+  }
+
+  /// String representation for Firestore document writes.
+  String get _authorRoleString {
+    final op = ref.read(currentOperatorProvider);
+    if (op == null) return 'bhaiya';
+    return op.role.name; // 'bhaiya', 'beta', 'munshi' — matches @JsonValue
+  }
+
   @override
   Future<ShopkeeperChatState> build(String arg) async {
     ref.onDispose(() {
@@ -105,7 +125,7 @@ class ShopkeeperChatController
       threadId: _projectId,
       projectId: _projectId,
       authorUid: user.uid,
-      authorRole: MessageAuthorRole.bhaiya,
+      authorRole: _authorRole,
       type: MessageType.text,
       sentAt: now,
       textBody: text,
@@ -130,7 +150,7 @@ class ShopkeeperChatController
         'threadId': _projectId,
         'projectId': _projectId,
         'authorUid': user.uid,
-        'authorRole': 'bhaiya',
+        'authorRole': _authorRoleString,
         'type': 'text',
         'sentAt': FieldValue.serverTimestamp(),
         'textBody': text,
@@ -172,7 +192,7 @@ class ShopkeeperChatController
       threadId: _projectId,
       projectId: _projectId,
       authorUid: user.uid,
-      authorRole: MessageAuthorRole.bhaiya,
+      authorRole: _authorRole,
       type: MessageType.priceProposal,
       sentAt: now,
       proposedPrice: proposedPrice,
@@ -198,7 +218,7 @@ class ShopkeeperChatController
         'threadId': _projectId,
         'projectId': _projectId,
         'authorUid': user.uid,
-        'authorRole': 'bhaiya',
+        'authorRole': _authorRoleString,
         'type': 'price_proposal',
         'sentAt': FieldValue.serverTimestamp(),
         'proposedPrice': proposedPrice,

@@ -6,21 +6,33 @@
 // B1.10 AC #4: record away voice note from here.
 // =============================================================================
 
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
 
+import '../../main.dart';
+import '../voice/voice_recorder_widget.dart';
+
 /// Presence status options per B1.9 AC #1.
 enum PresenceStatus {
-  available('दुकान पर हैं', Icons.storefront),
-  away('बाहर हैं', Icons.directions_walk),
-  busyWithCustomer('ग्राहक के साथ', Icons.people),
-  atEvent('शादी / कार्यक्रम में', Icons.celebration);
+  available(Icons.storefront),
+  away(Icons.directions_walk),
+  busyWithCustomer(Icons.people),
+  atEvent(Icons.celebration);
 
-  const PresenceStatus(this.label, this.icon);
-  final String label;
+  const PresenceStatus(this.icon);
   final IconData icon;
+
+  /// Resolve the display label from AppStrings (D-2 locale-aware).
+  String label(AppStrings strings) => switch (this) {
+        available => strings.presenceAtShop,
+        away => strings.presenceAway,
+        busyWithCustomer => strings.presenceBusyWithCustomer,
+        atEvent => strings.presenceAtEvent,
+      };
 }
 
 /// B1.9 — Presence status toggle screen.
@@ -37,6 +49,10 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
   final _returnTimeController = TextEditingController();
   bool _saving = false;
 
+  /// B-10: absence voice note bytes + duration, populated by VoiceRecorderWidget.
+  Uint8List? _absenceVoiceNoteBytes;
+  int _absenceVoiceNoteDuration = 0;
+
   @override
   void dispose() {
     _returnTimeController.dispose();
@@ -45,13 +61,14 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = const AppStringsHi();
     return Scaffold(
       backgroundColor: YugmaColors.background,
       appBar: AppBar(
         backgroundColor: YugmaColors.primary,
         foregroundColor: YugmaColors.textOnPrimary,
         title: Text(
-          'मेरी उपलब्धता',
+          strings.presenceMyAvailability,
           style: TextStyle(
             fontFamily: YugmaFonts.devaDisplay,
             fontSize: YugmaTypeScale.h3,
@@ -90,7 +107,7 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
                         Icon(status.icon, color: YugmaColors.primary, size: 24),
                         const SizedBox(width: YugmaSpacing.s3),
                         Text(
-                          status.label,
+                          status.label(strings),
                           style: TextStyle(
                             fontFamily: YugmaFonts.devaBody,
                             fontSize: YugmaTypeScale.body,
@@ -113,9 +130,9 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
               TextField(
                 controller: _returnTimeController,
                 decoration: InputDecoration(
-                  labelText: 'कितने बजे तक वापस?',
+                  labelText: strings.presenceReturnTimePrompt,
                   labelStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
-                  hintText: '6 बजे',
+                  hintText: strings.presenceReturnTimeDefault,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(YugmaRadius.md),
                   ),
@@ -125,6 +142,67 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
                   fontSize: YugmaTypeScale.body,
                 ),
               ),
+            ],
+
+            // B-10: absence voice note (away / atEvent only)
+            if (_selected == PresenceStatus.away ||
+                _selected == PresenceStatus.atEvent) ...[
+              const SizedBox(height: YugmaSpacing.s3),
+              Text(
+                strings.presenceVoicePrompt,
+                style: TextStyle(
+                  fontFamily: YugmaFonts.devaBody,
+                  fontSize: YugmaTypeScale.body,
+                  fontWeight: FontWeight.w600,
+                  color: YugmaColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: YugmaSpacing.s2),
+              if (_absenceVoiceNoteBytes != null)
+                Container(
+                  padding: const EdgeInsets.all(YugmaSpacing.s3),
+                  decoration: BoxDecoration(
+                    color: YugmaColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                    border: Border.all(color: YugmaColors.primary),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: YugmaColors.primary, size: 20),
+                      const SizedBox(width: YugmaSpacing.s2),
+                      Expanded(
+                        child: Text(
+                          strings.presenceVoiceRecorded(_absenceVoiceNoteDuration),
+                          style: TextStyle(
+                            fontFamily: YugmaFonts.devaBody,
+                            fontSize: YugmaTypeScale.caption,
+                            color: YugmaColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => setState(() {
+                          _absenceVoiceNoteBytes = null;
+                          _absenceVoiceNoteDuration = 0;
+                        }),
+                        icon: Icon(Icons.close, color: YugmaColors.textMuted, size: 20),
+                        tooltip: strings.presenceRemoveVoice,
+                      ),
+                    ],
+                  ),
+                )
+              else
+                VoiceRecorderWidget(
+                  onSend: (result) {
+                    setState(() {
+                      _absenceVoiceNoteBytes = Uint8List.fromList(result.bytes);
+                      _absenceVoiceNoteDuration = result.durationSeconds;
+                    });
+                  },
+                  onCancel: () {
+                    // Nothing to do — widget stays in place
+                  },
+                ),
             ],
 
             const Spacer(),
@@ -155,7 +233,7 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
                           color: YugmaColors.textOnPrimary,
                         ),
                       )
-                    : const Text('अपडेट कीजिए'),
+                    : Text(strings.presenceUpdateButton),
               ),
             ),
           ],
@@ -169,19 +247,38 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
     final shopId = ref.read(shopIdProviderProvider).shopId;
 
     try {
+      // B-10: upload absence voice note if recorded
+      String? absenceVoiceStorageRef;
+      if (_absenceVoiceNoteBytes != null) {
+        final voiceNoteId =
+            'vn_absence_${DateTime.now().millisecondsSinceEpoch}';
+        final mediaStore = ref.read(mediaStoreProvider);
+        await mediaStore.uploadVoiceNote(
+          bytes: _absenceVoiceNoteBytes!.toList(),
+          shopId: shopId,
+          voiceNoteId: voiceNoteId,
+        );
+        absenceVoiceStorageRef =
+            'shops/$shopId/voice_notes/$voiceNoteId.m4a';
+      }
+
       await FirebaseFirestore.instance
           .collection('shops')
           .doc(shopId)
           .set(<String, dynamic>{
         'presenceStatus': _selected.name,
-        'presenceMessage': _selected.label,
+        'presenceMessage': _selected.label(const AppStringsHi()),
         'presenceReturnTime': _returnTimeController.text.trim(),
         'presenceUpdatedAt': FieldValue.serverTimestamp(),
+        if (absenceVoiceStorageRef != null)
+          'absenceVoiceNoteRef': absenceVoiceStorageRef,
+        if (absenceVoiceStorageRef != null)
+          'absenceVoiceNoteDuration': _absenceVoiceNoteDuration,
       }, SetOptions(merge: true));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('उपलब्धता अपडेट हुई')),
+          SnackBar(content: Text(const AppStringsHi().presenceUpdated)),
         );
         Navigator.of(context).pop();
       }

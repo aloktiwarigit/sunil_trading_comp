@@ -39,6 +39,7 @@ export 'src/feature_flags/remote_config_loader.dart';
 export 'src/feature_flags/feature_flags.dart';
 export 'src/feature_flags/runtime_feature_flags.dart';
 export 'src/feature_flags/kill_switch_listener.dart';
+export 'src/feature_flags/feature_flag_service.dart';
 
 // ---------- Locale ----------
 export 'src/locale/strings_base.dart';
@@ -76,6 +77,7 @@ export 'src/models/chat_thread_patch.dart';
 export 'src/models/udhaar_ledger_patch.dart';
 
 // ---------- Repositories ----------
+export 'src/repositories/shop_repo.dart';
 export 'src/repositories/project_repo.dart';
 export 'src/repositories/chat_thread_repo.dart';
 export 'src/repositories/udhaar_ledger_repo.dart';
@@ -91,11 +93,25 @@ export 'src/components/bharosa_landing/bharosa_landing_barrel.dart';
 export 'src/components/voice_note_player.dart';
 export 'src/components/browse/browse_barrel.dart';
 export 'src/components/chat/chat_barrel.dart';
+export 'src/components/yugma_skeleton_card.dart';
+export 'src/components/yugma_error_banner.dart';
+export 'src/components/yugma_connectivity_banner.dart';
+export 'src/components/yugma_alert_dialog.dart';
+export 'src/components/yugma_empty_state.dart';
 
 // ---------- Invoice (B1.13 Devanagari receipt — client-side PDF) ----------
 export 'src/invoice/invoice_template.dart';
 
+// ---------- Routing (shared page transitions) ----------
+export 'src/routing/yugma_page_transition.dart';
+
 // ---------- Services (orchestration over adapters + repositories) ----------
 export 'src/services/phone_upgrade_coordinator.dart';
+export 'src/services/read_budget_meter.dart';
 export 'src/services/session_bootstrap.dart';
 export 'src/services/upi_intent_builder.dart';
+
+// ---------- Utilities ----------
+export 'src/utils/firestore_helpers.dart';
+export 'src/utils/format_inr.dart';
+export 'src/utils/retry_with_backoff.dart';

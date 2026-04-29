@@ -14,6 +14,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lib_core/lib_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -84,6 +85,8 @@ class PersonaNotifier extends StateNotifier<PersonaState> {
     }
   }
 
+  // F001 fix: write persona to Firestore (P2.2 AC #6) in addition to
+  // SharedPreferences, so the shopkeeper can see who is actively browsing.
   Future<void> setPersona(Persona persona, {String? customLabel}) async {
     state = PersonaState(persona: persona, customLabel: customLabel);
     final prefs = await SharedPreferences.getInstance();
@@ -92,6 +95,27 @@ class PersonaNotifier extends StateNotifier<PersonaState> {
       await prefs.setString('persona_custom_label', customLabel);
     } else {
       await prefs.remove('persona_custom_label');
+    }
+
+    // Write to Firestore for shopkeeper visibility.
+    try {
+      final shopId = prefs.getString('current_shop_id');
+      final uid = prefs.getString('current_user_uid');
+      if (shopId != null && uid != null) {
+        await FirebaseFirestore.instance
+            .collection('shops')
+            .doc(shopId)
+            .collection('decision_circles')
+            .doc(uid)
+            .set(<String, dynamic>{
+          'currentActivePersona': persona.name,
+          'personaDisplayLabel': customLabel ?? persona.label,
+          'isElderTier': persona.isElder,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    } catch (_) {
+      // Firestore write is best-effort — don't block the local persona change.
     }
   }
 }
@@ -109,10 +133,8 @@ class PersonaToggleButton extends ConsumerWidget {
 
     final personaState = ref.watch(personaProvider);
 
-    return Positioned(
-      right: YugmaSpacing.s4,
-      bottom: YugmaSpacing.s4,
-      child: Material(
+    // F002 fix: removed hardcoded Positioned — parent screen controls placement.
+    return Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _showPersonaSheet(context, ref),
@@ -154,7 +176,6 @@ class PersonaToggleButton extends ConsumerWidget {
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -192,7 +213,7 @@ class PersonaToggleButton extends ConsumerWidget {
                 ),
                 const SizedBox(height: YugmaSpacing.s3),
                 Text(
-                  'कौन देख रहा है?',
+                  const AppStringsHi().personaSheetTitle,
                   style: TextStyle(
                     fontFamily: YugmaFonts.devaDisplay,
                     fontSize: YugmaTypeScale.h3,
@@ -219,6 +240,7 @@ class PersonaToggleButton extends ConsumerWidget {
                       selectedColor:
                           YugmaColors.primary.withValues(alpha: 0.15),
                       onSelected: (_) {
+                        HapticFeedback.selectionClick();
                         if (p == Persona.other) {
                           // Edge #2: show custom label input
                           setSheetState(() {});
@@ -239,7 +261,7 @@ class PersonaToggleButton extends ConsumerWidget {
                     controller: customLabelController,
                     maxLength: 20,
                     decoration: InputDecoration(
-                      hintText: 'नाम लिखिए',
+                      hintText: const AppStringsHi().personaCustomLabelHint,
                       hintStyle: TextStyle(fontFamily: YugmaFonts.devaBody),
                       border: const OutlineInputBorder(),
                     ),
@@ -262,7 +284,7 @@ class PersonaToggleButton extends ConsumerWidget {
           );
         },
       ),
-    );
+    ).then((_) => customLabelController.dispose());
   }
 }
 

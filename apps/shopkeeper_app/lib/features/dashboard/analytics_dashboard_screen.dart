@@ -75,54 +75,50 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = context.yugmaTheme;
     final strings = const AppStringsHi();
     final projectsAsync = ref.watch(allShopProjectsProvider);
 
     return Scaffold(
-      backgroundColor: YugmaColors.background,
+      backgroundColor: theme.shopBackground,
       appBar: AppBar(
-        backgroundColor: YugmaColors.primary,
-        foregroundColor: YugmaColors.textOnPrimary,
+        backgroundColor: theme.shopPrimary,
+        foregroundColor: theme.shopTextOnPrimary,
         title: Text(
           strings.opsDashboardTitle,
-          style: TextStyle(
-            fontFamily: YugmaFonts.devaDisplay,
+          style: theme.h2Deva.copyWith(
             fontSize: YugmaTypeScale.h3,
           ),
         ),
       ),
       body: projectsAsync.when(
         loading: () => Center(
-          child: CircularProgressIndicator(color: YugmaColors.primary),
+          child: CircularProgressIndicator(color: theme.shopPrimary),
         ),
-        error: (err, _) => Center(
-          child: Text(err.toString(),
-              style: TextStyle(fontFamily: YugmaFonts.devaBody)),
-        ),
+        error: (err, _) => YugmaErrorBanner(error: err),
         data: (projects) {
           if (projects.isEmpty) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(YugmaSpacing.s8),
                 child: Text(
-                  strings.emptyOrdersList,
+                  strings.analyticsNoOrdersYet,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.devaBody,
-                    fontSize: YugmaTypeScale.body,
-                    color: YugmaColors.textMuted,
+                  style: theme.bodyDeva.copyWith(
+                    color: theme.shopTextMuted,
                   ),
                 ),
               ),
             );
           }
-          return _buildDashboard(context, projects);
+          return _buildDashboard(context, projects, strings);
         },
       ),
     );
   }
 
-  Widget _buildDashboard(BuildContext context, List<Project> projects) {
+  Widget _buildDashboard(BuildContext context, List<Project> projects, AppStrings strings) {
+    final theme = context.yugmaTheme;
     final now = DateTime.now();
     final thisMonth = DateTime(now.year, now.month);
     final lastMonth = DateTime(now.year, now.month - 1);
@@ -144,7 +140,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
             children: [
               Expanded(
                 child: _MetricTile(
-                  label: 'ऑर्डर',
+                  label: strings.analyticsOrders,
                   value: current.committedCount,
                   delta: current.committedCount - previous.committedCount,
                   onTap: () => context.push('/orders'),
@@ -153,7 +149,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
               const SizedBox(width: YugmaSpacing.s2),
               Expanded(
                 child: _MetricTile(
-                  label: 'कमाई',
+                  label: strings.analyticsRevenue,
                   value: current.revenue,
                   delta: current.revenue - previous.revenue,
                   isRupee: true,
@@ -167,7 +163,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
             children: [
               Expanded(
                 child: _MetricTile(
-                  label: 'खुले ऑर्डर',
+                  label: strings.analyticsOpenOrders,
                   value: current.openOrders,
                   delta: current.openOrders - previous.openOrders,
                   onTap: () => context.push('/orders'),
@@ -176,7 +172,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
               const SizedBox(width: YugmaSpacing.s2),
               Expanded(
                 child: _MetricTile(
-                  label: 'उधार बाकी',
+                  label: strings.analyticsUdhaarPending,
                   value: current.openUdhaarTotal,
                   delta: current.openUdhaarTotal - previous.openUdhaarTotal,
                   isRupee: true,
@@ -187,7 +183,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
           ),
           const SizedBox(height: YugmaSpacing.s2),
           _MetricTile(
-            label: 'नए ग्राहक',
+            label: strings.analyticsNewCustomers,
             value: current.newCustomers,
             delta: current.newCustomers - previous.newCustomers,
           ),
@@ -195,16 +191,15 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
 
           // AC #3: Bar chart — last 7 days
           Text(
-            'पिछले 7 दिन',
-            style: TextStyle(
-              fontFamily: YugmaFonts.devaBody,
+            strings.analyticsLast7Days,
+            style: theme.bodyDeva.copyWith(
               fontSize: YugmaTypeScale.bodyLarge,
               fontWeight: FontWeight.w700,
-              color: YugmaColors.textPrimary,
+              color: theme.shopTextPrimary,
             ),
           ),
           const SizedBox(height: YugmaSpacing.s2),
-          _SimpleBarChart(data: barData),
+          _SimpleBarChart(data: barData, strings: strings),
         ],
       ),
     );
@@ -239,13 +234,28 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
             p.state != ProjectState.cancelled)
         .length;
 
-    // Rough udhaar total — count projects with udhaarLedgerId
+    // Udhaar total — use unpaid balance (totalAmount - amountReceivedByShop)
+    // as a conservative estimate. TODO: read runningBalance from udhaarLedger
+    // collection for exact figures once ledger stream is wired here.
     final openUdhaarTotal = projects
         .where((p) => p.udhaarLedgerId != null && p.state != ProjectState.closed)
-        .fold<int>(0, (sum, p) => sum + p.totalAmount);
+        .fold<int>(0, (sum, p) => sum + (p.totalAmount - p.amountReceivedByShop));
 
-    final uniqueCustomers =
-        monthProjects.map((p) => p.customerUid).toSet().length;
+    // New customers — those whose first-ever order falls within this month.
+    final allCustomerFirstDates = <String, DateTime>{};
+    for (final p in projects) {
+      final date = p.committedAt ?? p.createdAt;
+      final uid = p.customerUid;
+      if (!allCustomerFirstDates.containsKey(uid) ||
+          date.isBefore(allCustomerFirstDates[uid]!)) {
+        allCustomerFirstDates[uid] = date;
+      }
+    }
+    final uniqueCustomers = allCustomerFirstDates.entries
+        .where((e) =>
+            e.value.isAfter(monthStart) &&
+            e.value.isBefore(monthEnd.add(const Duration(days: 1))))
+        .length;
 
     return _MonthMetrics(
       committedCount: committedCount,
@@ -289,12 +299,13 @@ class _MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayValue = isRupee ? '₹${_formatInr(value)}' : '$value';
+    final theme = context.yugmaTheme;
+    final displayValue = isRupee ? '₹${formatInr(value)}' : '$value';
     final deltaColor = delta > 0
-        ? YugmaColors.primary
+        ? theme.shopPrimary
         : delta < 0
-            ? YugmaColors.commit
-            : YugmaColors.textMuted;
+            ? theme.shopCommit
+            : theme.shopTextMuted;
     final deltaIcon = delta > 0
         ? Icons.arrow_upward
         : delta < 0
@@ -307,7 +318,7 @@ class _MetricTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(YugmaSpacing.s4),
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
           boxShadow: YugmaShadows.card,
         ),
@@ -316,20 +327,17 @@ class _MetricTile extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(
-                fontFamily: YugmaFonts.devaBody,
-                fontSize: YugmaTypeScale.caption,
-                color: YugmaColors.textSecondary,
+              style: theme.captionDeva.copyWith(
+                color: theme.shopTextSecondary,
               ),
             ),
             const SizedBox(height: YugmaSpacing.s1),
             Text(
               displayValue,
-              style: TextStyle(
-                fontFamily: YugmaFonts.mono,
+              style: theme.monoNumeral.copyWith(
                 fontSize: YugmaTypeScale.h3,
                 fontWeight: FontWeight.w700,
-                color: YugmaColors.textPrimary,
+                color: theme.shopTextPrimary,
               ),
             ),
             if (delta != 0) ...[
@@ -340,8 +348,7 @@ class _MetricTile extends StatelessWidget {
                     Icon(deltaIcon, size: 14, color: deltaColor),
                   Text(
                     '${delta.abs()}',
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.mono,
+                    style: theme.monoNumeral.copyWith(
                       fontSize: YugmaTypeScale.caption,
                       color: deltaColor,
                     ),
@@ -355,47 +362,32 @@ class _MetricTile extends StatelessWidget {
     );
   }
 
-  static String _formatInr(int amount) {
-    if (amount < 0) return '-${_formatInr(-amount)}';
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }
 
 /// Simple horizontal bar chart using basic Flutter widgets.
 /// No external chart package needed — just proportional containers.
 class _SimpleBarChart extends StatelessWidget {
-  const _SimpleBarChart({required this.data});
+  const _SimpleBarChart({required this.data, required this.strings});
 
   final List<int> data;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.yugmaTheme;
     final maxVal = data.fold<int>(0, (m, v) => v > m ? v : m);
     if (maxVal == 0) {
       return Container(
         height: 120,
         decoration: BoxDecoration(
-          color: YugmaColors.surface,
+          color: theme.shopSurface,
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
         ),
         child: Center(
           child: Text(
-            'अभी तक कोई ऑर्डर नहीं',
-            style: TextStyle(
-              fontFamily: YugmaFonts.devaBody,
-              fontSize: YugmaTypeScale.caption,
-              color: YugmaColors.textMuted,
+            strings.analyticsNoOrdersYet,
+            style: theme.captionDeva.copyWith(
+              color: theme.shopTextMuted,
             ),
           ),
         ),
@@ -408,7 +400,7 @@ class _SimpleBarChart extends StatelessWidget {
       height: 160,
       padding: const EdgeInsets.all(YugmaSpacing.s3),
       decoration: BoxDecoration(
-        color: YugmaColors.surface,
+        color: theme.shopSurface,
         borderRadius: BorderRadius.circular(YugmaRadius.lg),
         boxShadow: YugmaShadows.card,
       ),
@@ -424,17 +416,16 @@ class _SimpleBarChart extends StatelessWidget {
                   if (data[i] > 0)
                     Text(
                       '${data[i]}',
-                      style: TextStyle(
-                        fontFamily: YugmaFonts.mono,
+                      style: theme.monoNumeral.copyWith(
                         fontSize: 10,
-                        color: YugmaColors.textSecondary,
+                        color: theme.shopTextSecondary,
                       ),
                     ),
                   const SizedBox(height: 2),
                   Container(
                     height: (data[i] / maxVal) * 100,
                     decoration: BoxDecoration(
-                      color: YugmaColors.primary.withValues(
+                      color: theme.shopPrimary.withValues(
                         alpha: i == data.length - 1 ? 1.0 : 0.5,
                       ),
                       borderRadius: const BorderRadius.vertical(
@@ -445,10 +436,9 @@ class _SimpleBarChart extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '${now.subtract(Duration(days: 6 - i)).day}',
-                    style: TextStyle(
-                      fontFamily: YugmaFonts.mono,
+                    style: theme.monoNumeral.copyWith(
                       fontSize: 10,
-                      color: YugmaColors.textMuted,
+                      color: theme.shopTextMuted,
                     ),
                   ),
                 ],

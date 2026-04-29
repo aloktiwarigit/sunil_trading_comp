@@ -12,6 +12,7 @@
 // =============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lib_core/lib_core.dart';
@@ -39,6 +40,8 @@ class CommitScreen extends ConsumerStatefulWidget {
 class _CommitScreenState extends ConsumerState<CommitScreen> {
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
+  final _phoneFormKey = GlobalKey<FormState>();
+  final _otpFormKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -70,9 +73,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
         loading: () => Center(
           child: CircularProgressIndicator(color: theme.shopAccent),
         ),
-        error: (err, _) => Center(
-          child: Text(err.toString(), style: theme.bodyDeva),
-        ),
+        error: (err, _) => YugmaErrorBanner(error: err),
         data: (flowState) {
           return switch (flowState.stage) {
             CommitFlowStage.idle => _buildOrderSummary(
@@ -106,9 +107,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
       loading: () => Center(
         child: CircularProgressIndicator(color: theme.shopAccent),
       ),
-      error: (err, _) => Center(
-        child: Text(err.toString(), style: theme.bodyDeva),
-      ),
+      error: (err, _) => YugmaErrorBanner(error: err),
       data: (draftState) {
         if (draftState.isEmpty) {
           return Center(
@@ -150,7 +149,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                           ),
                         ),
                         Text(
-                          '${item.quantity} × ₹${_formatInr(item.unitPriceInr)}',
+                          '${item.quantity} × ₹${formatInr(item.unitPriceInr)}',
                           style: theme.monoNumeral,
                         ),
                       ],
@@ -194,7 +193,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                       .copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  '₹${_formatInr(total)}',
+                  '₹${formatInr(total)}',
                   style: theme.monoNumeral.copyWith(
                     fontSize: theme.isElderTier ? 22.0 : 18.0,
                     fontWeight: FontWeight.w700,
@@ -208,6 +207,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
               height: theme.tapTargetMin,
               child: ElevatedButton(
                 onPressed: () {
+                  HapticFeedback.heavyImpact();
                   ref
                       .read(commitControllerProvider(widget.projectId)
                           .notifier)
@@ -259,66 +259,99 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
           ),
           const SizedBox(height: YugmaSpacing.s8),
           // Phone number field
-          TextField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            style: theme.monoNumeral.copyWith(
-              fontSize: theme.isElderTier ? 22.0 : 18.0,
-            ),
-            decoration: InputDecoration(
-              labelText: widget.strings.phoneInputLabel,
-              labelStyle: theme.bodyDeva.copyWith(
-                color: theme.shopTextSecondary,
-              ),
-              prefixText: '+91 ',
-              prefixStyle: theme.monoNumeral.copyWith(
+          Form(
+            key: _phoneFormKey,
+            child: TextFormField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              style: theme.monoNumeral.copyWith(
                 fontSize: theme.isElderTier ? 22.0 : 18.0,
-                color: theme.shopTextSecondary,
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(YugmaRadius.md),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(YugmaRadius.md),
-                borderSide: BorderSide(color: theme.shopPrimary, width: 2),
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              validator: (value) {
+                final digits = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+                if (digits.isEmpty) return widget.strings.validationRequired;
+                final normalized = digits.startsWith('91') && digits.length > 10
+                    ? digits.substring(2)
+                    : digits;
+                if (normalized.length != 10) {
+                  return widget.strings.validationRequired;
+                }
+                return null;
+              },
+              decoration: InputDecoration(
+                labelText: widget.strings.phoneInputLabel,
+                labelStyle: theme.bodyDeva.copyWith(
+                  color: theme.shopTextSecondary,
+                ),
+                prefixText: '+91 ',
+                prefixStyle: theme.monoNumeral.copyWith(
+                  fontSize: theme.isElderTier ? 22.0 : 18.0,
+                  color: theme.shopTextSecondary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  borderSide: BorderSide(color: theme.shopPrimary, width: 2),
+                ),
               ),
             ),
           ),
           const SizedBox(height: YugmaSpacing.s6),
-          // Send OTP button
-          SizedBox(
-            height: theme.tapTargetMin,
-            child: ElevatedButton(
-              onPressed: () {
-                var raw = _phoneController.text.trim();
-                if (raw.isEmpty) return;
-                // Strip non-digits and normalize to E.164 (India).
-                raw = raw.replaceAll(RegExp(r'[^0-9]'), '');
-                // Handle if user entered with country code.
-                if (raw.startsWith('91') && raw.length > 10) {
-                  raw = raw.substring(2);
-                }
-                if (raw.length != 10) return; // Indian mobile = 10 digits
-                final phoneE164 = '+91$raw';
-                ref
-                    .read(commitControllerProvider(widget.projectId).notifier)
-                    .sendOtp(phoneE164);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.shopPrimary,
-                foregroundColor: theme.shopTextOnPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+          // Send OTP button (with cooldown guard)
+          Builder(builder: (context) {
+            // Watch provider state so countdown ticks trigger rebuilds.
+            ref.watch(commitControllerProvider(widget.projectId));
+            final controller = ref.read(
+                commitControllerProvider(widget.projectId).notifier);
+            final cooldown = controller.otpCooldownSeconds;
+            final isCoolingDown = cooldown > 0;
+
+            return SizedBox(
+              height: theme.tapTargetMin,
+              child: ElevatedButton(
+                onPressed: isCoolingDown
+                    ? null
+                    : () {
+                        if (!(_phoneFormKey.currentState?.validate() ?? false)) return;
+                        var raw = _phoneController.text.trim();
+                        if (raw.isEmpty) return;
+                        // Strip non-digits and normalize to E.164 (India).
+                        raw = raw.replaceAll(RegExp(r'[^0-9]'), '');
+                        // Handle if user entered with country code.
+                        if (raw.startsWith('91') && raw.length > 10) {
+                          raw = raw.substring(2);
+                        }
+                        if (raw.length != 10) return; // Indian mobile = 10 digits
+                        final phoneE164 = '+91$raw';
+                        controller.sendOtp(phoneE164);
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.shopPrimary,
+                  foregroundColor: theme.shopTextOnPrimary,
+                  disabledBackgroundColor:
+                      theme.shopPrimary.withOpacity(0.4),
+                  disabledForegroundColor:
+                      theme.shopTextOnPrimary.withOpacity(0.6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  ),
+                  textStyle: TextStyle(
+                    fontFamily: theme.fontFamilyDevanagariBody,
+                    fontSize: theme.isElderTier ? 18.0 : 15.0,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                textStyle: TextStyle(
-                  fontFamily: theme.fontFamilyDevanagariBody,
-                  fontSize: theme.isElderTier ? 18.0 : 15.0,
-                  fontWeight: FontWeight.w600,
+                child: Text(
+                  isCoolingDown
+                      ? widget.strings.otpResendCountdown(cooldown)
+                      : widget.strings.otpSendButton,
                 ),
               ),
-              child: Text(widget.strings.otpSendButton),
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );
@@ -347,23 +380,33 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
           ),
           const SizedBox(height: YugmaSpacing.s8),
           // OTP code field
-          TextField(
-            controller: _otpController,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            style: theme.monoNumeral.copyWith(
-              fontSize: theme.isElderTier ? 28.0 : 24.0,
-              letterSpacing: 8,
-            ),
-            maxLength: 6,
-            decoration: InputDecoration(
-              counterText: '',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(YugmaRadius.md),
+          Form(
+            key: _otpFormKey,
+            child: TextFormField(
+              controller: _otpController,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: theme.monoNumeral.copyWith(
+                fontSize: theme.isElderTier ? 28.0 : 24.0,
+                letterSpacing: 8,
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(YugmaRadius.md),
-                borderSide: BorderSide(color: theme.shopPrimary, width: 2),
+              maxLength: 6,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              validator: (value) {
+                final digits = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+                if (digits.isEmpty) return widget.strings.validationRequired;
+                if (digits.length != 6) return widget.strings.validationRequired;
+                return null;
+              },
+              decoration: InputDecoration(
+                counterText: '',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  borderSide: BorderSide(color: theme.shopPrimary, width: 2),
+                ),
               ),
             ),
           ),
@@ -373,6 +416,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
             height: theme.tapTargetMin,
             child: ElevatedButton(
               onPressed: () {
+                if (!(_otpFormKey.currentState?.validate() ?? false)) return;
                 final code = _otpController.text.trim();
                 if (code.length < 6) return;
                 ref
@@ -394,6 +438,35 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
               child: Text(widget.strings.otpVerifyButton),
             ),
           ),
+          const SizedBox(height: YugmaSpacing.s4),
+          // Resend OTP with cooldown
+          Builder(builder: (context) {
+            // Watch provider state so countdown ticks trigger rebuilds.
+            final watchedState = ref.watch(
+                commitControllerProvider(widget.projectId));
+            final controller = ref.read(
+                commitControllerProvider(widget.projectId).notifier);
+            final cooldown = controller.otpCooldownSeconds;
+            final isCoolingDown = cooldown > 0;
+            final flowState = watchedState.valueOrNull;
+
+            return TextButton(
+              onPressed: isCoolingDown || flowState?.phoneE164 == null
+                  ? null
+                  : () => controller.sendOtp(flowState!.phoneE164!),
+              child: Text(
+                isCoolingDown
+                    ? widget.strings.otpResendCountdown(cooldown)
+                    : widget.strings.otpSendButton,
+                style: theme.bodyDeva.copyWith(
+                  color: isCoolingDown
+                      ? theme.shopTextSecondary
+                      : theme.shopPrimary,
+                  fontSize: theme.isElderTier ? 16.0 : 14.0,
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -445,10 +518,22 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
               children: [
                 const SizedBox(height: YugmaSpacing.s6),
                 // Success icon
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 72,
-                  color: theme.shopCommit,
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0.0, end: 1.0),
+                  duration: YugmaMotion.normal,
+                  curve: Curves.easeOutBack,
+                  builder: (context, value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: child,
+                    );
+                  },
+                  child: Icon(
+                    Icons.check_circle_outline,
+                    size: 72,
+                    color: theme.shopCommit,
+                    semanticLabel: 'Order confirmed',
+                  ),
                 ),
                 const SizedBox(height: YugmaSpacing.s4),
                 // Success title
@@ -468,7 +553,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                             child: Text(item.skuName, style: theme.bodyDeva),
                           ),
                           Text(
-                            '${item.quantity} × ₹${_formatInr(item.unitPriceInr)}',
+                            '${item.quantity} × ₹${formatInr(item.unitPriceInr)}',
                             style: theme.monoNumeral,
                           ),
                         ],
@@ -487,7 +572,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                           .copyWith(fontWeight: FontWeight.w700),
                     ),
                     Text(
-                      '₹${_formatInr(total)}',
+                      '₹${formatInr(total)}',
                       style: theme.monoNumeral.copyWith(
                         fontSize: theme.isElderTier ? 22.0 : 18.0,
                         fontWeight: FontWeight.w700,
@@ -563,6 +648,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
             Icons.error_outline,
             size: 64,
             color: theme.shopCommit,
+            semanticLabel: 'Error',
           ),
           const SizedBox(height: YugmaSpacing.s4),
           Text(
@@ -601,22 +687,4 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  static String _formatInr(int amount) {
-    final s = amount.toString();
-    if (s.length <= 3) return s;
-    final lastThree = s.substring(s.length - 3);
-    final rest = s.substring(0, s.length - 3);
-    final buffer = StringBuffer();
-    for (var i = 0; i < rest.length; i++) {
-      if (i != 0 && (rest.length - i) % 2 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(rest[i]);
-    }
-    return '$buffer,$lastThree';
-  }
 }

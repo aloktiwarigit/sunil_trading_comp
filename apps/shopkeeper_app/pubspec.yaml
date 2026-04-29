@@ -34,6 +34,12 @@ dependencies:
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
 
+  # ---- Camera capture (S4.5 Golden Hour photos + D-10 face upload) ----
+  image_picker: ^1.1.2
+
+  # ---- D-10: Color picker for shop branding ----
+  flutter_colorpicker: ^1.0.3
+
   # ---- Audio recording (B1.6 + B1.7 voice notes) ----
   record: ^5.1.2
   path_provider: ^2.1.5

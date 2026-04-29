@@ -21,8 +21,8 @@ service firebase.storage {
 
     function isShopOperator(shopId) {
       return isShopMember(shopId)
-        && (request.auth.token.role == 'shopkeeper'
-            || request.auth.token.role == 'son'
+        && (request.auth.token.role == 'bhaiya'
+            || request.auth.token.role == 'beta'
             || request.auth.token.role == 'munshi');
     }
 

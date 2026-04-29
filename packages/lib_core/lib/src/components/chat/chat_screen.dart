@@ -19,6 +19,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:lib_core/src/locale/strings_base.dart';
 import 'package:lib_core/src/models/message.dart';
@@ -153,6 +154,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
+    HapticFeedback.lightImpact();
     widget.onSendText?.call(text);
     _textController.clear();
     _focusNode.requestFocus();

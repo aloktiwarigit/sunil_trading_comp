@@ -95,8 +95,17 @@ final commitControllerProvider = AsyncNotifierProvider.family<
 class CommitController extends FamilyAsyncNotifier<CommitFlowState, String> {
   static final Logger _log = Logger('CommitController');
 
+  Timer? _cooldownTimer;
+  int _otpCooldownSeconds = 0;
+
+  /// Remaining seconds before OTP can be re-sent. Zero means ready.
+  int get otpCooldownSeconds => _otpCooldownSeconds;
+
   @override
   Future<CommitFlowState> build(String arg) async {
+    ref.onDispose(() {
+      _cooldownTimer?.cancel();
+    });
     return const CommitFlowState(stage: CommitFlowStage.idle);
   }
 
@@ -136,10 +145,13 @@ class CommitController extends FamilyAsyncNotifier<CommitFlowState, String> {
 
   /// Customer entered their phone number. Send the OTP.
   Future<void> sendOtp(String phoneE164) async {
+    if (_otpCooldownSeconds > 0) return;
+
     final authProvider = ref.read(authProviderInstanceProvider);
 
     try {
       final result = await authProvider.requestPhoneVerification(phoneE164);
+      _startCooldown();
       state = AsyncData(CommitFlowState(
         stage: CommitFlowStage.awaitingOtp,
         verificationId: result.verificationId,
@@ -272,6 +284,24 @@ class CommitController extends FamilyAsyncNotifier<CommitFlowState, String> {
   /// Reset to idle so the customer can retry.
   void retry() {
     state = const AsyncData(CommitFlowState(stage: CommitFlowStage.idle));
+  }
+
+  /// Start a 60-second cooldown preventing OTP re-sends.
+  void _startCooldown() {
+    _otpCooldownSeconds = 60;
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _otpCooldownSeconds--;
+      if (_otpCooldownSeconds <= 0) {
+        timer.cancel();
+        _otpCooldownSeconds = 0;
+      }
+      // Trigger state rebuild so the UI reflects the countdown.
+      final current = state.valueOrNull;
+      if (current != null) {
+        state = AsyncData(current);
+      }
+    });
   }
 
   /// Map AuthException codes to user-facing error keys.
