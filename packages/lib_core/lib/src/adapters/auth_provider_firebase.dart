@@ -10,6 +10,7 @@
 
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:logging/logging.dart';
@@ -20,14 +21,25 @@ import 'auth_provider.dart';
 class AuthProviderFirebase implements AuthProvider {
   /// [auth] and [googleSignIn] are injectable for testability — production
   /// callers should pass `fb.FirebaseAuth.instance` and a default `GoogleSignIn`.
+  ///
+  /// [shopId]: when provided, a successful [confirmPhoneVerification] writes a
+  /// fire-and-forget increment to `system/phone_auth_quota/shops/{shopId}` so
+  /// the per-shop quota monitor (WS6.2) can apply graduated responses per-shop
+  /// rather than globally. Omit in tests that don't need Firestore.
   AuthProviderFirebase({
     required fb.FirebaseAuth auth,
     GoogleSignIn? googleSignIn,
+    String? shopId,
+    FirebaseFirestore? firestore,
   })  : _auth = auth,
-        _googleSignIn = googleSignIn ?? GoogleSignIn();
+        _googleSignIn = googleSignIn ?? GoogleSignIn(),
+        _shopId = shopId,
+        _firestore = firestore ?? (shopId != null ? FirebaseFirestore.instance : null);
 
   final fb.FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
+  final String? _shopId;
+  final FirebaseFirestore? _firestore;
   static final Logger _log = Logger('AuthProviderFirebase');
 
   @override
@@ -169,6 +181,7 @@ class AuthProviderFirebase implements AuthProvider {
           );
         }
         _log.info('Anonymous → Phone upgrade successful: ${user.uid}');
+        _incrementPerShopSmsCounter();
         return _toAppUser(user)!;
       } on fb.FirebaseAuthException catch (e) {
         // ---- Collision recovery (SAD §4 Flow 4) ----
@@ -236,6 +249,7 @@ class AuthProviderFirebase implements AuthProvider {
         );
       }
       _log.info('Phone sign-in successful: ${user.uid}');
+      _incrementPerShopSmsCounter();
       return _toAppUser(user)!;
     } on fb.FirebaseAuthException catch (e) {
       throw _normalize(e);
@@ -339,6 +353,46 @@ class AuthProviderFirebase implements AuthProvider {
     if (user == null) return {};
     final result = await user.getIdTokenResult(forceRefresh);
     return result.claims ?? {};
+  }
+
+  // ---------------------------------------------------------------------------
+  // Per-shop SMS quota counter (WS6.2)
+  // ---------------------------------------------------------------------------
+
+  /// Fire-and-forget increment of `system/phone_auth_quota/shops/{shopId}`
+  /// field `smsCount_{YYYY-MM}`. Called after every successful OTP verification.
+  /// Errors are logged but never rethrow — the auth flow must not fail due to
+  /// an observability write.
+  void _incrementPerShopSmsCounter() {
+    final db = _firestore;
+    final shopId = _shopId;
+    if (db == null || shopId == null || shopId.isEmpty) return;
+
+    final now = DateTime.now().toUtc();
+    final monthKey =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+
+    db
+        .collection('system')
+        .doc('phone_auth_quota')
+        .collection('shops')
+        .doc(shopId)
+        .set(
+          {
+            'smsCount_$monthKey': FieldValue.increment(1),
+            'shopId': shopId,
+            'lastUpdatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        )
+        .then((_) {
+          _log.fine('Per-shop SMS counter incremented: $shopId/$monthKey');
+        })
+        .catchError((Object err) {
+          _log.warning(
+            'Failed to increment per-shop SMS counter for $shopId: $err',
+          );
+        });
   }
 
   // ---------------------------------------------------------------------------

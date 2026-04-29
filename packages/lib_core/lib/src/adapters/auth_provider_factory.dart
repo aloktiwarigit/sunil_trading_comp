@@ -52,8 +52,12 @@ class AuthProviderFactory {
     required fb.FirebaseAuth firebaseAuth,
     String? msg91AuthKey,
     FirebaseCrashlytics? crashlytics,
+    String? shopId,
   }) {
-    final firebaseDelegate = AuthProviderFirebase(auth: firebaseAuth);
+    final firebaseDelegate = AuthProviderFirebase(
+      auth: firebaseAuth,
+      shopId: shopId,
+    );
 
     final strategy = remoteConfig.getString('auth_provider_strategy');
     final effective =

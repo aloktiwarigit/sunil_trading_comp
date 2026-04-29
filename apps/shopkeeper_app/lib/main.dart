@@ -43,6 +43,17 @@ Future<void> main() async {
 
       await Observability.initialize();
 
+      // WS6.1 — per-shop Crashlytics key + Analytics property so shopkeeper
+      // incidents are filterable by shop in the Firebase console.
+      // Post-S4.1 this should use the real shopId from the operator's Google
+      // claim; for now the flagship shopId is the only valid value.
+      await Observability.crashlytics
+          .setCustomKey('shopId', ShopIdProvider.flagshipShopId);
+      await Observability.analytics.setUserProperty(
+        name: 'shopId',
+        value: ShopIdProvider.flagshipShopId,
+      );
+
       // PRD I6.3 — verify persisted session (same rationale as customer_app).
       // For ops users this means the bhaiya / son / munshi doesn't re-type
       // Google Sign-In every morning.

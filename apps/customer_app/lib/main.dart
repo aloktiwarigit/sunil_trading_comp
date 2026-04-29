@@ -5,9 +5,11 @@
 //   1. Flutter bindings
 //   2. Firebase + App Check                           (FirebaseClient.initialize)
 //   3. Remote Config (fetch + activate with defaults) (RemoteConfigLoader)
-//   4. AuthProvider resolved from Remote Config flag  (AuthProviderFactory)
-//   5. ShopId resolved from deep link / prefs / fallback (TenantResolver)
+//   4. ShopId resolved from deep link / prefs / fallback (TenantResolver)
+//   5. AuthProvider resolved from Remote Config flag  (AuthProviderFactory)
+//      — shopId passed in so AuthProviderFirebase can tag per-shop SMS quota
 //   6. Observability (Crashlytics + Analytics + Performance, runZonedGuarded)
+//   6.1 Per-shop Crashlytics key + Analytics property (WS6)
 //   7. runApp inside the same runZonedGuarded block
 //   7.5 Start re-bind stream listener (WS1.5)
 //
@@ -50,18 +52,27 @@ Future<void> main() async {
       // Step 3 — Remote Config
       final remoteConfig = await RemoteConfigLoader.initialize();
 
-      // Step 4 — AuthProvider resolution
-      final authProvider = AuthProviderFactory.build(
-        remoteConfig: remoteConfig,
-        firebaseAuth: fb.FirebaseAuth.instance,
-      );
-
-      // Step 5 — ShopId resolution (WS1): deep link → prefs → flagship fallback
+      // Step 4 — ShopId resolution (WS1): deep link → prefs → flagship fallback.
+      // Moved before AuthProvider so the shopId can be passed into the auth
+      // adapter for per-shop SMS quota tracking (WS6.2).
       final shopId = await TenantResolver.resolveShopId();
       _log.info('Resolved shopId=$shopId');
 
+      // Step 5 — AuthProvider resolution
+      final authProvider = AuthProviderFactory.build(
+        remoteConfig: remoteConfig,
+        firebaseAuth: fb.FirebaseAuth.instance,
+        shopId: shopId,
+      );
+
       // Step 6 — Observability
       await Observability.initialize();
+
+      // Step 6.1 — WS6: tag crash reports + analytics session with the
+      // resolved shopId so shop #2 incidents can be isolated in the dashboard.
+      await Observability.crashlytics.setCustomKey('shopId', shopId);
+      await Observability.analytics
+          .setUserProperty(name: 'shopId', value: shopId);
 
       // Step 6.5 — PRD I6.3: verify persisted session from refresh token.
       await SessionBootstrap.verifyPersistedUser(

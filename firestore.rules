@@ -279,6 +279,18 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/cost_attribution/{month} — WS6.3 MediaSpendTile source
+      // Written daily by aggregateCostAttribution Cloud Function (admin SDK).
+      // Read: operator only — cost data is internal to the shop.
+      // Write: Cloud Function only (admin SDK bypasses rules).
+      // ---------------------------------------------------------------------
+
+      match /cost_attribution/{month} {
+        allow read: if isShopOperator(shopId);
+        allow write: if false;
+      }
+
       // Sprint 1 stub for udhaarLedger — present so the cross-tenant test
       // can assert the forbidden-field guard works from day one. Writes
       // freeze automatically when shopLifecycle != 'active' per ADR-013.
