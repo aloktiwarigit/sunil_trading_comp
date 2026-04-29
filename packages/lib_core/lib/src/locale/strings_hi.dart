@@ -454,7 +454,7 @@ class AppStringsHi extends AppStrings {
 
   @override
   String get shopClosureReversibilityFooter =>
-      'अगर गलती से दबाया, अगले 24 घंटे में उल्टा कर सकते हैं';
+      'अगर गलती से दबाया, अगले 30 दिन में उल्टा कर सकते हैं';
 
   // ---- §15 S4.16 Media spend tile ----
 

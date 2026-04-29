@@ -235,24 +235,23 @@ export const joinDecisionCircle = onCall(
       });
 
       // ── 2. Reassign Project.customerUid ──
-      // SEC003 fix: use sequential batches (not parallel) and merge
-      // arrayRemove + arrayUnion into a single update per document to
-      // prevent partial migration / overwrite race.
-      // Codex P1-2: when a token is present, scope to the single project the
-      // wa.me link was minted for — prevents cross-project migration.
-      let projectsQuery: admin.firestore.Query = shopRef
-        .collection('projects')
-        .where('customerUid', '==', sourceUid);
-      if (tokenPayload) {
-        projectsQuery = projectsQuery.where(
-          'projectId',
-          '==',
-          tokenPayload.projectId,
-        );
+      // Token path (wa.me DC join): SKIP. The token path is a participant
+      // add — sourceUid remains the customer of record for their project.
+      // Reassigning customerUid to destUid would break the `firestore.rules`
+      // gate `resource.data.customerUid == request.auth.uid` for sourceUid,
+      // locking the original customer out of their own order.
+      //
+      // Legacy path (phone collision, no token): full reassignment.
+      // SEC003 fix: sequential batches, merged arrayRemove+arrayUnion.
+      let projectsSnap: admin.firestore.QuerySnapshot | null = null;
+      if (!tokenPayload) {
+        const projectsQuery = shopRef
+          .collection('projects')
+          .where('customerUid', '==', sourceUid);
+        projectsSnap = await projectsQuery.get();
       }
-      const projectsSnap = await projectsQuery.get();
 
-      if (!projectsSnap.empty) {
+      if (projectsSnap && !projectsSnap.empty) {
         const chunks: admin.firestore.QueryDocumentSnapshot[][] = [];
         for (let i = 0; i < projectsSnap.docs.length; i += BATCH_SIZE) {
           chunks.push(projectsSnap.docs.slice(i, i + BATCH_SIZE));
@@ -339,7 +338,7 @@ export const joinDecisionCircle = onCall(
             destUid,
             shopId,
             callerUid,
-            projectsReassigned: projectsSnap.size,
+            projectsReassigned: projectsSnap?.size ?? 0,
             threadsUpdated: threadsUpdated,
             executedByUid: SYSTEM_UID,
           });
@@ -353,7 +352,7 @@ export const joinDecisionCircle = onCall(
         sourceUid,
         destUid,
         shopId,
-        projectsReassigned: projectsSnap.size,
+        projectsReassigned: projectsSnap?.size ?? 0,
         threadsUpdated: threadsUpdated,
       });
 

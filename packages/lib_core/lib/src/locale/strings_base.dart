@@ -502,7 +502,7 @@ abstract class AppStrings {
   /// Shop-closure option in ops app Settings (bhaiya-only).
   String get shopClosureSettingsOption;
 
-  /// 24-hour reversibility footer on the 3rd tap.
+  /// 30-day reversibility footer on the 3rd tap (§15.1.D — grace period).
   String get shopClosureReversibilityFooter;
 
   // =========================================================================
