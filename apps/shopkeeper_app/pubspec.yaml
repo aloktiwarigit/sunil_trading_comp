@@ -66,3 +66,7 @@ dependency_overrides:
   # (used by CI runner Flutter 3.41.8). Force 0.13.x which supports
   # the Element2 API introduced in analyzer 7.x.
   analyzer_plugin: ^0.13.0
+  # record_linux 0.7.2 is missing the startStream implementation that
+  # newer versions of RecordMethodChannelPlatformInterface require. Force
+  # a newer version that includes the implementation.
+  record_linux: ^0.8.0
