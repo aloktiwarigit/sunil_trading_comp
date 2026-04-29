@@ -1,19 +1,3 @@
-# =============================================================================
-# ci-marketing.yml — build + deploy the Astro static marketing site.
-#
-# Triggers:
-#   1. PR + push to main filtered to apps/marketing_site/ changes (CI gate)
-#   2. workflow_dispatch from triggerMarketingRebuild Cloud Function (M5.5)
-#   3. Nightly cron at 20:30 UTC (02:00 IST) as safety net (M5.5 AC #6)
-#
-# Per ADR-011: marketing site is pure static Astro, NOT Flutter Web.
-# Target: <100 KB initial bundle with Devanagari subset preloaded.
-#
-# Secrets required:
-#   FIREBASE_SERVICE_ACCOUNT — Firebase service account JSON for deploy
-#   FIREBASE_MARKETING_READONLY_SA_JSON — read-only SA for Firestore fetch
-# =============================================================================
-
 name: Marketing site CI
 
 on:
@@ -27,7 +11,6 @@ on:
     paths:
       - 'apps/marketing_site/**'
 
-  # M5.5 AC #2: Cloud Function calls workflow_dispatch with shop_id input
   workflow_dispatch:
     inputs:
       shop_id:
@@ -36,19 +19,16 @@ on:
         default: 'sunil-trading-company'
         type: string
 
-  # M5.5 AC #6: Nightly cron rebuild as safety net
   schedule:
-    - cron: '30 20 * * *'  # 20:30 UTC = 02:00 IST
+    - cron: '30 20 * * *'
 
-# Prevent concurrent deploys for the same shop.
-# Include event_name so cron ('schedule') never collides with dispatch/push (F12).
 concurrency:
   group: marketing-deploy-${{ github.event_name }}-${{ github.event.inputs.shop_id || 'default' }}
   cancel-in-progress: true
 
 jobs:
   build-and-deploy:
-    name: Build & deploy Astro site
+    name: Build and deploy Astro site
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: ${{ hashFiles('apps/marketing_site/package.json') != '' }}
@@ -72,8 +52,6 @@ jobs:
         working-directory: apps/marketing_site
         run: npm run lint --if-present
 
-      # M5.3/M5.5: Set shop_id for build-time fetch.
-      # workflow_dispatch provides it; cron + push default to flagship shop.
       - name: Resolve shop ID
         id: shop
         env:
@@ -83,17 +61,12 @@ jobs:
           if [ -z "$SHOP_ID" ]; then
             SHOP_ID="sunil-trading-company"
           fi
-          # F2: Validate shop_id format — lowercase alphanumeric + hyphens only.
-          # Prevents shell injection via workflow_dispatch input.
           if ! echo "$SHOP_ID" | grep -qE '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$'; then
             echo "::error::Invalid shop_id '${SHOP_ID}'. Must be lowercase alphanumeric + hyphens, 1-63 chars."
             exit 1
           fi
           echo "shop_id=$SHOP_ID" >> "$GITHUB_OUTPUT"
 
-      # M5.3: Build-time Firestore fetch for shop content.
-      # The Astro build script reads SHOP_ID + FIREBASE_MARKETING_READONLY_SA_JSON
-      # env vars to fetch live shop data and bake it into static HTML.
       - name: Astro build
         working-directory: apps/marketing_site
         env:
@@ -102,16 +75,14 @@ jobs:
           FIREBASE_STORAGE_BUCKET: yugma-dukaan-dev.firebasestorage.app
         run: npm run build
 
-      # M5.5 AC #4: Build duration <2 minutes (timeout-minutes: 10 is generous)
-
-      - name: Check bundle size (<100 KB initial paint per ADR-011)
+      - name: Check bundle size
         working-directory: apps/marketing_site
         run: |
           if [ -d dist ]; then
             SIZE=$(du -sb dist/index.html 2>/dev/null | awk '{print $1}' || echo 0)
             echo "index.html size: $SIZE bytes"
             if [ "$SIZE" -gt 102400 ]; then
-              echo "::warning::index.html exceeds 100 KB target per ADR-011"
+              echo "::warning::index.html exceeds 100 KB target"
             fi
           fi
 
@@ -121,9 +92,6 @@ jobs:
           name: marketing-dist
           path: apps/marketing_site/dist/
 
-      # M5.5 AC #5: Deploy to Firebase Hosting on successful build.
-      # Only deploys on push to main, workflow_dispatch, or scheduled runs.
-      # PR builds are CI-only (no deploy).
       - name: Deploy to Firebase Hosting
         if: ${{ github.event_name != 'pull_request' }}
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -134,10 +102,6 @@ jobs:
           target: marketing
           projectId: yugma-dukaan-dev
 
-  # M5.5 AC #7: Failed builds notify Yugma Labs ops via email.
-  # GitHub Actions sends failure notifications to repo watchers by default.
-  # This explicit step ensures the ops team is notified even if they don't
-  # watch the repo.
   notify-on-failure:
     name: Notify on build failure
     runs-on: ubuntu-latest
@@ -147,7 +111,5 @@ jobs:
       - name: Log failure for ops
         run: |
           echo "::error::Marketing site build/deploy FAILED for shop: ${{ github.event.inputs.shop_id || 'sunil-trading-company' }}"
-          echo "Previous version remains deployed (M5.5 Edge #2)."
-          echo "Check the build-and-deploy job logs for details."
-          echo ""
+          echo "Previous version remains deployed."
           echo "To manually rebuild: gh workflow run ci-marketing.yml -f shop_id=sunil-trading-company"
