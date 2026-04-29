@@ -1,4 +1,4 @@
-﻿// =============================================================================
+// =============================================================================
 // ReadTrackingController â€” P2.7: multi-participant message read tracking.
 //
 // AC #1: message doc has readByUids array (already in Message model)

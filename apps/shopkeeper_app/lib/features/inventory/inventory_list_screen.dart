@@ -202,7 +202,8 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   backgroundColor: YugmaColors.surface,
                   onRefresh: () async {
                     ref.invalidate(inventoryListProvider);
-                    await Future<void>.delayed(const Duration(milliseconds: 500));
+                    await Future<void>.delayed(
+                        const Duration(milliseconds: 500));
                   },
                   child: ListView.separated(
                     padding: const EdgeInsets.only(
@@ -320,7 +321,8 @@ class _SkuListTile extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: YugmaFonts.enBody,
                     fontSize: YugmaTypeScale.label,
-                    color: sku.inStock ? YugmaColors.success : YugmaColors.error,
+                    color:
+                        sku.inStock ? YugmaColors.success : YugmaColors.error,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -360,5 +362,4 @@ class _SkuListTile extends StatelessWidget {
         return 'प्लाई / लेमिनेट';
     }
   }
-
 }

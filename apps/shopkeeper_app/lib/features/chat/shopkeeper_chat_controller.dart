@@ -232,7 +232,8 @@ class ShopkeeperChatController
           ..remove(messageId);
         state = AsyncData(updated.copyWith(pendingMessageIds: newPending));
       }
-      _log.info('price proposal sent: lineItem=$lineItemId price=$proposedPrice');
+      _log.info(
+          'price proposal sent: lineItem=$lineItemId price=$proposedPrice');
     } catch (e) {
       _log.warning('sendPriceProposal failed: $e');
     }

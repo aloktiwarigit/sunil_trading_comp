@@ -90,7 +90,8 @@ Map<String, String> _renderAllStrings(AppStrings s) {
     'proposalPriceLine(15000)': s.proposalPriceLine(15000),
     'proposalAcceptButton': s.proposalAcceptButton,
     'proposalAcceptedBadge': s.proposalAcceptedBadge,
-    'proposalAcceptedSystemMessage': s.proposalAcceptedSystemMessage(15000, 'Test'),
+    'proposalAcceptedSystemMessage':
+        s.proposalAcceptedSystemMessage(15000, 'Test'),
     'proposalOriginalPriceLabel': s.proposalOriginalPriceLabel,
 
     // ---- §5 Commit + OTP + payment ----
@@ -275,7 +276,8 @@ void main() {
       });
     });
 
-    test('Hindi and English output differ for every string (no accidental copy)',
+    test(
+        'Hindi and English output differ for every string (no accidental copy)',
         () {
       // A string identical between the two implementations is almost always
       // a bug — either the Hindi was forgotten (placeholder English fallback)
@@ -415,8 +417,7 @@ void main() {
           expect(
             lower.contains(forbidden),
             isFalse,
-            reason:
-                'strings_en.dart ${entry.key} contains forbidden English '
+            reason: 'strings_en.dart ${entry.key} contains forbidden English '
                 'udhaar word "$forbidden" per ADR-010 / UX Spec §5.6',
           );
         }
@@ -472,7 +473,8 @@ void main() {
       expect(hi.udhaarBalance(1), isNot(contains(',')));
     });
 
-    test('Indian lakh formatter: 999 → "999" (last three digits, no comma)', () {
+    test('Indian lakh formatter: 999 → "999" (last three digits, no comma)',
+        () {
       expect(hi.udhaarBalance(999), contains('999'));
       expect(hi.udhaarBalance(999), isNot(contains(',')));
     });

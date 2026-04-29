@@ -116,13 +116,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           return Consumer(
             builder: (ctx, innerRef, _) {
               final previews = innerRef
-                  .watch(curatedShortlistsPreviewProvider)
-                  .valueOrNull ?? const [];
+                      .watch(curatedShortlistsPreviewProvider)
+                      .valueOrNull ??
+                  const [];
 
               // Featured products for carousel + grid.
-              final featuredProducts = innerRef
-                  .watch(allActiveSkusProvider)
-                  .valueOrNull ?? const [];
+              final featuredProducts =
+                  innerRef.watch(allActiveSkusProvider).valueOrNull ?? const [];
 
               // C3.12: Build deactivation banner if shop is not active.
               final lifecycle = data.shop.shopLifecycle;
@@ -157,7 +157,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 greetingDurationSeconds: 0,
                 currentLocaleCode: data.localeCode,
                 onLocaleToggle: () {
-                  ref.read(onboardingControllerProvider.notifier).toggleLocale();
+                  ref
+                      .read(onboardingControllerProvider.notifier)
+                      .toggleLocale();
                 },
                 onRefresh: () async {
                   ref.invalidate(curatedShortlistsPreviewProvider);
@@ -191,23 +193,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) {
           return Consumer(
             builder: (ctx, shellRef, _) {
-              final shellOnboarding = shellRef.watch(onboardingControllerProvider);
+              final shellOnboarding =
+                  shellRef.watch(onboardingControllerProvider);
               final data = shellOnboarding.valueOrNull;
               if (data == null) return child;
               return Material(
                 color: Colors.transparent,
                 child: Column(
-                children: [
-                  Expanded(child: child),
-                  ShopkeeperPresenceDock(
-                    onVoiceNote: () {},
-                    strings: data.strings,
-                    onMyListTap: () => context.go('/draft'),
-                    onOrdersTap: () => context.go('/orders'),
-                    onUdhaarTap: () => context.go('/udhaar'),
-                  ),
-                ],
-              ),
+                  children: [
+                    Expanded(child: child),
+                    ShopkeeperPresenceDock(
+                      onVoiceNote: () {},
+                      strings: data.strings,
+                      onMyListTap: () => context.go('/draft'),
+                      onOrdersTap: () => context.go('/orders'),
+                      onUdhaarTap: () => context.go('/udhaar'),
+                    ),
+                  ],
+                ),
               );
             },
           );
@@ -230,7 +233,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                   onBrowse: () => context.go('/landing'),
                   onTalkToBhaiya: () {
                     // Navigate to chat once a draft project exists.
-                    final draftState = ref.read(draftControllerProvider).valueOrNull;
+                    final draftState =
+                        ref.read(draftControllerProvider).valueOrNull;
                     final projectId = draftState?.projectId;
                     if (projectId != null) {
                       context.push('/project/$projectId/chat');
@@ -238,7 +242,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                   },
                   onCommit: () {
                     // C3.4 — Navigate to commit flow.
-                    final draftState = ref.read(draftControllerProvider).valueOrNull;
+                    final draftState =
+                        ref.read(draftControllerProvider).valueOrNull;
                     final projectId = draftState?.projectId;
                     if (projectId != null) {
                       context.push('/project/$projectId/commit');
@@ -358,7 +363,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               // CR F6: compute retention days from Shop.dpdpRetentionUntil.
               final retentionUntil = data.shop.dpdpRetentionUntil;
               final retentionDays = retentionUntil != null
-                  ? retentionUntil.difference(DateTime.now()).inDays.clamp(0, 999)
+                  ? retentionUntil
+                      .difference(DateTime.now())
+                      .inDays
+                      .clamp(0, 999)
                   : 180;
 
               return _buildTransitionPage(
@@ -408,12 +416,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                 key: state.pageKey,
                 child: Consumer(
                   builder: (ctx, innerRef, _) {
-                    final shortlistAsync =
-                        innerRef.watch(curatedShortlistByOccasionProvider(occasionTag));
+                    final shortlistAsync = innerRef
+                        .watch(curatedShortlistByOccasionProvider(occasionTag));
                     final skusAsync =
                         innerRef.watch(shortlistSkusProvider(occasionTag));
 
-                    final isLoading = shortlistAsync.isLoading || skusAsync.isLoading;
+                    final isLoading =
+                        shortlistAsync.isLoading || skusAsync.isLoading;
                     final error = shortlistAsync.error ?? skusAsync.error;
                     final theme = context.yugmaTheme;
 

@@ -32,11 +32,10 @@ class UdhaarLedgerRepo {
   final ShopIdProvider _shopIdProvider;
   static final Logger _log = Logger('UdhaarLedgerRepo');
 
-  CollectionReference<Map<String, dynamic>> _collection() =>
-      _firestore
-          .collection('shops')
-          .doc(_shopIdProvider.shopId)
-          .collection('udhaarLedger');
+  CollectionReference<Map<String, dynamic>> _collection() => _firestore
+      .collection('shops')
+      .doc(_shopIdProvider.shopId)
+      .collection('udhaarLedger');
 
   Future<UdhaarLedger?> getById(String ledgerId) async {
     final snap = await _collection().doc(ledgerId).get();
@@ -47,16 +46,15 @@ class UdhaarLedgerRepo {
     });
   }
 
-  Stream<List<UdhaarLedger>> watchByCustomer(String customerId) =>
-      _collection()
-          .where('customerId', isEqualTo: customerId)
-          .snapshots()
-          .map((snap) => snap.docs
-              .map((d) => UdhaarLedger.fromJson(<String, dynamic>{
-                    ...d.data(),
-                    'ledgerId': d.id,
-                  }))
-              .toList());
+  Stream<List<UdhaarLedger>> watchByCustomer(String customerId) => _collection()
+      .where('customerId', isEqualTo: customerId)
+      .snapshots()
+      .map((snap) => snap.docs
+          .map((d) => UdhaarLedger.fromJson(<String, dynamic>{
+                ...d.data(),
+                'ledgerId': d.id,
+              }))
+          .toList());
 
   /// Create a new udhaar ledger entry. Operator-only. Links the ledger
   /// to the project by setting `Project.udhaarLedgerId` in the same

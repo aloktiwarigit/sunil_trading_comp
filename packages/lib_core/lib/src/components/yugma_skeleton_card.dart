@@ -8,7 +8,8 @@ class YugmaSkeletonCard extends StatelessWidget {
   final double height;
   final double width;
 
-  const YugmaSkeletonCard({super.key, this.height = 80, this.width = double.infinity});
+  const YugmaSkeletonCard(
+      {super.key, this.height = 80, this.width = double.infinity});
 
   @override
   Widget build(BuildContext context) {

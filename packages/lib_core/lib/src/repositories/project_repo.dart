@@ -74,11 +74,10 @@ class ProjectRepo {
   final ReadBudgetMeter? _meter;
   static final Logger _log = Logger('ProjectRepo');
 
-  CollectionReference<Map<String, dynamic>> _projectsCollection() =>
-      _firestore
-          .collection('shops')
-          .doc(_shopIdProvider.shopId)
-          .collection('projects');
+  CollectionReference<Map<String, dynamic>> _projectsCollection() => _firestore
+      .collection('shops')
+      .doc(_shopIdProvider.shopId)
+      .collection('projects');
 
   /// Read a single Project document.
   Future<Project?> getById(String projectId) async {
@@ -112,14 +111,16 @@ class ProjectRepo {
   ) async {
     final map = patch.toFirestoreMap();
     if (map.isEmpty) {
-      _log.fine('applyCustomerPatch(projectId=$projectId) with empty patch — skipping');
+      _log.fine(
+          'applyCustomerPatch(projectId=$projectId) with empty patch — skipping');
       return;
     }
     map['updatedAt'] = FieldValue.serverTimestamp();
     await _projectsCollection()
         .doc(projectId)
         .set(map, SetOptions(merge: true));
-    _log.info('customer patch applied: projectId=$projectId fields=${map.keys.toList()}');
+    _log.info(
+        'customer patch applied: projectId=$projectId fields=${map.keys.toList()}');
   }
 
   /// Operator-owned field writes. Called only from `shopkeeper_app`.
@@ -129,14 +130,16 @@ class ProjectRepo {
   ) async {
     final map = patch.toFirestoreMap();
     if (map.isEmpty) {
-      _log.fine('applyOperatorPatch(projectId=$projectId) with empty patch — skipping');
+      _log.fine(
+          'applyOperatorPatch(projectId=$projectId) with empty patch — skipping');
       return;
     }
     map['updatedAt'] = FieldValue.serverTimestamp();
     await _projectsCollection()
         .doc(projectId)
         .set(map, SetOptions(merge: true));
-    _log.info('operator patch applied: projectId=$projectId fields=${map.keys.toList()}');
+    _log.info(
+        'operator patch applied: projectId=$projectId fields=${map.keys.toList()}');
   }
 
   /// System-owned field writes. Called only from Cloud Functions.
@@ -229,7 +232,7 @@ class ProjectRepo {
         throw ProjectRepoException(
           'invalid-state-transition',
           'Cannot pay Project in state $currentState — '
-          'only committed can transition to paid',
+              'only committed can transition to paid',
         );
       }
 
@@ -240,7 +243,7 @@ class ProjectRepo {
         throw ProjectRepoException(
           'triple-zero-violation',
           'amountReceivedByShop ($received) != totalAmount ($totalAmount) — '
-          'Triple Zero invariant violated, refusing paid transition',
+              'Triple Zero invariant violated, refusing paid transition',
         );
       }
 
@@ -285,7 +288,7 @@ class ProjectRepo {
         throw ProjectRepoException(
           'invalid-state-transition',
           'Cannot commit Project in state $currentState — '
-          'only draft or negotiating can transition to committed',
+              'only draft or negotiating can transition to committed',
         );
       }
 
@@ -349,7 +352,7 @@ class ProjectRepo {
         throw ProjectRepoException(
           'invalid-state-transition',
           'Cannot cancel Project in state $currentState — '
-          'only draft is cancellable by customer',
+              'only draft is cancellable by customer',
         );
       }
       final map = patch.toFirestoreMap();

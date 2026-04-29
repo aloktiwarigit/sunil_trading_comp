@@ -98,8 +98,7 @@ void main() {
         ),
       ];
 
-      final total =
-          items.fold<int>(0, (sum, item) => sum + item.lineTotalInr);
+      final total = items.fold<int>(0, (sum, item) => sum + item.lineTotalInr);
       expect(total, 60000);
     });
   });
@@ -172,9 +171,8 @@ void main() {
       );
 
       // After removing the only item, list is empty.
-      final updatedItems = state.lineItems
-          .where((i) => i.lineItemId != 'li-1')
-          .toList();
+      final updatedItems =
+          state.lineItems.where((i) => i.lineItemId != 'li-1').toList();
       expect(updatedItems, isEmpty);
 
       // The controller should reset to empty DraftState.
@@ -191,9 +189,8 @@ void main() {
         ],
       );
 
-      final updatedItems = state.lineItems
-          .where((i) => i.lineItemId != 'li-1')
-          .toList();
+      final updatedItems =
+          state.lineItems.where((i) => i.lineItemId != 'li-1').toList();
       expect(updatedItems.length, 1);
       expect(updatedItems.first.lineItemId, 'li-2');
     });

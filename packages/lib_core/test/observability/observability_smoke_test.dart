@@ -89,7 +89,8 @@ void main() {
         expect(
           snakeCase.hasMatch(name),
           isTrue,
-          reason: '"$name" is not snake_case — fails Firebase Analytics name convention',
+          reason:
+              '"$name" is not snake_case — fails Firebase Analytics name convention',
         );
       }
     });

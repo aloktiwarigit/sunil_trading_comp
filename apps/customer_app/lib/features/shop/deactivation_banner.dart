@@ -151,27 +151,32 @@ class DeactivationFaqScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _faqItem(context,
+            _faqItem(
+              context,
               'दुकान क्यों बंद हो रही है?',
               'सुनील भैया ने दुकान बंद करने का फ़ैसला किया है। '
                   'यह उनका निजी फ़ैसला है।',
             ),
-            _faqItem(context,
+            _faqItem(
+              context,
               'मेरे पैसे का क्या होगा?',
               'अगर आपने भुगतान किया है और ऑर्डर पूरा नहीं हुआ, '
                   'तो आपका पैसा वापस आ जाएगा।',
             ),
-            _faqItem(context,
+            _faqItem(
+              context,
               'मेरे ऑर्डर का क्या होगा?',
               'चल रहे ऑर्डर रुक गए हैं। अगर सुनील भैया ने '
                   'पहले ही बना दिया है, तो डिलीवरी होगी।',
             ),
-            _faqItem(context,
+            _faqItem(
+              context,
               'उधार खाता?',
               'आपका उधार खाता जैसा है वैसा रहेगा — रुका हुआ। '
                   'कोई नया भुगतान नहीं माँगा जाएगा।',
             ),
-            _faqItem(context,
+            _faqItem(
+              context,
               'मेरा डेटा कब तक सुरक्षित है?',
               'आपका डेटा $retentionDays दिन तक सुरक्षित है। '
                   'उसके बाद हटा दिया जाएगा।',

@@ -45,8 +45,8 @@ Map<String, dynamic> _normalizeProjectTimestamps(Map<String, dynamic> raw) {
 }
 
 /// S4.9 — Provider for customer memory, streamed by customerUid.
-final customerMemoryProvider =
-    StreamProvider.autoDispose.family<CustomerMemory?, String>((ref, customerUid) {
+final customerMemoryProvider = StreamProvider.autoDispose
+    .family<CustomerMemory?, String>((ref, customerUid) {
   final firestore = FirebaseFirestore.instance;
   final shopId = ref.read(shopIdProviderProvider).shopId;
 
@@ -534,8 +534,7 @@ class ProjectDetailScreen extends ConsumerWidget {
           SizedBox(
             height: YugmaSpacing.s12,
             child: OutlinedButton.icon(
-              onPressed: () =>
-                  _confirmMarkPaid(context, ref, project, strings),
+              onPressed: () => _confirmMarkPaid(context, ref, project, strings),
               icon: const Icon(Icons.payments_outlined, size: 20),
               label: const Text('भुगतान मिला'),
               style: OutlinedButton.styleFrom(
@@ -559,7 +558,8 @@ class ProjectDetailScreen extends ConsumerWidget {
           SizedBox(
             height: YugmaSpacing.s12,
             child: OutlinedButton.icon(
-              onPressed: () => _confirmStartDelivery(context, ref, project, strings),
+              onPressed: () =>
+                  _confirmStartDelivery(context, ref, project, strings),
               icon: const Icon(Icons.local_shipping_outlined, size: 20),
               label: const Text('डिलीवरी शुरू'),
               style: OutlinedButton.styleFrom(
@@ -636,7 +636,8 @@ class ProjectDetailScreen extends ConsumerWidget {
           SizedBox(
             height: YugmaSpacing.s12,
             child: OutlinedButton.icon(
-              onPressed: () => _showUdhaarDialog(context, ref, project, strings),
+              onPressed: () =>
+                  _showUdhaarDialog(context, ref, project, strings),
               icon: const Icon(Icons.account_balance_wallet_outlined, size: 20),
               label: Text(strings.udhaarStartButton),
               style: OutlinedButton.styleFrom(
@@ -926,8 +927,7 @@ class ProjectDetailScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              final balance =
-                  int.tryParse(balanceController.text.trim()) ?? 0;
+              final balance = int.tryParse(balanceController.text.trim()) ?? 0;
               if (balance <= 0) return;
 
               Navigator.of(ctx).pop();
@@ -1014,7 +1014,8 @@ class ProjectDetailScreen extends ConsumerWidget {
                 items: const [
                   DropdownMenuItem(value: 'cash', child: Text('नकद')),
                   DropdownMenuItem(value: 'upi', child: Text('UPI')),
-                  DropdownMenuItem(value: 'bank', child: Text('बैंक ट्रांसफ़र')),
+                  DropdownMenuItem(
+                      value: 'bank', child: Text('बैंक ट्रांसफ़र')),
                 ],
                 onChanged: (v) {
                   if (v != null) {
@@ -1031,8 +1032,7 @@ class ProjectDetailScreen extends ConsumerWidget {
             ),
             ElevatedButton(
               onPressed: () async {
-                final amount =
-                    int.tryParse(amountController.text.trim()) ?? 0;
+                final amount = int.tryParse(amountController.text.trim()) ?? 0;
                 if (amount <= 0) return;
 
                 Navigator.of(ctx).pop();
@@ -1105,7 +1105,6 @@ class ProjectDetailScreen extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 /// Line item row in the detail view.
@@ -1203,7 +1202,8 @@ class _ChatPreviewRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCustomer = message.authorRole == MessageAuthorRole.customer;
-    final sender = isCustomer ? strings.chatSenderYou : strings.chatSenderBhaiya;
+    final sender =
+        isCustomer ? strings.chatSenderYou : strings.chatSenderBhaiya;
     // CR #8: show meaningful preview for non-text messages.
     final body = switch (message.type) {
       MessageType.text || MessageType.system => message.textBody ?? '',
@@ -1225,9 +1225,8 @@ class _ChatPreviewRow extends StatelessWidget {
               fontFamily: YugmaFonts.devaBody,
               fontSize: YugmaTypeScale.caption,
               fontWeight: FontWeight.w600,
-              color: isCustomer
-                  ? YugmaColors.textSecondary
-                  : YugmaColors.primary,
+              color:
+                  isCustomer ? YugmaColors.textSecondary : YugmaColors.primary,
             ),
           ),
           Expanded(
@@ -1275,9 +1274,7 @@ class _MemorySummary extends StatelessWidget {
           if (memory.preferredOccasions.isNotEmpty)
             _memoryLine(
               Icons.event_outlined,
-              memory.preferredOccasions
-                  .map(_occasionLabel)
-                  .join(', '),
+              memory.preferredOccasions.map(_occasionLabel).join(', '),
             ),
           if (memory.preferredPriceMin != null ||
               memory.preferredPriceMax != null)
@@ -1606,4 +1603,3 @@ class _MemoryEditSheetState extends State<_MemoryEditSheet> {
     );
   }
 }
-

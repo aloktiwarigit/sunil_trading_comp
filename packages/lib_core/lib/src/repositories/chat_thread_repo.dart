@@ -23,11 +23,10 @@ class ChatThreadRepo {
   final ShopIdProvider _shopIdProvider;
   static final Logger _log = Logger('ChatThreadRepo');
 
-  CollectionReference<Map<String, dynamic>> _collection() =>
-      _firestore
-          .collection('shops')
-          .doc(_shopIdProvider.shopId)
-          .collection('chatThreads');
+  CollectionReference<Map<String, dynamic>> _collection() => _firestore
+      .collection('shops')
+      .doc(_shopIdProvider.shopId)
+      .collection('chatThreads');
 
   Future<ChatThread?> getById(String threadId) async {
     final snap = await _collection().doc(threadId).get();

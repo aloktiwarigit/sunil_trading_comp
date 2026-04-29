@@ -22,8 +22,10 @@ import '../shop_id_provider.dart';
 class OperatorRepoException implements Exception {
   /// Wrap a code + message for UI-layer routing.
   const OperatorRepoException(this.code, this.message);
+
   /// Stable code — matches FirebaseException codes where possible.
   final String code;
+
   /// Human-readable message.
   final String message;
   @override
@@ -44,11 +46,10 @@ class OperatorRepo {
   final ShopIdProvider _shopIdProvider;
   static final Logger _log = Logger('OperatorRepo');
 
-  CollectionReference<Map<String, dynamic>> _collection() =>
-      _firestore
-          .collection('shops')
-          .doc(_shopIdProvider.shopId)
-          .collection('operators');
+  CollectionReference<Map<String, dynamic>> _collection() => _firestore
+      .collection('shops')
+      .doc(_shopIdProvider.shopId)
+      .collection('operators');
 
   /// Read one Operator by Google UID.
   Future<Operator?> getByUid(String uid) async {

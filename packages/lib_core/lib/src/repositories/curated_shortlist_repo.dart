@@ -22,8 +22,10 @@ import '../shop_id_provider.dart';
 class CuratedShortlistRepoException implements Exception {
   /// Wrap a code + message.
   const CuratedShortlistRepoException(this.code, this.message);
+
   /// Stable error code.
   final String code;
+
   /// Human-readable message.
   final String message;
   @override
@@ -47,11 +49,10 @@ class CuratedShortlistRepo {
   /// as a defense-in-depth check above the security rule.
   static const int finiteCap = 6;
 
-  CollectionReference<Map<String, dynamic>> _collection() =>
-      _firestore
-          .collection('shops')
-          .doc(_shopIdProvider.shopId)
-          .collection('curatedShortlists');
+  CollectionReference<Map<String, dynamic>> _collection() => _firestore
+      .collection('shops')
+      .doc(_shopIdProvider.shopId)
+      .collection('curatedShortlists');
 
   /// Fetch one shortlist by ID.
   Future<CuratedShortlist?> getById(String shortlistId) async {
@@ -131,7 +132,7 @@ class CuratedShortlistRepo {
       throw CuratedShortlistRepoException(
         'finite-cap-exceeded',
         'CuratedShortlist.skuIdsInOrder exceeds finite cap of $finiteCap '
-        'per UX Spec §4.3 — got ${shortlist.skuIdsInOrder.length}',
+            'per UX Spec §4.3 — got ${shortlist.skuIdsInOrder.length}',
       );
     }
     if (shortlist.skuIdsInOrder.toSet().length !=
@@ -139,7 +140,7 @@ class CuratedShortlistRepo {
       throw const CuratedShortlistRepoException(
         'duplicate-sku-ids',
         'CuratedShortlist.skuIdsInOrder contains duplicate SKU IDs — '
-        'the B1.4 shortlist would render the same almirah twice',
+            'the B1.4 shortlist would render the same almirah twice',
       );
     }
     try {
@@ -184,7 +185,7 @@ class CuratedShortlistRepo {
       throw const CuratedShortlistRepoException(
         'duplicate-sku-ids',
         'reorderSkus received duplicate SKU IDs — the B1.4 shortlist '
-        'would render the same almirah twice',
+            'would render the same almirah twice',
       );
     }
     try {

@@ -47,7 +47,6 @@ class DecisionCircle with _$DecisionCircle {
     /// switches personas via P2.2 toggle. Shopkeeper sees this in the
     /// project detail to know who is currently looking.
     String? currentActivePersona,
-
     required DateTime createdAt,
   }) = _DecisionCircle;
 

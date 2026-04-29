@@ -53,8 +53,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = context.yugmaTheme;
-    final commitAsync =
-        ref.watch(commitControllerProvider(widget.projectId));
+    final commitAsync = ref.watch(commitControllerProvider(widget.projectId));
     final draftAsync = ref.watch(draftControllerProvider);
 
     return Scaffold(
@@ -76,18 +75,14 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
         error: (err, _) => YugmaErrorBanner(error: err),
         data: (flowState) {
           return switch (flowState.stage) {
-            CommitFlowStage.idle => _buildOrderSummary(
-                context, theme, draftAsync),
-            CommitFlowStage.enteringPhone => _buildPhoneInput(
-                context, theme),
-            CommitFlowStage.awaitingOtp => _buildOtpInput(
-                context, theme),
-            CommitFlowStage.committing => _buildCommitting(
-                context, theme),
-            CommitFlowStage.committed => _buildConfirmation(
-                context, theme, flowState),
-            CommitFlowStage.error => _buildError(
-                context, theme, flowState),
+            CommitFlowStage.idle =>
+              _buildOrderSummary(context, theme, draftAsync),
+            CommitFlowStage.enteringPhone => _buildPhoneInput(context, theme),
+            CommitFlowStage.awaitingOtp => _buildOtpInput(context, theme),
+            CommitFlowStage.committing => _buildCommitting(context, theme),
+            CommitFlowStage.committed =>
+              _buildConfirmation(context, theme, flowState),
+            CommitFlowStage.error => _buildError(context, theme, flowState),
           };
         },
       ),
@@ -137,8 +132,8 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                 itemBuilder: (context, index) {
                   final item = items[index];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: YugmaSpacing.s3),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: YugmaSpacing.s3),
                     child: Row(
                       children: [
                         Expanded(
@@ -189,8 +184,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
               children: [
                 Text(
                   widget.strings.orderTotalLabel,
-                  style: theme.bodyDeva
-                      .copyWith(fontWeight: FontWeight.w600),
+                  style: theme.bodyDeva.copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(
                   '₹${formatInr(total)}',
@@ -209,8 +203,7 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                 onPressed: () {
                   HapticFeedback.heavyImpact();
                   ref
-                      .read(commitControllerProvider(widget.projectId)
-                          .notifier)
+                      .read(commitControllerProvider(widget.projectId).notifier)
                       .startCommit();
                 },
                 style: ElevatedButton.styleFrom(
@@ -304,8 +297,8 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
           Builder(builder: (context) {
             // Watch provider state so countdown ticks trigger rebuilds.
             ref.watch(commitControllerProvider(widget.projectId));
-            final controller = ref.read(
-                commitControllerProvider(widget.projectId).notifier);
+            final controller =
+                ref.read(commitControllerProvider(widget.projectId).notifier);
             final cooldown = controller.otpCooldownSeconds;
             final isCoolingDown = cooldown > 0;
 
@@ -315,7 +308,8 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                 onPressed: isCoolingDown
                     ? null
                     : () {
-                        if (!(_phoneFormKey.currentState?.validate() ?? false)) return;
+                        if (!(_phoneFormKey.currentState?.validate() ?? false))
+                          return;
                         var raw = _phoneController.text.trim();
                         if (raw.isEmpty) return;
                         // Strip non-digits and normalize to E.164 (India).
@@ -324,15 +318,15 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                         if (raw.startsWith('91') && raw.length > 10) {
                           raw = raw.substring(2);
                         }
-                        if (raw.length != 10) return; // Indian mobile = 10 digits
+                        if (raw.length != 10)
+                          return; // Indian mobile = 10 digits
                         final phoneE164 = '+91$raw';
                         controller.sendOtp(phoneE164);
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.shopPrimary,
                   foregroundColor: theme.shopTextOnPrimary,
-                  disabledBackgroundColor:
-                      theme.shopPrimary.withOpacity(0.4),
+                  disabledBackgroundColor: theme.shopPrimary.withOpacity(0.4),
                   disabledForegroundColor:
                       theme.shopTextOnPrimary.withOpacity(0.6),
                   shape: RoundedRectangleBorder(
@@ -395,7 +389,8 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
               validator: (value) {
                 final digits = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
                 if (digits.isEmpty) return widget.strings.validationRequired;
-                if (digits.length != 6) return widget.strings.validationRequired;
+                if (digits.length != 6)
+                  return widget.strings.validationRequired;
                 return null;
               },
               decoration: InputDecoration(
@@ -442,10 +437,10 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
           // Resend OTP with cooldown
           Builder(builder: (context) {
             // Watch provider state so countdown ticks trigger rebuilds.
-            final watchedState = ref.watch(
-                commitControllerProvider(widget.projectId));
-            final controller = ref.read(
-                commitControllerProvider(widget.projectId).notifier);
+            final watchedState =
+                ref.watch(commitControllerProvider(widget.projectId));
+            final controller =
+                ref.read(commitControllerProvider(widget.projectId).notifier);
             final cooldown = controller.otpCooldownSeconds;
             final isCoolingDown = cooldown > 0;
             final flowState = watchedState.valueOrNull;
@@ -545,8 +540,8 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                 const SizedBox(height: YugmaSpacing.s6),
                 // Line items summary
                 ...items.map((item) => Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: YugmaSpacing.s2),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: YugmaSpacing.s2),
                       child: Row(
                         children: [
                           Expanded(
@@ -568,8 +563,8 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
                   children: [
                     Text(
                       widget.strings.orderTotalLabel,
-                      style: theme.bodyDeva
-                          .copyWith(fontWeight: FontWeight.w700),
+                      style:
+                          theme.bodyDeva.copyWith(fontWeight: FontWeight.w700),
                     ),
                     Text(
                       '₹${formatInr(total)}',
@@ -686,5 +681,4 @@ class _CommitScreenState extends ConsumerState<CommitScreen> {
       ),
     );
   }
-
 }

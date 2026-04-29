@@ -29,8 +29,10 @@ import '../shop_id_provider.dart';
 class InventorySkuRepoException implements Exception {
   /// Wrap a code + message.
   const InventorySkuRepoException(this.code, this.message);
+
   /// Stable code.
   final String code;
+
   /// Human-readable message.
   final String message;
   @override
@@ -50,11 +52,10 @@ class InventorySkuRepo {
   final ShopIdProvider _shopIdProvider;
   static final Logger _log = Logger('InventorySkuRepo');
 
-  CollectionReference<Map<String, dynamic>> _collection() =>
-      _firestore
-          .collection('shops')
-          .doc(_shopIdProvider.shopId)
-          .collection('inventory');
+  CollectionReference<Map<String, dynamic>> _collection() => _firestore
+      .collection('shops')
+      .doc(_shopIdProvider.shopId)
+      .collection('inventory');
 
   /// Read one SKU by ID. 1 read against the session budget.
   ///

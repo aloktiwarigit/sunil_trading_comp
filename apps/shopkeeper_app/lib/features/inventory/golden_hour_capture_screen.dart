@@ -19,6 +19,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lib_core/lib_core.dart';
 
 import '../../main.dart';
+
 /// S4.5 — Golden Hour photo capture screen.
 ///
 /// Opens the device camera, captures a photo, uploads via MediaStore,
@@ -61,9 +62,7 @@ class _GoldenHourCaptureScreenState
           ),
         ),
       ),
-      body: _capturedBytes == null
-          ? _buildCaptureView()
-          : _buildPreview(),
+      body: _capturedBytes == null ? _buildCaptureView() : _buildPreview(),
     );
   }
 
@@ -202,8 +201,7 @@ class _GoldenHourCaptureScreenState
                     style: TextStyle(fontFamily: YugmaFonts.devaBody),
                   ),
                   selectedColor: YugmaColors.primary.withValues(alpha: 0.15),
-                  onSelected: (_) =>
-                      setState(() => _selectedTier = 'hero'),
+                  onSelected: (_) => setState(() => _selectedTier = 'hero'),
                 ),
               ),
               const SizedBox(width: YugmaSpacing.s2),
@@ -215,8 +213,7 @@ class _GoldenHourCaptureScreenState
                     style: TextStyle(fontFamily: YugmaFonts.devaBody),
                   ),
                   selectedColor: YugmaColors.primary.withValues(alpha: 0.15),
-                  onSelected: (_) =>
-                      setState(() => _selectedTier = 'working'),
+                  onSelected: (_) => setState(() => _selectedTier = 'working'),
                 ),
               ),
             ],

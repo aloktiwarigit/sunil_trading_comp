@@ -111,9 +111,8 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
                           style: TextStyle(
                             fontFamily: YugmaFonts.devaBody,
                             fontSize: YugmaTypeScale.body,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: YugmaColors.textPrimary,
                           ),
                         ),
@@ -168,11 +167,13 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle, color: YugmaColors.primary, size: 20),
+                      Icon(Icons.check_circle,
+                          color: YugmaColors.primary, size: 20),
                       const SizedBox(width: YugmaSpacing.s2),
                       Expanded(
                         child: Text(
-                          strings.presenceVoiceRecorded(_absenceVoiceNoteDuration),
+                          strings
+                              .presenceVoiceRecorded(_absenceVoiceNoteDuration),
                           style: TextStyle(
                             fontFamily: YugmaFonts.devaBody,
                             fontSize: YugmaTypeScale.caption,
@@ -185,7 +186,8 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
                           _absenceVoiceNoteBytes = null;
                           _absenceVoiceNoteDuration = 0;
                         }),
-                        icon: Icon(Icons.close, color: YugmaColors.textMuted, size: 20),
+                        icon: Icon(Icons.close,
+                            color: YugmaColors.textMuted, size: 20),
                         tooltip: strings.presenceRemoveVoice,
                       ),
                     ],
@@ -258,8 +260,7 @@ class _PresenceToggleScreenState extends ConsumerState<PresenceToggleScreen> {
           shopId: shopId,
           voiceNoteId: voiceNoteId,
         );
-        absenceVoiceStorageRef =
-            'shops/$shopId/voice_notes/$voiceNoteId.m4a';
+        absenceVoiceStorageRef = 'shops/$shopId/voice_notes/$voiceNoteId.m4a';
       }
 
       await FirebaseFirestore.instance

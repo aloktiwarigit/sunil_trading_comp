@@ -87,8 +87,8 @@ class CommitFlowState {
 }
 
 /// Provider for the commit controller, scoped to a specific project.
-final commitControllerProvider = AsyncNotifierProvider.family<
-    CommitController, CommitFlowState, String>(
+final commitControllerProvider =
+    AsyncNotifierProvider.family<CommitController, CommitFlowState, String>(
   CommitController.new,
 );
 

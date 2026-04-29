@@ -93,10 +93,12 @@ void main() {
       final stream = repo.watchMemory(customerUid);
 
       // Initially null.
-      expect(stream, emitsInOrder([
-        isNull,
-        isNotNull,
-      ]));
+      expect(
+          stream,
+          emitsInOrder([
+            isNull,
+            isNotNull,
+          ]));
 
       // Trigger creation.
       await repo.upsertMemory(

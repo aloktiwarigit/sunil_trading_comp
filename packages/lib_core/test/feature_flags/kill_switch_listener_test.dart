@@ -228,12 +228,14 @@ void main() {
         expect(
           listener.isCloudinaryBlocked,
           isTrue,
-          reason: 'master kill implies cloudinary blocked even if sub-flag is false',
+          reason:
+              'master kill implies cloudinary blocked even if sub-flag is false',
         );
         expect(
           listener.isFirestoreBlocked,
           isTrue,
-          reason: 'master kill implies firestore blocked even if sub-flag is false',
+          reason:
+              'master kill implies firestore blocked even if sub-flag is false',
         );
       });
 

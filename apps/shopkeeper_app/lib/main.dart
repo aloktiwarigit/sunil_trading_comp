@@ -76,7 +76,8 @@ void _configureLogging() {
   Logger.root.level = kDebugMode ? Level.ALL : Level.INFO;
   Logger.root.onRecord.listen((record) {
     if (kDebugMode) {
-      debugPrint('[${record.level.name}] ${record.loggerName}: ${record.message}');
+      debugPrint(
+          '[${record.level.name}] ${record.loggerName}: ${record.message}');
     } else {
       Observability.crashlytics.log('${record.loggerName}: ${record.message}');
     }
@@ -95,11 +96,10 @@ final shopkeeperAuthProviderInstance = Provider<AuthProvider>((ref) {
 /// golden hour photo capture, and greeting management screens. Avoids ad-hoc
 /// MediaStoreCloudinaryFirebase construction per handoff §4 gotcha.
 final mediaStoreProvider = Provider<MediaStore>((ref) {
-  final cloudName = FirebaseRemoteConfig.instance
-      .getString(FeatureFlags.cloudinaryCloudName);
+  final cloudName =
+      FirebaseRemoteConfig.instance.getString(FeatureFlags.cloudinaryCloudName);
   return MediaStoreCloudinaryFirebase(
     firebaseStorage: FirebaseStorage.instance,
-    cloudinaryCloudName:
-        cloudName.isNotEmpty ? cloudName : 'yugma-dukaan-dev',
+    cloudinaryCloudName: cloudName.isNotEmpty ? cloudName : 'yugma-dukaan-dev',
   );
 });

@@ -112,9 +112,7 @@ class TodaysTaskCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(YugmaRadius.lg),
           boxShadow: YugmaShadows.card,
           border: Border.all(
-            color: isCelebration
-                ? YugmaColors.accent
-                : YugmaColors.divider,
+            color: isCelebration ? YugmaColors.accent : YugmaColors.divider,
             width: isCelebration ? 2 : 1,
           ),
         ),
@@ -221,9 +219,7 @@ class TodaysTaskCard extends ConsumerWidget {
               width: double.infinity,
               height: YugmaTapTargets.minDefault,
               child: ElevatedButton(
-                onPressed: isCompleted
-                    ? null
-                    : () => _markComplete(ref),
+                onPressed: isCompleted ? null : () => _markComplete(ref),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isCompleted
                       ? YugmaColors.success.withValues(alpha: 0.12)
@@ -237,7 +233,9 @@ class TodaysTaskCard extends ConsumerWidget {
                   elevation: 0,
                 ),
                 child: Text(
-                  isCompleted ? '${strings.todaysTaskDone}!' : strings.todaysTaskDone,
+                  isCompleted
+                      ? '${strings.todaysTaskDone}!'
+                      : strings.todaysTaskDone,
                   style: TextStyle(
                     fontFamily: YugmaFonts.devaBody,
                     fontSize: YugmaTypeScale.bodyLarge,

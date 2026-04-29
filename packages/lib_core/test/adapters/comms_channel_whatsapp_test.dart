@@ -414,7 +414,8 @@ void main() {
         );
       });
 
-      test('observeMessages emits notSupported error on first listen', () async {
+      test('observeMessages emits notSupported error on first listen',
+          () async {
         final stream = adapter.observeMessages(
           shopId: shopId,
           projectId: projectId,

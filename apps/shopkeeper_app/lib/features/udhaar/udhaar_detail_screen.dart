@@ -259,7 +259,8 @@ class UdhaarDetailScreen extends ConsumerWidget {
               width: double.infinity,
               height: YugmaSpacing.s12,
               child: ElevatedButton.icon(
-                onPressed: () => _showRecordPayment(context, ref, ledger, strings),
+                onPressed: () =>
+                    _showRecordPayment(context, ref, ledger, strings),
                 icon: const Icon(Icons.payments_outlined, size: 20),
                 label: Text(strings.udhaarRecordPaymentButton),
                 style: ElevatedButton.styleFrom(
@@ -325,7 +326,8 @@ class UdhaarDetailScreen extends ConsumerWidget {
                 items: const [
                   DropdownMenuItem(value: 'cash', child: Text('नकद')),
                   DropdownMenuItem(value: 'upi', child: Text('UPI')),
-                  DropdownMenuItem(value: 'bank', child: Text('बैंक ट्रांसफ़र')),
+                  DropdownMenuItem(
+                      value: 'bank', child: Text('बैंक ट्रांसफ़र')),
                 ],
                 onChanged: (v) {
                   if (v != null) {
@@ -342,8 +344,7 @@ class UdhaarDetailScreen extends ConsumerWidget {
             ),
             ElevatedButton(
               onPressed: () async {
-                final amount =
-                    int.tryParse(amountController.text.trim()) ?? 0;
+                final amount = int.tryParse(amountController.text.trim()) ?? 0;
                 if (amount <= 0) return;
 
                 Navigator.of(ctx).pop();
@@ -390,7 +391,6 @@ class UdhaarDetailScreen extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 /// S4.10 AC #9: Cadence stepper (7–30 days).

@@ -251,8 +251,7 @@ class _ChatScreenState extends State<ChatScreen> {
             MessageDeliveryStatus.delivered;
 
         // C3.3: resolve proposal metadata if this is a price_proposal message.
-        final proposalMeta =
-            widget.proposalMetadata[message.messageId];
+        final proposalMeta = widget.proposalMetadata[message.messageId];
 
         return ChatBubble(
           message: message,

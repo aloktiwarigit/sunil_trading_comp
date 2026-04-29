@@ -86,8 +86,7 @@ void main() {
         expect(
           json['authorRole'],
           equals(entry.value),
-          reason:
-              'Domain enum ${entry.key} must serialize as ${entry.value}',
+          reason: 'Domain enum ${entry.key} must serialize as ${entry.value}',
         );
       }
     });

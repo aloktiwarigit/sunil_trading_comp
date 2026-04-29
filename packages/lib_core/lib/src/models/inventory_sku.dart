@@ -98,7 +98,6 @@ class InventorySku with _$InventorySku {
     /// Short description — 1 line, plain, shopkeeper's register. Never
     /// marketing copy ("श्रेष्ठ / सर्वोत्तम / गुणवत्ता" forbidden per Constraint 10).
     @Default('') String description,
-
     required SkuCategory category,
     required SkuMaterial material,
     required SkuDimensions dimensions,
@@ -137,7 +136,6 @@ class InventorySku with _$InventorySku {
     /// `curated_shortlist.dart`. Example: `['shaadi', 'beti_ka_ghar']` means
     /// this SKU appears in both the wedding and daughter's-new-home shortlists.
     @Default(<String>[]) List<String> occasionTags,
-
     required DateTime createdAt,
     DateTime? updatedAt,
 

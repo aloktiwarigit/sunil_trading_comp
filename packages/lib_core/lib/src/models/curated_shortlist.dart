@@ -76,7 +76,6 @@ class CuratedShortlist with _$CuratedShortlist {
     /// pagination, no "load more" — the list is finite by design. Max
     /// 6 per UX Spec §4.3.
     @Default(<String>[]) List<String> skuIdsInOrder,
-
     required DateTime createdAt,
     DateTime? updatedAt,
 

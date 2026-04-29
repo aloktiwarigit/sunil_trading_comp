@@ -167,8 +167,9 @@ class _ShopDeactivationScreenState
           width: double.infinity,
           height: YugmaSpacing.s12,
           child: ElevatedButton(
-            onPressed:
-                _selectedReason.isNotEmpty ? () => setState(() => _step = 2) : null,
+            onPressed: _selectedReason.isNotEmpty
+                ? () => setState(() => _step = 2)
+                : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: YugmaColors.commit,
               foregroundColor: YugmaColors.textOnPrimary,

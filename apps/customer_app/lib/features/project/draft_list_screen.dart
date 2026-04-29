@@ -151,8 +151,7 @@ class DraftListScreen extends ConsumerWidget {
                 direction: DismissDirection.endToStart,
                 background: Container(
                   alignment: Alignment.centerRight,
-                  padding:
-                      const EdgeInsets.only(right: YugmaSpacing.s4),
+                  padding: const EdgeInsets.only(right: YugmaSpacing.s4),
                   color: theme.shopCommit.withValues(alpha: 0.15),
                   child: Icon(
                     Icons.delete_outline,
@@ -211,24 +210,20 @@ class DraftListScreen extends ConsumerWidget {
                           ),
                           actions: [
                             TextButton(
-                              onPressed: () =>
-                                  Navigator.of(context).pop(false),
+                              onPressed: () => Navigator.of(context).pop(false),
                               child: Text(
                                 strings.draftQtyHighCancel,
                                 style: TextStyle(
-                                  fontFamily:
-                                      theme.fontFamilyDevanagariBody,
+                                  fontFamily: theme.fontFamilyDevanagariBody,
                                 ),
                               ),
                             ),
                             TextButton(
-                              onPressed: () =>
-                                  Navigator.of(context).pop(true),
+                              onPressed: () => Navigator.of(context).pop(true),
                               child: Text(
                                 strings.draftQtyHighConfirm,
                                 style: TextStyle(
-                                  fontFamily:
-                                      theme.fontFamilyDevanagariBody,
+                                  fontFamily: theme.fontFamilyDevanagariBody,
                                   color: theme.shopPrimary,
                                 ),
                               ),
@@ -273,8 +268,7 @@ class DraftListScreen extends ConsumerWidget {
           children: [
             // C3.2 AC #3: show recomputed total.
             Padding(
-              padding:
-                  const EdgeInsets.only(bottom: YugmaSpacing.s3),
+              padding: const EdgeInsets.only(bottom: YugmaSpacing.s3),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -434,7 +428,6 @@ class _DraftLineItemTile extends StatelessWidget {
       ),
     );
   }
-
 }
 
 /// Small quantity +/- button.

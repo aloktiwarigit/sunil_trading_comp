@@ -116,9 +116,7 @@ class _BharosaLandingState extends State<BharosaLanding>
     _bannerController = PageController(viewportFraction: 0.92);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _entranceController.forward();
-      if (widget.autoPlayGreeting &&
-          widget.hasGreetingVoiceNote &&
-          !_isMuted) {
+      if (widget.autoPlayGreeting && widget.hasGreetingVoiceNote && !_isMuted) {
         Future.delayed(
           const Duration(milliseconds: 800),
           widget.onGreetingPlay,
@@ -203,8 +201,7 @@ class _BharosaLandingState extends State<BharosaLanding>
                       ),
 
                       // ── 1b. Presence Banner ──
-                      if (widget.presenceBanner != null)
-                        widget.presenceBanner!,
+                      if (widget.presenceBanner != null) widget.presenceBanner!,
 
                       // ── 2. HERO CAROUSEL ──
                       if (products.isNotEmpty)
@@ -266,8 +263,7 @@ class _BharosaLandingState extends State<BharosaLanding>
             child: PageView.builder(
               controller: _bannerController,
               itemCount: bannerItems.length,
-              onPageChanged: (i) =>
-                  setState(() => _currentBannerPage = i),
+              onPageChanged: (i) => setState(() => _currentBannerPage = i),
               itemBuilder: (context, index) {
                 final product = bannerItems[index];
                 final imageUrl = product.fallbackPhotoUrls.isNotEmpty
@@ -345,8 +341,7 @@ class _BharosaLandingState extends State<BharosaLanding>
                                 borderRadius: BorderRadius.circular(6),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black
-                                        .withValues(alpha: 0.15),
+                                    color: Colors.black.withValues(alpha: 0.15),
                                     blurRadius: 8,
                                   ),
                                 ],
@@ -381,8 +376,8 @@ class _BharosaLandingState extends State<BharosaLanding>
                                       Text(
                                         product.nameDevanagari,
                                         style: TextStyle(
-                                          fontFamily: theme
-                                              .fontFamilyDevanagariDisplay,
+                                          fontFamily:
+                                              theme.fontFamilyDevanagariDisplay,
                                           fontSize: 18,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white,
@@ -412,8 +407,7 @@ class _BharosaLandingState extends State<BharosaLanding>
                                                   .withValues(alpha: 0.8),
                                             ),
                                             maxLines: 1,
-                                            overflow:
-                                                TextOverflow.ellipsis,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                     ],
@@ -428,14 +422,13 @@ class _BharosaLandingState extends State<BharosaLanding>
                                   ),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius:
-                                        BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
                                     '\u0926\u0947\u0916\u093F\u090F',
                                     style: TextStyle(
-                                      fontFamily: theme
-                                          .fontFamilyDevanagariBody,
+                                      fontFamily:
+                                          theme.fontFamilyDevanagariBody,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
                                       color: theme.shopPrimary,
@@ -609,7 +602,10 @@ class _BharosaLandingState extends State<BharosaLanding>
   Widget _buildVoiceGreeting(YugmaThemeExtension theme) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        YugmaSpacing.s4, YugmaSpacing.s5, YugmaSpacing.s4, 0,
+        YugmaSpacing.s4,
+        YugmaSpacing.s5,
+        YugmaSpacing.s4,
+        0,
       ),
       child: Material(
         borderRadius: BorderRadius.circular(16),
@@ -655,8 +651,7 @@ class _BharosaLandingState extends State<BharosaLanding>
                         Text(
                           widget.strings.greetingCardTitle,
                           style: TextStyle(
-                            fontFamily:
-                                theme.fontFamilyDevanagariDisplay,
+                            fontFamily: theme.fontFamilyDevanagariDisplay,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -669,8 +664,7 @@ class _BharosaLandingState extends State<BharosaLanding>
                             widget.greetingDurationSeconds,
                           ),
                           style: TextStyle(
-                            fontFamily:
-                                theme.fontFamilyDevanagariBody,
+                            fontFamily: theme.fontFamilyDevanagariBody,
                             fontSize: 11,
                             color: Colors.white.withValues(alpha: 0.7),
                           ),
@@ -684,19 +678,24 @@ class _BharosaLandingState extends State<BharosaLanding>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Mini waveform
-                      ...([5.0, 12.0, 7.0, 16.0, 9.0, 13.0, 6.0]
-                          .map((h) => Container(
-                                width: 2.5,
-                                height: h,
-                                margin: const EdgeInsets.symmetric(
-                                    horizontal: 1),
-                                decoration: BoxDecoration(
-                                  color: theme.shopAccentGlow
-                                      .withValues(alpha: 0.5),
-                                  borderRadius:
-                                      BorderRadius.circular(2),
-                                ),
-                              ))),
+                      ...([
+                        5.0,
+                        12.0,
+                        7.0,
+                        16.0,
+                        9.0,
+                        13.0,
+                        6.0
+                      ].map((h) => Container(
+                            width: 2.5,
+                            height: h,
+                            margin: const EdgeInsets.symmetric(horizontal: 1),
+                            decoration: BoxDecoration(
+                              color:
+                                  theme.shopAccentGlow.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ))),
                       const SizedBox(width: 10),
                       // Play circle
                       Container(
@@ -760,8 +759,7 @@ class _BharosaLandingState extends State<BharosaLanding>
                         // "सुनील भैया की पसंद" → "बेस्ट सेलर"
                         '\u092C\u0947\u0938\u094D\u091F \u0938\u0947\u0932\u0930',
                         style: TextStyle(
-                          fontFamily:
-                              theme.fontFamilyDevanagariDisplay,
+                          fontFamily: theme.fontFamilyDevanagariDisplay,
                           fontSize: 17,
                           color: theme.shopTextPrimary,
                           fontWeight: FontWeight.w600,
@@ -860,7 +858,8 @@ class _BharosaLandingState extends State<BharosaLanding>
               _TrustColumn(
                 icon: Icons.verified_rounded,
                 value: '$years+',
-                label: '\u0938\u093E\u0932 \u0915\u093E \u0905\u0928\u0941\u092D\u0935',
+                label:
+                    '\u0938\u093E\u0932 \u0915\u093E \u0905\u0928\u0941\u092D\u0935',
                 theme: theme,
               ),
               Container(
@@ -972,8 +971,7 @@ class _HeaderBar extends StatelessWidget {
           ScaleTransition(
             scale: CurvedAnimation(
               parent: entranceController,
-              curve:
-                  const Interval(0.0, 0.5, curve: Curves.easeOutBack),
+              curve: const Interval(0.0, 0.5, curve: Curves.easeOutBack),
             ),
             child: Container(
               padding: const EdgeInsets.all(1.5),
@@ -1006,7 +1004,8 @@ class _HeaderBar extends StatelessWidget {
           // Status pill
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: 8, vertical: 3,
+              horizontal: 8,
+              vertical: 3,
             ),
             decoration: BoxDecoration(
               color: const Color(0xFF1B5E20).withValues(alpha: 0.35),
@@ -1045,7 +1044,8 @@ class _HeaderBar extends StatelessWidget {
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 3,
+                  horizontal: 10,
+                  vertical: 3,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.12),
@@ -1092,8 +1092,7 @@ class _ProductCard extends StatelessWidget {
 
     // Calculate fake MRP (20-30% higher) for strikethrough effect
     final mrp = (product.basePrice * 1.25).round();
-    final discountPct =
-        (((mrp - product.basePrice) / mrp) * 100).round();
+    final discountPct = (((mrp - product.basePrice) / mrp) * 100).round();
 
     return GestureDetector(
       onTap: onTap,
@@ -1121,8 +1120,7 @@ class _ProductCard extends StatelessWidget {
                     Image.network(
                       imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          _imagePlaceholder(),
+                      errorBuilder: (_, __, ___) => _imagePlaceholder(),
                     )
                   else
                     _imagePlaceholder(),
@@ -1133,7 +1131,8 @@ class _ProductCard extends StatelessWidget {
                     left: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 3,
+                        horizontal: 6,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF388E3C),

@@ -1,4 +1,4 @@
-﻿// =============================================================================
+// =============================================================================
 // PaymentController â€” Riverpod controller managing the C3.5 UPI payment flow.
 //
 // State machine: idle â†’ launching â†’ awaitingReturn â†’ recording â†’ paid | error
@@ -65,8 +65,8 @@ class PaymentFlowState {
 }
 
 /// Provider for the payment controller, scoped to a specific project.
-final paymentControllerProvider = AsyncNotifierProvider.family<
-    PaymentController, PaymentFlowState, String>(
+final paymentControllerProvider =
+    AsyncNotifierProvider.family<PaymentController, PaymentFlowState, String>(
   PaymentController.new,
 );
 

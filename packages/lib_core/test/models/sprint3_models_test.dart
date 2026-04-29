@@ -119,7 +119,8 @@ void main() {
         description: 'Mazboot, taala bhi achha',
         category: SkuCategory.steelAlmirah,
         material: SkuMaterial.steel,
-        dimensions: const SkuDimensions(heightCm: 152, widthCm: 92, depthCm: 51),
+        dimensions:
+            const SkuDimensions(heightCm: 152, widthCm: 92, depthCm: 51),
         basePrice: 14000,
         negotiableDownTo: 12500,
         stockCount: 3,
@@ -156,7 +157,8 @@ void main() {
           nameDevanagari: 'न',
           category: entry.key,
           material: SkuMaterial.steel,
-          dimensions: const SkuDimensions(heightCm: 100, widthCm: 100, depthCm: 50),
+          dimensions:
+              const SkuDimensions(heightCm: 100, widthCm: 100, depthCm: 50),
           basePrice: 10000,
           negotiableDownTo: 9000,
           createdAt: DateTime.parse('2026-04-11T00:00:00Z'),
@@ -173,7 +175,8 @@ void main() {
         nameDevanagari: 'न',
         category: SkuCategory.steelAlmirah,
         material: SkuMaterial.steel,
-        dimensions: const SkuDimensions(heightCm: 100, widthCm: 100, depthCm: 50),
+        dimensions:
+            const SkuDimensions(heightCm: 100, widthCm: 100, depthCm: 50),
         basePrice: 10000,
         negotiableDownTo: 9000,
         createdAt: DateTime.parse('2026-04-11T00:00:00Z'),
@@ -190,7 +193,8 @@ void main() {
         nameDevanagari: 'न',
         category: SkuCategory.steelAlmirah,
         material: SkuMaterial.steel,
-        dimensions: const SkuDimensions(heightCm: 100, widthCm: 100, depthCm: 50),
+        dimensions:
+            const SkuDimensions(heightCm: 100, widthCm: 100, depthCm: 50),
         basePrice: 10000,
         negotiableDownTo: 9000,
         goldenHourPhotoIds: const <String>['ghp_01'],

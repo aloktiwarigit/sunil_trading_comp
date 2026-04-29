@@ -36,12 +36,10 @@ class FirebaseClient {
     // App Check — Play Integrity (Android) + DeviceCheck (iOS) in release;
     // debug providers in debug builds (PRD I6.10 AC #4 + #6).
     await FirebaseAppCheck.instance.activate(
-      androidProvider: kDebugMode
-          ? AndroidProvider.debug
-          : AndroidProvider.playIntegrity,
-      appleProvider: kDebugMode
-          ? AppleProvider.debug
-          : AppleProvider.deviceCheck,
+      androidProvider:
+          kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      appleProvider:
+          kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
     );
 
     _initialized = true;

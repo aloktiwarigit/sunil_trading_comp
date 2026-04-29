@@ -38,8 +38,7 @@ class CustomerChatScreen extends ConsumerStatefulWidget {
   final AppStrings strings;
 
   @override
-  ConsumerState<CustomerChatScreen> createState() =>
-      _CustomerChatScreenState();
+  ConsumerState<CustomerChatScreen> createState() => _CustomerChatScreenState();
 }
 
 class _CustomerChatScreenState extends ConsumerState<CustomerChatScreen> {
@@ -145,7 +144,9 @@ class _CustomerChatScreenState extends ConsumerState<CustomerChatScreen> {
           deliveryStatuses: deliveryStatuses,
           isLoadingOlder: chatState.isLoadingOlder,
           onSendText: (text) {
-            ref.read(chatControllerProvider(widget.projectId).notifier).sendText(text);
+            ref
+                .read(chatControllerProvider(widget.projectId).notifier)
+                .sendText(text);
           },
           onLoadOlder: () {
             ref

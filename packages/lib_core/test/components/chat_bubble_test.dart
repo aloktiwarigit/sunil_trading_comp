@@ -265,8 +265,7 @@ void main() {
       expect(find.text('सुनील भैया'), findsOneWidget);
     });
 
-    testWidgets(
-        'no oxblood commit color in chat bubble (binding rule #7)',
+    testWidgets('no oxblood commit color in chat bubble (binding rule #7)',
         (tester) async {
       final strings = const AppStringsEn();
       final msg = _textMessage();
@@ -390,28 +389,58 @@ void main() {
       const en = AppStringsEn();
 
       final forbiddenEn = [
-        'interest', 'overdue', 'penalty', 'loan', 'credit',
-        'lending', 'default', 'collection', 'installment', 'EMI',
-        'debt', 'due date', 'late fee',
+        'interest',
+        'overdue',
+        'penalty',
+        'loan',
+        'credit',
+        'lending',
+        'default',
+        'collection',
+        'installment',
+        'EMI',
+        'debt',
+        'due date',
+        'late fee',
       ];
       final forbiddenHi = [
-        'ब्याज', 'देय तिथि', 'जुर्माना', 'ऋण', 'वसूली',
-        'डिफ़ॉल्ट', 'क़िस्त',
+        'ब्याज',
+        'देय तिथि',
+        'जुर्माना',
+        'ऋण',
+        'वसूली',
+        'डिफ़ॉल्ट',
+        'क़िस्त',
       ];
       final forbiddenMythic = [
-        'शुभ', 'मंगल', 'मंदिर', 'धर्म', 'तीर्थ', 'स्वागतम्',
-        'उत्पाद', 'गुणवत्ता', 'श्रेष्ठ',
+        'शुभ',
+        'मंगल',
+        'मंदिर',
+        'धर्म',
+        'तीर्थ',
+        'स्वागतम्',
+        'उत्पाद',
+        'गुणवत्ता',
+        'श्रेष्ठ',
       ];
 
       final hiStrings = [
-        hi.myListTitle, hi.addedToList, hi.chatSenderYou,
-        hi.chatSenderBhaiya, hi.chatThreadTitleWithOrder('X'),
-        hi.chatSendButton, hi.chatMessagePending,
+        hi.myListTitle,
+        hi.addedToList,
+        hi.chatSenderYou,
+        hi.chatSenderBhaiya,
+        hi.chatThreadTitleWithOrder('X'),
+        hi.chatSendButton,
+        hi.chatMessagePending,
       ];
       final enStrings = [
-        en.myListTitle, en.addedToList, en.chatSenderYou,
-        en.chatSenderBhaiya, en.chatThreadTitleWithOrder('X'),
-        en.chatSendButton, en.chatMessagePending,
+        en.myListTitle,
+        en.addedToList,
+        en.chatSenderYou,
+        en.chatSenderBhaiya,
+        en.chatThreadTitleWithOrder('X'),
+        en.chatSendButton,
+        en.chatMessagePending,
       ];
 
       for (final s in hiStrings) {

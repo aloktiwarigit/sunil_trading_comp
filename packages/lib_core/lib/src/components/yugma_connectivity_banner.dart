@@ -34,9 +34,10 @@ class YugmaConnectivityBanner extends ConsumerWidget {
     final theme = context.yugmaTheme;
 
     final isOffline = connectivityAsync.whenOrNull(
-      data: (results) =>
-          results.contains(ConnectivityResult.none) || results.isEmpty,
-    ) ?? false;
+          data: (results) =>
+              results.contains(ConnectivityResult.none) || results.isEmpty,
+        ) ??
+        false;
 
     return AnimatedSlide(
       offset: isOffline ? Offset.zero : const Offset(0, -1),

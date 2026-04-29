@@ -39,7 +39,8 @@ void main() {
     // -------------------------------------------------------------------------
 
     group('openConversation', () {
-      test('returns FirestoreConversationHandle with shopId + projectId', () async {
+      test('returns FirestoreConversationHandle with shopId + projectId',
+          () async {
         final handle = await adapter.openConversation(
           shopId: shopId,
           projectId: projectId,

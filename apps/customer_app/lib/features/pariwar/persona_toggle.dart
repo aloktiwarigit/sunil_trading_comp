@@ -54,10 +54,9 @@ class PersonaState {
   final Persona persona;
   final String? customLabel;
 
-  String get displayLabel =>
-      persona == Persona.other && customLabel != null
-          ? customLabel!
-          : persona.label;
+  String get displayLabel => persona == Persona.other && customLabel != null
+      ? customLabel!
+      : persona.label;
 
   bool get isElder => persona.isElder;
 }
@@ -128,54 +127,55 @@ class PersonaToggleButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // AC #7: hidden when guestModeEnabled is false.
-    final guestModeEnabled = FirebaseRemoteConfig.instance.getBool('guest_mode_enabled');
+    final guestModeEnabled =
+        FirebaseRemoteConfig.instance.getBool('guest_mode_enabled');
     if (!guestModeEnabled) return const SizedBox.shrink();
 
     final personaState = ref.watch(personaProvider);
 
     // F002 fix: removed hardcoded Positioned — parent screen controls placement.
     return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _showPersonaSheet(context, ref),
-          borderRadius: BorderRadius.circular(YugmaRadius.lg),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: YugmaSpacing.s3,
-              vertical: YugmaSpacing.s2,
-            ),
-            decoration: BoxDecoration(
-              color: YugmaColors.surface,
-              borderRadius: BorderRadius.circular(YugmaRadius.lg),
-              boxShadow: YugmaShadows.card,
-              border: Border.all(
-                color: personaState.isElder
-                    ? YugmaColors.accent
-                    : YugmaColors.divider,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.people_outline,
-                  size: 16,
-                  color: YugmaColors.primary,
-                ),
-                const SizedBox(width: YugmaSpacing.s1),
-                Text(
-                  personaState.displayLabel,
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.devaBody,
-                    fontSize: YugmaTypeScale.caption,
-                    fontWeight: FontWeight.w600,
-                    color: YugmaColors.textPrimary,
-                  ),
-                ),
-              ],
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showPersonaSheet(context, ref),
+        borderRadius: BorderRadius.circular(YugmaRadius.lg),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: YugmaSpacing.s3,
+            vertical: YugmaSpacing.s2,
+          ),
+          decoration: BoxDecoration(
+            color: YugmaColors.surface,
+            borderRadius: BorderRadius.circular(YugmaRadius.lg),
+            boxShadow: YugmaShadows.card,
+            border: Border.all(
+              color: personaState.isElder
+                  ? YugmaColors.accent
+                  : YugmaColors.divider,
             ),
           ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.people_outline,
+                size: 16,
+                color: YugmaColors.primary,
+              ),
+              const SizedBox(width: YugmaSpacing.s1),
+              Text(
+                personaState.displayLabel,
+                style: TextStyle(
+                  fontFamily: YugmaFonts.devaBody,
+                  fontSize: YugmaTypeScale.caption,
+                  fontWeight: FontWeight.w600,
+                  color: YugmaColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
     );
   }
 
@@ -254,8 +254,7 @@ class PersonaToggleButton extends ConsumerWidget {
                 ),
                 // Edge #2: custom label for "Someone else"
                 if (current.persona == Persona.other ||
-                    Persona.other ==
-                        Persona.values[Persona.other.index]) ...[
+                    Persona.other == Persona.values[Persona.other.index]) ...[
                   const SizedBox(height: YugmaSpacing.s3),
                   TextField(
                     controller: customLabelController,
@@ -271,9 +270,9 @@ class PersonaToggleButton extends ConsumerWidget {
                     ),
                     onSubmitted: (value) {
                       if (value.trim().isNotEmpty) {
-                        ref
-                            .read(personaProvider.notifier)
-                            .setPersona(Persona.other, customLabel: value.trim());
+                        ref.read(personaProvider.notifier).setPersona(
+                            Persona.other,
+                            customLabel: value.trim());
                         Navigator.of(ctx).pop();
                       }
                     },
@@ -294,7 +293,8 @@ class PersonaAppBarIndicator extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final guestModeEnabled = FirebaseRemoteConfig.instance.getBool('guest_mode_enabled');
+    final guestModeEnabled =
+        FirebaseRemoteConfig.instance.getBool('guest_mode_enabled');
     if (!guestModeEnabled) return const SizedBox.shrink();
 
     final personaState = ref.watch(personaProvider);

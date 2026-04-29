@@ -60,9 +60,8 @@ class _NpsCardState extends ConsumerState<NpsCard> {
 
     // Edge #1: check operator joined > 14 days ago
     final op = ref.read(opsAuthControllerProvider).valueOrNull?.operator;
-    final joinedDaysAgo = op != null
-        ? DateTime.now().difference(op.joinedAt).inDays
-        : 0;
+    final joinedDaysAgo =
+        op != null ? DateTime.now().difference(op.joinedAt).inDays : 0;
 
     setState(() {
       _shouldShow = dueSinceSubmit && snoozePassed && joinedDaysAgo >= 14;
@@ -179,9 +178,8 @@ class _NpsCardState extends ConsumerState<NpsCard> {
                   height: 28,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isSelected
-                        ? YugmaColors.primary
-                        : YugmaColors.divider,
+                    color:
+                        isSelected ? YugmaColors.primary : YugmaColors.divider,
                   ),
                   child: Center(
                     child: Text(

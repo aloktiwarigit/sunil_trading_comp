@@ -29,7 +29,8 @@ class CustomerApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     debugPrint('[APP] routerProvider watched');
     final onboarding = ref.watch(onboardingControllerProvider);
-    debugPrint('[APP] onboardingProvider watched — isLoading=${onboarding.isLoading}, hasError=${onboarding.hasError}, hasValue=${onboarding.hasValue}');
+    debugPrint(
+        '[APP] onboardingProvider watched — isLoading=${onboarding.isLoading}, hasError=${onboarding.hasError}, hasValue=${onboarding.hasValue}');
 
     // P2.3 + P2.8: Elder tier activation via persona OR large text toggle.
     // Both providers default to false when onboarding hasn't loaded yet.
@@ -55,7 +56,8 @@ class CustomerApp extends ConsumerWidget {
   /// Build the full theme with YugmaThemeExtension from loaded tokens.
   /// [isElderTier] activates 1.4× text, 56dp taps, slower motion per P2.3.
   ThemeData _buildTheme(ShopThemeTokens tokens, bool isElderTier) {
-    final ext = YugmaThemeExtension.fromTokens(tokens, isElderTier: isElderTier);
+    final ext =
+        YugmaThemeExtension.fromTokens(tokens, isElderTier: isElderTier);
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(

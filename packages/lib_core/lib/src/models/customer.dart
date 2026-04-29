@@ -24,7 +24,6 @@ class Customer with _$Customer {
     /// new Project ID on every Project commit and caps the array at 10
     /// most-recent entries. Read by the ops dashboard to compute repeat %.
     @Default(<String>[]) List<String> previousProjectIds,
-
     required DateTime createdAt,
   }) = _Customer;
 

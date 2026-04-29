@@ -99,9 +99,8 @@ class CommsChannelWhatsApp implements CommsChannel {
         'Shop $shopId not found',
       );
     }
-    final projectDoc = await _firestore
-        .doc('shops/$shopId/projects/$projectId')
-        .get();
+    final projectDoc =
+        await _firestore.doc('shops/$shopId/projects/$projectId').get();
     if (!projectDoc.exists) {
       throw CommsChannelException(
         CommsChannelErrorCode.notFound,
@@ -125,19 +124,22 @@ class CommsChannelWhatsApp implements CommsChannel {
         (shop['displayName'] ?? shop['displayNameEnglish'] ?? shopId) as String;
     final totalAmount =
         _asInt(project['totalAmount'] ?? project['amountReceivedByShop']) ?? 0;
-    final lineItemsCount =
-        _asInt(project['lineItemsCount'] ?? (project['lineItems'] as List?)?.length) ?? 0;
+    final lineItemsCount = _asInt(project['lineItemsCount'] ??
+            (project['lineItems'] as List?)?.length) ??
+        0;
 
     final message = _buildHindiBody(
       shopDisplayName: displayName,
-      projectIdShort:
-          projectId.length <= 6 ? projectId : projectId.substring(projectId.length - 6),
+      projectIdShort: projectId.length <= 6
+          ? projectId
+          : projectId.substring(projectId.length - 6),
       totalAmount: totalAmount,
       lineItemsCount: lineItemsCount,
     );
 
     final encodedMessage = Uri.encodeComponent(message);
-    final launchUri = Uri.parse('https://wa.me/$phoneDigits?text=$encodedMessage');
+    final launchUri =
+        Uri.parse('https://wa.me/$phoneDigits?text=$encodedMessage');
 
     _log.info(
       'openConversation (wa.me): shop=$shopId, project=$projectId, '

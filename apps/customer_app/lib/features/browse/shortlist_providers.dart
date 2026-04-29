@@ -102,8 +102,7 @@ final shortlistSkusProvider =
 // descending (premium items first — aspirational).
 // ---------------------------------------------------------------------------
 
-final allActiveSkusProvider =
-    FutureProvider<List<InventorySku>>((ref) async {
+final allActiveSkusProvider = FutureProvider<List<InventorySku>>((ref) async {
   final repo = ref.read(_inventorySkuRepoProvider);
   final skus = await repo.listAll();
   final active = skus.where((s) => s.isActive && s.inStock).toList()

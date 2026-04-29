@@ -161,9 +161,21 @@ void main() {
 
     test('no forbidden udhaar vocabulary in inventory strings', () {
       const forbidden = [
-        'interest', 'loan', 'penalty', 'due date', 'overdue',
-        'default', 'collection', 'recovery', 'installment', 'EMI',
-        'ब्याज', 'ऋण', 'जुर्माना', 'देय तिथि', 'क़िस्त',
+        'interest',
+        'loan',
+        'penalty',
+        'due date',
+        'overdue',
+        'default',
+        'collection',
+        'recovery',
+        'installment',
+        'EMI',
+        'ब्याज',
+        'ऋण',
+        'जुर्माना',
+        'देय तिथि',
+        'क़िस्त',
       ];
       for (final s in [...hiStrings, ...enStrings]) {
         for (final word in forbidden) {
@@ -178,8 +190,15 @@ void main() {
 
     test('no forbidden mythic vocabulary in inventory strings', () {
       const forbidden = [
-        'शुभ', 'मंगल', 'मंदिर', 'धर्म', 'तीर्थ', 'स्वागतम्',
-        'उत्पाद', 'गुणवत्ता', 'श्रेष्ठ',
+        'शुभ',
+        'मंगल',
+        'मंदिर',
+        'धर्म',
+        'तीर्थ',
+        'स्वागतम्',
+        'उत्पाद',
+        'गुणवत्ता',
+        'श्रेष्ठ',
       ];
       for (final s in hiStrings) {
         for (final word in forbidden) {

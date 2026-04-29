@@ -298,8 +298,8 @@ class TodaysTaskSeed {
       return rampSequence[dayNumber - 1];
     }
     // Post-ramp weekly rotation.
-    final rotationIndex = (dayNumber - rampSequence.length - 1) %
-        weeklyRotation.length;
+    final rotationIndex =
+        (dayNumber - rampSequence.length - 1) % weeklyRotation.length;
     return weeklyRotation[rotationIndex];
   }
 

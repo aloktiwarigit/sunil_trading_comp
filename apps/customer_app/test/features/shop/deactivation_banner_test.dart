@@ -1,4 +1,4 @@
-﻿// =============================================================================
+// =============================================================================
 // DeactivationBanner â€” C3.12 widget tests.
 //
 // Tests:
@@ -22,7 +22,6 @@ void main() {
 
   group('DeactivationBanner', () {
     test('hidden when shopLifecycle is active', () {
-
       // The build method returns SizedBox.shrink for active.
       // We verify by checking the build logic directly.
       expect(ShopLifecycle.active, equals(ShopLifecycle.active));
@@ -42,7 +41,8 @@ void main() {
       ));
 
       // Banner text should contain key phrases
-      expect(find.textContaining('à¤¬à¤‚à¤¦ à¤¹à¥‹ à¤°à¤¹à¥€ à¤¹à¥ˆ'), findsOneWidget);
+      expect(find.textContaining('à¤¬à¤‚à¤¦ à¤¹à¥‹ à¤°à¤¹à¥€ à¤¹à¥ˆ'),
+          findsOneWidget);
       // FAQ link
       expect(find.text(strings.shopDeactivationFaqTitle), findsOneWidget);
       // Export CTA
@@ -62,7 +62,8 @@ void main() {
       ));
 
       // Purge banner text
-      expect(find.textContaining('à¤¹à¤Ÿà¤¾ à¤¦à¤¿à¤¯à¤¾ à¤œà¤¾à¤à¤—à¤¾'), findsOneWidget);
+      expect(find.textContaining('à¤¹à¤Ÿà¤¾ à¤¦à¤¿à¤¯à¤¾ à¤œà¤¾à¤à¤—à¤¾'),
+          findsOneWidget);
     });
 
     testWidgets('hidden when shopLifecycle is purged', (tester) async {
@@ -79,7 +80,8 @@ void main() {
       expect(find.textContaining('à¤¹à¤Ÿà¤¾'), findsNothing);
     });
 
-    testWidgets('FAQ and export buttons hidden when no callbacks', (tester) async {
+    testWidgets('FAQ and export buttons hidden when no callbacks',
+        (tester) async {
       final retentionDate = DateTime.now().add(const Duration(days: 100));
 
       await tester.pumpWidget(wrap(
@@ -106,7 +108,8 @@ void main() {
       ));
 
       expect(find.text(strings.shopDeactivationFaqTitle), findsOneWidget);
-      expect(find.textContaining('à¤¦à¥à¤•à¤¾à¤¨ à¤•à¥à¤¯à¥‹à¤‚ à¤¬à¤‚à¤¦'), findsOneWidget);
+      expect(find.textContaining('à¤¦à¥à¤•à¤¾à¤¨ à¤•à¥à¤¯à¥‹à¤‚ à¤¬à¤‚à¤¦'),
+          findsOneWidget);
       expect(find.textContaining('à¤®à¥‡à¤°à¥‡ à¤ªà¥ˆà¤¸à¥‡'), findsOneWidget);
       expect(find.textContaining('150 à¤¦à¤¿à¤¨ à¤¤à¤•'), findsOneWidget);
     });

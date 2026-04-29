@@ -60,78 +60,78 @@ class _SplashScreenState extends State<SplashScreen>
           child: ScaleTransition(
             scale: _scaleAnimation,
             child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Devanagari-initial circle (same visual vocabulary as D4 fallback)
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    YugmaColors.accentGlow,
-                    YugmaColors.primary,
-                  ],
-                ),
-                border: Border.all(color: YugmaColors.accent, width: 3),
-              ),
-              child: const Center(
-                child: Text(
-                  'सु',
-                  style: TextStyle(
-                    fontFamily: YugmaFonts.devaDisplay,
-                    fontSize: 32,
-                    color: YugmaColors.textOnPrimary,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Devanagari-initial circle (same visual vocabulary as D4 fallback)
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        YugmaColors.accentGlow,
+                        YugmaColors.primary,
+                      ],
+                    ),
+                    border: Border.all(color: YugmaColors.accent, width: 3),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'सु',
+                      style: TextStyle(
+                        fontFamily: YugmaFonts.devaDisplay,
+                        fontSize: 32,
+                        color: YugmaColors.textOnPrimary,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Shop name — compile-time constant, not from Firestore
-            Text(
-              ShopThemeTokens.sunilTradingCompanyDefault().brandName,
-              style: const TextStyle(
-                fontFamily: YugmaFonts.devaDisplay,
-                fontSize: 24,
-                color: YugmaColors.primary,
-                height: YugmaLineHeights.tight,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            // Tagline — uses compile-time default. If empty (Sprint 0
-            // discipline), shows nothing.
-            Builder(
-              builder: (context) {
-                final tagline =
-                    ShopThemeTokens.sunilTradingCompanyDefault().taglineDevanagari;
-                if (tagline.isEmpty) return const SizedBox.shrink();
-                return Text(
-                  tagline,
+                const SizedBox(height: 24),
+                // Shop name — compile-time constant, not from Firestore
+                Text(
+                  ShopThemeTokens.sunilTradingCompanyDefault().brandName,
                   style: const TextStyle(
-                    fontFamily: YugmaFonts.devaBody,
-                    fontSize: 14,
-                    color: YugmaColors.textSecondary,
+                    fontFamily: YugmaFonts.devaDisplay,
+                    fontSize: 24,
+                    color: YugmaColors.primary,
+                    height: YugmaLineHeights.tight,
                   ),
                   textAlign: TextAlign.center,
-                );
-              },
+                ),
+                const SizedBox(height: 8),
+                // Tagline — uses compile-time default. If empty (Sprint 0
+                // discipline), shows nothing.
+                Builder(
+                  builder: (context) {
+                    final tagline = ShopThemeTokens.sunilTradingCompanyDefault()
+                        .taglineDevanagari;
+                    if (tagline.isEmpty) return const SizedBox.shrink();
+                    return Text(
+                      tagline,
+                      style: const TextStyle(
+                        fontFamily: YugmaFonts.devaBody,
+                        fontSize: 14,
+                        color: YugmaColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    );
+                  },
+                ),
+                const SizedBox(height: 32),
+                // Devanagari-styled progress indicator (brass accent, not blue)
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: YugmaColors.accent,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 32),
-            // Devanagari-styled progress indicator (brass accent, not blue)
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: YugmaColors.accent,
-              ),
-            ),
-          ],
-        ),
           ),
         ),
       ),

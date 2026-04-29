@@ -277,5 +277,4 @@ class CuratedShortlistCard extends StatelessWidget {
       ],
     );
   }
-
 }

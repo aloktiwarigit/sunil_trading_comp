@@ -257,8 +257,7 @@ class AppStringsEn extends AppStrings {
   String get paymentOtherMethods => 'Other ways to pay';
 
   @override
-  String get noUpiAppFound =>
-      'No UPI app found — choose another method';
+  String get noUpiAppFound => 'No UPI app found — choose another method';
 
   @override
   String get paymentProcessing => 'Processing payment...';
@@ -321,8 +320,7 @@ class AppStringsEn extends AppStrings {
   String get filterClosed => 'Closed';
 
   @override
-  String get emptyOrdersList =>
-      'First order coming soon.';
+  String get emptyOrdersList => 'First order coming soon.';
 
   // ---- §6 Udhaar khaata ----
 
@@ -467,7 +465,8 @@ class AppStringsEn extends AppStrings {
   String udhaarReminderCountBadge(int count) => 'Reminded: $count/3';
 
   @override
-  String get udhaarReminderCadencePrompt => 'After how many days should I remind?';
+  String get udhaarReminderCadencePrompt =>
+      'After how many days should I remind?';
 
   // ---- §17 S4.1 + S4.13 Ops app foundation ----
 
@@ -669,7 +668,8 @@ class AppStringsEn extends AppStrings {
   String get timelinePaid => 'Paid';
 
   @override
-  String get timelineBankTransferPending => 'Bank transfer — verification pending';
+  String get timelineBankTransferPending =>
+      'Bank transfer — verification pending';
 
   @override
   String get timelineDelivering => 'Out for delivery';
@@ -697,7 +697,8 @@ class AppStringsEn extends AppStrings {
       'Receipt generation failed: $detail';
 
   @override
-  String monthName(int month) => const <int, String>{
+  String monthName(int month) =>
+      const <int, String>{
         1: 'January',
         2: 'February',
         3: 'March',
@@ -710,7 +711,8 @@ class AppStringsEn extends AppStrings {
         10: 'October',
         11: 'November',
         12: 'December',
-      }[month] ?? '';
+      }[month] ??
+      '';
 
   // ---- §25 D-2: Order list state badge labels ----
 
@@ -1008,5 +1010,4 @@ class AppStringsEn extends AppStrings {
 
   @override
   String get paymentSuccessBackHome => 'Back to Home';
-
 }

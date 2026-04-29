@@ -126,11 +126,11 @@ class InvoiceTemplate {
       fontWeight: pw.FontWeight.bold,
     );
     final bodyStyle = pw.TextStyle(font: devaBodyFont, fontSize: 11);
-    final bodyBold =
-        pw.TextStyle(font: devaBodyFont, fontSize: 11, fontWeight: pw.FontWeight.bold);
+    final bodyBold = pw.TextStyle(
+        font: devaBodyFont, fontSize: 11, fontWeight: pw.FontWeight.bold);
     final monoStyle = pw.TextStyle(font: monoFont, fontSize: 11);
-    final monoBold =
-        pw.TextStyle(font: monoFont, fontSize: 14, fontWeight: pw.FontWeight.bold);
+    final monoBold = pw.TextStyle(
+        font: monoFont, fontSize: 14, fontWeight: pw.FontWeight.bold);
     final signatureStyle = pw.TextStyle(
       font: devaBodyFontItalic,
       fontSize: 16,

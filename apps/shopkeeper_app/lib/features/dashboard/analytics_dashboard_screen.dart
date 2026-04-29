@@ -117,15 +117,16 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDashboard(BuildContext context, List<Project> projects, AppStrings strings) {
+  Widget _buildDashboard(
+      BuildContext context, List<Project> projects, AppStrings strings) {
     final theme = context.yugmaTheme;
     final now = DateTime.now();
     final thisMonth = DateTime(now.year, now.month);
     final lastMonth = DateTime(now.year, now.month - 1);
 
     final current = _computeMetrics(projects, thisMonth, now);
-    final previous = _computeMetrics(
-        projects, lastMonth, DateTime(now.year, now.month, 0));
+    final previous =
+        _computeMetrics(projects, lastMonth, DateTime(now.year, now.month, 0));
 
     // Last 7 days bar data
     final barData = _last7DaysOrders(projects, now);
@@ -218,8 +219,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
 
     final committedCount = monthProjects
         .where((p) =>
-            p.state != ProjectState.draft &&
-            p.state != ProjectState.cancelled)
+            p.state != ProjectState.draft && p.state != ProjectState.cancelled)
         .length;
 
     final revenue = monthProjects
@@ -238,8 +238,10 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
     // as a conservative estimate. TODO: read runningBalance from udhaarLedger
     // collection for exact figures once ledger stream is wired here.
     final openUdhaarTotal = projects
-        .where((p) => p.udhaarLedgerId != null && p.state != ProjectState.closed)
-        .fold<int>(0, (sum, p) => sum + (p.totalAmount - p.amountReceivedByShop));
+        .where(
+            (p) => p.udhaarLedgerId != null && p.state != ProjectState.closed)
+        .fold<int>(
+            0, (sum, p) => sum + (p.totalAmount - p.amountReceivedByShop));
 
     // New customers — those whose first-ever order falls within this month.
     final allCustomerFirstDates = <String, DateTime>{};
@@ -361,7 +363,6 @@ class _MetricTile extends StatelessWidget {
       ),
     );
   }
-
 }
 
 /// Simple horizontal bar chart using basic Flutter widgets.

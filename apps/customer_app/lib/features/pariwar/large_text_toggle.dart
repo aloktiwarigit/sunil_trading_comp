@@ -14,8 +14,7 @@ import 'package:lib_core/lib_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// P2.8 — Large text toggle provider.
-final largeTextProvider =
-    StateNotifierProvider<LargeTextNotifier, bool>((ref) {
+final largeTextProvider = StateNotifierProvider<LargeTextNotifier, bool>((ref) {
   return LargeTextNotifier();
 });
 

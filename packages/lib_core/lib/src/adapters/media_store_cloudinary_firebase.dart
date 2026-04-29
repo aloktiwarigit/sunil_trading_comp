@@ -205,7 +205,8 @@ class MediaStoreCloudinaryFirebase implements MediaStore {
       // object-not-found is the specific Firebase Storage error code for
       // "the path you asked for doesn't exist". Distinguish it from other
       // errors so callers can show "नोट अभी नहीं है" vs "network error".
-      if (e.code == 'object-not-found' || e.code == 'storage/object-not-found') {
+      if (e.code == 'object-not-found' ||
+          e.code == 'storage/object-not-found') {
         throw MediaStoreException(
           MediaStoreErrorCode.notFound,
           'Voice note $voiceNoteId not found in shop $shopId',

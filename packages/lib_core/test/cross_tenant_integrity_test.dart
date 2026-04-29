@@ -207,7 +207,8 @@ void main() {
         expect(map.keys, isNot(contains('lastMessageAt')));
       });
 
-      test('ProjectOperatorPatch.toFirestoreMap() can emit amountReceivedByShop',
+      test(
+          'ProjectOperatorPatch.toFirestoreMap() can emit amountReceivedByShop',
           () {
         const patch = ProjectOperatorPatch(
           state: ProjectState.paid,

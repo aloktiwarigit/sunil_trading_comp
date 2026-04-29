@@ -151,10 +151,13 @@ class ShopThemeTokens with _$ShopThemeTokens {
     // ─── Bank details (C3.7 — nullable, hidden if absent) ──────────────
     /// Bank account number for direct transfer. Null = option hidden.
     String? bankAccountNumber,
+
     /// IFSC code.
     String? bankIfsc,
+
     /// Account holder name (may differ from brandName).
     String? bankAccountHolderName,
+
     /// Bank branch name.
     String? bankBranch,
 

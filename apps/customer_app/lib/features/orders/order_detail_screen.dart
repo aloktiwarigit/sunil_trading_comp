@@ -196,7 +196,8 @@ class OrderDetailScreen extends ConsumerWidget {
               height: 48,
               child: OutlinedButton.icon(
                 onPressed: () => _generateAndShareInvoice(context, project),
-                icon: const Icon(Icons.receipt_long, semanticLabel: 'Download receipt'),
+                icon: const Icon(Icons.receipt_long,
+                    semanticLabel: 'Download receipt'),
                 label: Text(strings.orderDownloadReceipt),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.shopPrimary,
@@ -301,8 +302,8 @@ class OrderDetailScreen extends ConsumerWidget {
       entries.add(_TimelineEntry(
         label: strings.timelineDelivering,
         timestamp: null,
-        isActive: project.deliveredAt != null ||
-            currentState == ProjectState.closed,
+        isActive:
+            project.deliveredAt != null || currentState == ProjectState.closed,
         isCurrent: currentState == ProjectState.delivering,
       ));
     }
@@ -313,8 +314,8 @@ class OrderDetailScreen extends ConsumerWidget {
         label: strings.timelineDelivered,
         timestamp: project.deliveredAt,
         isActive: true,
-        isCurrent: currentState == ProjectState.closed &&
-            project.closedAt == null,
+        isCurrent:
+            currentState == ProjectState.closed && project.closedAt == null,
       ));
     }
 
@@ -482,7 +483,6 @@ class OrderDetailScreen extends ConsumerWidget {
       }
     }
   }
-
 }
 
 /// A single row in the vertical timeline.
@@ -503,7 +503,8 @@ class _TimelineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.yugmaTheme;
     final activeColor = entry.isActive ? theme.shopPrimary : theme.shopDivider;
-    final textColor = entry.isActive ? theme.shopTextPrimary : theme.shopTextMuted;
+    final textColor =
+        entry.isActive ? theme.shopTextPrimary : theme.shopTextMuted;
 
     return IntrinsicHeight(
       child: Row(
@@ -572,7 +573,8 @@ class _TimelineRow extends StatelessWidget {
 
   /// Format date locale-aware: "11 अप्रैल 2026, 2:30 PM" / "11 April 2026, 2:30 PM"
   static String _formatDate(DateTime date, AppStrings strings) {
-    final hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+    final hour =
+        date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
     final amPm = date.hour >= 12 ? 'PM' : 'AM';
     final min = date.minute.toString().padLeft(2, '0');
     return '${date.day} ${strings.monthName(date.month)} ${date.year}, $hour:$min $amPm';

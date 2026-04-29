@@ -242,7 +242,9 @@ class _FilterChipRow extends StatelessWidget {
           style: TextStyle(
             fontFamily: YugmaFonts.devaBody,
             fontSize: YugmaTypeScale.caption,
-            color: isSelected ? YugmaColors.textOnPrimary : YugmaColors.textPrimary,
+            color: isSelected
+                ? YugmaColors.textOnPrimary
+                : YugmaColors.textPrimary,
           ),
         ),
         backgroundColor: YugmaColors.surface,
@@ -350,7 +352,6 @@ class _ProjectCard extends StatelessWidget {
       ),
     );
   }
-
 }
 
 /// Devanagari state badge with color coding.
@@ -365,8 +366,14 @@ class _StateBadge extends StatelessWidget {
     final (label, color) = switch (state) {
       ProjectState.committed => (strings.filterCommitted, YugmaColors.accent),
       ProjectState.paid => (strings.filterPendingPayment, YugmaColors.primary),
-      ProjectState.delivering => (strings.filterDelivering, YugmaColors.primaryDeep),
-      ProjectState.awaitingVerification => (strings.filterPendingPayment, YugmaColors.accent),
+      ProjectState.delivering => (
+          strings.filterDelivering,
+          YugmaColors.primaryDeep
+        ),
+      ProjectState.awaitingVerification => (
+          strings.filterPendingPayment,
+          YugmaColors.accent
+        ),
       ProjectState.closed => (strings.filterClosed, YugmaColors.textMuted),
       _ => (state.name, YugmaColors.textMuted),
     };

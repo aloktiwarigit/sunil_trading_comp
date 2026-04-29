@@ -227,15 +227,19 @@ class YugmaThemeExtension extends ThemeExtension<YugmaThemeExtension> {
 
   /// Bank account number (C3.7). Null = bank transfer option hidden.
   final String? bankAccountNumber;
+
   /// IFSC code.
   final String? bankIfsc;
+
   /// Account holder name.
   final String? bankAccountHolderName;
+
   /// Bank branch name.
   final String? bankBranch;
 
   /// True if bank details are configured and bank transfer should be shown.
-  bool get hasBankDetails => bankAccountNumber != null && bankAccountNumber!.isNotEmpty;
+  bool get hasBankDetails =>
+      bankAccountNumber != null && bankAccountNumber!.isNotEmpty;
 
   // ─── Mode flags ───
 
@@ -428,12 +432,10 @@ class YugmaThemeExtension extends ThemeExtension<YugmaThemeExtension> {
       fontFamilyDevanagariDisplay: t < 0.5
           ? fontFamilyDevanagariDisplay
           : other.fontFamilyDevanagariDisplay,
-      fontFamilyDevanagariBody: t < 0.5
-          ? fontFamilyDevanagariBody
-          : other.fontFamilyDevanagariBody,
-      fontFamilyEnglishDisplay: t < 0.5
-          ? fontFamilyEnglishDisplay
-          : other.fontFamilyEnglishDisplay,
+      fontFamilyDevanagariBody:
+          t < 0.5 ? fontFamilyDevanagariBody : other.fontFamilyDevanagariBody,
+      fontFamilyEnglishDisplay:
+          t < 0.5 ? fontFamilyEnglishDisplay : other.fontFamilyEnglishDisplay,
       fontFamilyEnglishBody:
           t < 0.5 ? fontFamilyEnglishBody : other.fontFamilyEnglishBody,
       shopkeeperFaceUrl: t < 0.5 ? shopkeeperFaceUrl : other.shopkeeperFaceUrl,

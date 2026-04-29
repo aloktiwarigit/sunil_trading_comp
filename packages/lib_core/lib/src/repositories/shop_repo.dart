@@ -1,4 +1,4 @@
-﻿// =============================================================================
+// =============================================================================
 // ShopRepo â€” Firestore access for /shops/{shopId}.
 //
 // The Shop document is the top-level tenant root. Unlike subcollection repos
@@ -63,10 +63,8 @@ class ShopRepo {
   }
 
   /// Watch a shop document in real-time.
-  Stream<Shop?> watchShop(String shopId) => _collection()
-      .doc(shopId)
-      .snapshots()
-      .map((snap) {
+  Stream<Shop?> watchShop(String shopId) =>
+      _collection().doc(shopId).snapshots().map((snap) {
         if (!snap.exists) return null;
         final raw = snap.data()!;
         return Shop.fromJson(<String, dynamic>{
@@ -76,11 +74,9 @@ class ShopRepo {
           'activeFromDay': _normalizeTimestamp(raw['activeFromDay']),
           'shopLifecycleChangedAt':
               _normalizeTimestamp(raw['shopLifecycleChangedAt']),
-          'dpdpRetentionUntil':
-              _normalizeTimestamp(raw['dpdpRetentionUntil']),
+          'dpdpRetentionUntil': _normalizeTimestamp(raw['dpdpRetentionUntil']),
         });
-      })
-      .handleError(
+      }).handleError(
         (Object e) {
           final fe = e as FirebaseException;
           throw ShopRepoException(

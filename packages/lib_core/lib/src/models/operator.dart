@@ -102,7 +102,6 @@ class Operator with _$Operator {
     /// shop's digital operations. NOT enforced — just telemetry for the
     /// Brief R1 burnout watch.
     @Default(0) int weeklyHoursCommitted,
-
     DateTime? lastActiveAt,
   }) = _Operator;
 

@@ -121,15 +121,13 @@ class CustomerMemoryRepo {
     // CR #2: always include price fields — use FieldValue.delete() to clear
     // when null, so previously-set values don't persist after the operator
     // clears the field.
-    data['preferredPriceMin'] =
-        preferredPriceMin ?? FieldValue.delete();
-    data['preferredPriceMax'] =
-        preferredPriceMax ?? FieldValue.delete();
+    data['preferredPriceMin'] = preferredPriceMin ?? FieldValue.delete();
+    data['preferredPriceMax'] = preferredPriceMax ?? FieldValue.delete();
 
     await _collection().doc(customerUid).set(
-      data,
-      SetOptions(merge: true),
-    );
+          data,
+          SetOptions(merge: true),
+        );
     _log.info('upsertMemory customerUid=$customerUid');
   }
 }

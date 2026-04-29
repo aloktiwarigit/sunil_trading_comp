@@ -255,7 +255,8 @@ class _OrdersSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = context.yugmaTheme;
     final strings = const AppStringsHi();
-    final pendingCount = ref.watch(_pendingOrdersCountProvider).valueOrNull ?? 0;
+    final pendingCount =
+        ref.watch(_pendingOrdersCountProvider).valueOrNull ?? 0;
 
     return GestureDetector(
       onTap: () => context.push('/orders'),
@@ -486,8 +487,7 @@ class _UdhaarSection extends ConsumerWidget {
               ),
             ),
             const Spacer(),
-            if (openCount > 0)
-              _CountBadge(count: openCount, theme: theme),
+            if (openCount > 0) _CountBadge(count: openCount, theme: theme),
             Icon(
               Icons.chevron_right,
               color: theme.shopTextMuted,

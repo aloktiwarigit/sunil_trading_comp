@@ -123,8 +123,7 @@ class _SkuDetailCardState extends State<SkuDetailCard> {
   // ═══════════════════════════════════════════════════════════════════
   // 1. IMAGE GALLERY — swipeable with page dots
   // ═══════════════════════════════════════════════════════════════════
-  Widget _buildImageGallery(
-      YugmaThemeExtension theme, List<String> images) {
+  Widget _buildImageGallery(YugmaThemeExtension theme, List<String> images) {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Stack(
@@ -142,8 +141,7 @@ class _SkuDetailCardState extends State<SkuDetailCard> {
                 )
               : PageView.builder(
                   itemCount: images.length,
-                  onPageChanged: (i) =>
-                      setState(() => _currentImageIndex = i),
+                  onPageChanged: (i) => setState(() => _currentImageIndex = i),
                   itemBuilder: (context, index) {
                     return Image.network(
                       images[index],
@@ -202,7 +200,8 @@ class _SkuDetailCardState extends State<SkuDetailCard> {
                 HapticFeedback.lightImpact();
               },
               child: const SizedBox(
-                width: 40, height: 40,
+                width: 40,
+                height: 40,
                 child: Icon(Icons.share_outlined, size: 20),
               ),
             ),
@@ -223,7 +222,8 @@ class _SkuDetailCardState extends State<SkuDetailCard> {
                 HapticFeedback.lightImpact();
               },
               child: const SizedBox(
-                width: 40, height: 40,
+                width: 40,
+                height: 40,
                 child: Icon(Icons.favorite_border_rounded, size: 20),
               ),
             ),
@@ -263,7 +263,8 @@ class _SkuDetailCardState extends State<SkuDetailCard> {
             right: 16,
             child: Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: 8, vertical: 4,
+                horizontal: 8,
+                vertical: 4,
               ),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.6),
@@ -321,7 +322,8 @@ class _SkuDetailCardState extends State<SkuDetailCard> {
           // Discount badge
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: 8, vertical: 3,
+              horizontal: 8,
+              vertical: 3,
             ),
             decoration: BoxDecoration(
               color: const Color(0xFF388E3C),
@@ -389,7 +391,8 @@ class _SkuDetailCardState extends State<SkuDetailCard> {
             const SizedBox(height: YugmaSpacing.s3),
             Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: 10, vertical: 5,
+                horizontal: 10,
+                vertical: 5,
               ),
               decoration: BoxDecoration(
                 color: theme.shopAccent.withValues(alpha: 0.1),
@@ -463,9 +466,8 @@ class _SkuDetailCardState extends State<SkuDetailCard> {
                 ? '\u0939\u093E\u0901, \u0909\u092A\u0932\u092C\u094D\u0927'
                 : '\u0909\u092A\u0932\u092C\u094D\u0927 \u0928\u0939\u0940\u0902',
             theme: theme,
-            valueColor: sku.inStock
-                ? const Color(0xFF2E7D32)
-                : const Color(0xFFC62828),
+            valueColor:
+                sku.inStock ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
           ),
           if (sku.stockCount != null)
             _SpecRow(
@@ -516,8 +518,10 @@ class _SkuDetailCardState extends State<SkuDetailCard> {
   Widget _buildStickyButtons(YugmaThemeExtension theme, InventorySku sku) {
     return Container(
       padding: const EdgeInsets.fromLTRB(
-        YugmaSpacing.s4, YugmaSpacing.s3,
-        YugmaSpacing.s4, YugmaSpacing.s4,
+        YugmaSpacing.s4,
+        YugmaSpacing.s3,
+        YugmaSpacing.s4,
+        YugmaSpacing.s4,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -600,27 +604,24 @@ class _SkuDetailCardState extends State<SkuDetailCard> {
   }
 
   static String _materialLabel(SkuMaterial material) => switch (material) {
-        SkuMaterial.steel =>
-            '\u0938\u094D\u091F\u0940\u0932 (Steel)',
-        SkuMaterial.woodSheesham =>
-            '\u0936\u0940\u0936\u092E (Sheesham)',
-        SkuMaterial.woodTeak =>
-            '\u0938\u093E\u0917\u094C\u0928 (Teak)',
+        SkuMaterial.steel => '\u0938\u094D\u091F\u0940\u0932 (Steel)',
+        SkuMaterial.woodSheesham => '\u0936\u0940\u0936\u092E (Sheesham)',
+        SkuMaterial.woodTeak => '\u0938\u093E\u0917\u094C\u0928 (Teak)',
         SkuMaterial.plyLaminate =>
-            '\u092A\u094D\u0932\u093E\u0908/\u0932\u0948\u092E\u093F\u0928\u0947\u091F',
+          '\u092A\u094D\u0932\u093E\u0908/\u0932\u0948\u092E\u093F\u0928\u0947\u091F',
       };
 
   static String _categoryLabel(SkuCategory category) => switch (category) {
         SkuCategory.steelAlmirah =>
-            '\u0938\u094D\u091F\u0940\u0932 \u0905\u0932\u092E\u093E\u0930\u0940',
+          '\u0938\u094D\u091F\u0940\u0932 \u0905\u0932\u092E\u093E\u0930\u0940',
         SkuCategory.woodenWardrobe =>
-            '\u0932\u0915\u0921\u093C\u0940 \u0935\u093E\u0930\u094D\u0921\u0930\u094B\u092C',
+          '\u0932\u0915\u0921\u093C\u0940 \u0935\u093E\u0930\u094D\u0921\u0930\u094B\u092C',
         SkuCategory.modular =>
-            '\u092E\u0949\u0921\u094D\u092F\u0941\u0932\u0930',
+          '\u092E\u0949\u0921\u094D\u092F\u0941\u0932\u0930',
         SkuCategory.dressing =>
-            '\u0921\u094D\u0930\u0947\u0938\u093F\u0902\u0917 \u091F\u0947\u092C\u0932',
+          '\u0921\u094D\u0930\u0947\u0938\u093F\u0902\u0917 \u091F\u0947\u092C\u0932',
         SkuCategory.sideCabinet =>
-            '\u0938\u093E\u0907\u0921 \u0915\u0948\u092C\u093F\u0928\u0947\u091F',
+          '\u0938\u093E\u0907\u0921 \u0915\u0948\u092C\u093F\u0928\u0947\u091F',
       };
 }
 

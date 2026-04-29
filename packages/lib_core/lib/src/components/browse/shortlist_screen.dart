@@ -63,9 +63,8 @@ class ShortlistScreen extends StatelessWidget {
           style: theme.h2Deva,
         ),
       ),
-      body: shortlist.isCurated
-          ? _buildSkuList(theme)
-          : _buildEmptyState(theme),
+      body:
+          shortlist.isCurated ? _buildSkuList(theme) : _buildEmptyState(theme),
     );
   }
 
@@ -90,7 +89,8 @@ class ShortlistScreen extends StatelessWidget {
               : (sku.fallbackPhotoUrls.isNotEmpty
                   ? sku.fallbackPhotoUrls.first
                   : null),
-          isShopkeepersTopPick: true, // All cards in a curated shortlist get the badge per B1.4 AC #4
+          isShopkeepersTopPick:
+              true, // All cards in a curated shortlist get the badge per B1.4 AC #4
           description: sku.description,
           onTap: () => onSkuTap?.call(sku),
         );

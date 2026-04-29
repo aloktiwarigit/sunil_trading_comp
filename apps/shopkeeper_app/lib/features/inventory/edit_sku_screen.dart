@@ -113,7 +113,8 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
     );
   }
 
-  Widget _buildForm(BuildContext context, InventorySku sku, AppStrings strings) {
+  Widget _buildForm(
+      BuildContext context, InventorySku sku, AppStrings strings) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(YugmaSpacing.s4),
       child: Column(
@@ -186,8 +187,7 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
               _StockButton(
                 icon: Icons.remove,
                 onTap: () {
-                  final current =
-                      int.tryParse(_stockCountController.text) ?? 0;
+                  final current = int.tryParse(_stockCountController.text) ?? 0;
                   if (current > 0) {
                     setState(() {
                       _stockCountController.text = (current - 1).toString();
@@ -222,8 +222,7 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
               _StockButton(
                 icon: Icons.add,
                 onTap: () {
-                  final current =
-                      int.tryParse(_stockCountController.text) ?? 0;
+                  final current = int.tryParse(_stockCountController.text) ?? 0;
                   setState(() {
                     _stockCountController.text = (current + 1).toString();
                   });
@@ -391,8 +390,7 @@ class _EditSkuScreenState extends ConsumerState<EditSkuScreen> {
                   ? VoiceNoteAuthorRole.bhaiya
                   : VoiceNoteAuthorRole.beta,
               durationSeconds: result.durationSeconds,
-              audioStorageRef:
-                  'shops/$shopId/voice_notes/$voiceNoteId.m4a',
+              audioStorageRef: 'shops/$shopId/voice_notes/$voiceNoteId.m4a',
               audioSizeBytes: result.bytes.length,
               attachmentType: VoiceNoteAttachment.sku,
               attachmentRefId: sku.skuId,

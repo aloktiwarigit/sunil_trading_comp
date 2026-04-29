@@ -279,7 +279,8 @@ class GreetingManagementScreen extends ConsumerWidget {
           final op = authState?.operator;
           if (op == null) return;
 
-          final voiceNoteId = 'vn_greeting_${DateTime.now().millisecondsSinceEpoch}';
+          final voiceNoteId =
+              'vn_greeting_${DateTime.now().millisecondsSinceEpoch}';
 
           try {
             // Upload audio via shared MediaStore provider

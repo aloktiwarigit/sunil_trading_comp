@@ -87,10 +87,7 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
       _log.info('Reading shop doc...');
       // CA005 fix: removed Source.server force — default reads from cache
       // when offline, preventing a timeout on cold launch with no network.
-      final shopDoc = await firestore
-          .collection('shops')
-          .doc(shopId)
-          .get();
+      final shopDoc = await firestore.collection('shops').doc(shopId).get();
       if (shopDoc.exists && shopDoc.data() != null) {
         final raw = shopDoc.data()!;
         shop = Shop.fromJson(<String, dynamic>{
@@ -99,8 +96,7 @@ class OnboardingController extends AsyncNotifier<OnboardingState> {
           'activeFromDay': _normalizeTimestamp(raw['activeFromDay']),
           'shopLifecycleChangedAt':
               _normalizeTimestamp(raw['shopLifecycleChangedAt']),
-          'dpdpRetentionUntil':
-              _normalizeTimestamp(raw['dpdpRetentionUntil']),
+          'dpdpRetentionUntil': _normalizeTimestamp(raw['dpdpRetentionUntil']),
         });
       } else {
         shop = _fallbackShop(shopId);

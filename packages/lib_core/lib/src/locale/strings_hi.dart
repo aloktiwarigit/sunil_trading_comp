@@ -263,8 +263,7 @@ class AppStringsHi extends AppStrings {
   String get paymentOtherMethods => 'और तरीके';
 
   @override
-  String get noUpiAppFound =>
-      'UPI ऐप नहीं मिला — कोई और तरीका चुनिए';
+  String get noUpiAppFound => 'UPI ऐप नहीं मिला — कोई और तरीका चुनिए';
 
   @override
   String get paymentProcessing => 'भुगतान हो रहा है...';
@@ -278,8 +277,7 @@ class AppStringsHi extends AppStrings {
   String get codOption => 'डिलीवरी पर नकद';
 
   @override
-  String get codConfirmNote =>
-      'सुनील भैया डिलीवरी के समय पैसे लेंगे';
+  String get codConfirmNote => 'सुनील भैया डिलीवरी के समय पैसे लेंगे';
 
   @override
   String get codConfirmButton => 'COD पक्का कीजिए';
@@ -327,8 +325,7 @@ class AppStringsHi extends AppStrings {
   String get filterClosed => 'बंद';
 
   @override
-  String get emptyOrdersList =>
-      'जल्द ही पहला ऑर्डर आएगा।';
+  String get emptyOrdersList => 'जल्द ही पहला ऑर्डर आएगा।';
 
   // ---- §6 Udhaar khaata ----
 
@@ -349,8 +346,7 @@ class AppStringsHi extends AppStrings {
   // ---- §7 Empty states ----
 
   @override
-  String get emptyDraftList =>
-      'आपकी सूची अभी खाली है। नीचे से कुछ चुनिए।';
+  String get emptyDraftList => 'आपकी सूची अभी खाली है। नीचे से कुछ चुनिए।';
 
   @override
   String get noOrdersYet =>
@@ -467,8 +463,7 @@ class AppStringsHi extends AppStrings {
   // ---- §16 S4.10 Udhaar reminder affordances ----
 
   @override
-  String get udhaarReminderOptInPrompt =>
-      'क्या मैं इस ग्राहक को याद दिलाऊँ?';
+  String get udhaarReminderOptInPrompt => 'क्या मैं इस ग्राहक को याद दिलाऊँ?';
 
   @override
   String udhaarReminderCountBadge(int count) => 'याद दिलाया गया: $count/3';
@@ -705,7 +700,8 @@ class AppStringsHi extends AppStrings {
       'रसीद बनाने में समस्या: $detail';
 
   @override
-  String monthName(int month) => const <int, String>{
+  String monthName(int month) =>
+      const <int, String>{
         1: 'जनवरी',
         2: 'फ़रवरी',
         3: 'मार्च',
@@ -718,7 +714,8 @@ class AppStringsHi extends AppStrings {
         10: 'अक्टूबर',
         11: 'नवंबर',
         12: 'दिसंबर',
-      }[month] ?? '';
+      }[month] ??
+      '';
 
   // ---- §25 D-2: Order list state badge labels ----
 
@@ -1014,5 +1011,4 @@ class AppStringsHi extends AppStrings {
 
   @override
   String get paymentSuccessBackHome => 'वापस जाइए';
-
 }

@@ -127,8 +127,7 @@ class ChatBubble extends StatelessWidget {
             child: Divider(color: theme.shopAccent.withValues(alpha: 0.3)),
           ),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: YugmaSpacing.s3),
+            padding: const EdgeInsets.symmetric(horizontal: YugmaSpacing.s3),
             child: Text(
               message.textBody ?? '',
               style: theme.captionDeva.copyWith(
@@ -298,7 +297,8 @@ class ChatBubble extends StatelessWidget {
           skuName: proposalSkuName ?? '',
           originalPrice: proposalOriginalPrice,
           isAccepted: isProposalAccepted,
-          isCustomerSide: _isCustomerMessage == false, // proposals come FROM shopkeeper, shown TO customer
+          isCustomerSide: _isCustomerMessage ==
+              false, // proposals come FROM shopkeeper, shown TO customer
           onAccept: onAcceptProposal,
         );
     }

@@ -1,4 +1,4 @@
-﻿// =============================================================================
+// =============================================================================
 // OrderListScreen â€” C3.10 AC #1â€“2: customer's "à¤®à¥‡à¤°à¥‡ à¤‘à¤°à¥à¤¡à¤°" tab.
 //
 // Shows all projects for the current customer (filtered by customerUid).
@@ -230,5 +230,4 @@ class _OrderCard extends StatelessWidget {
         ProjectState.closed => strings.stateBadgeClosed,
         ProjectState.cancelled => strings.stateBadgeCancelled,
       };
-
 }

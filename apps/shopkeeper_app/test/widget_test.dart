@@ -80,7 +80,8 @@ void main() {
     test('every task has non-empty titleHi and subtitleEn', () {
       for (final task in TodaysTaskSeed.rampSequence) {
         expect(task.titleHi, isNotEmpty, reason: 'Day ${task.day} titleHi');
-        expect(task.subtitleEn, isNotEmpty, reason: 'Day ${task.day} subtitleEn');
+        expect(task.subtitleEn, isNotEmpty,
+            reason: 'Day ${task.day} subtitleEn');
       }
       for (final task in TodaysTaskSeed.weeklyRotation) {
         expect(task.titleHi, isNotEmpty);
@@ -127,9 +128,21 @@ void main() {
 
     test('no forbidden udhaar vocabulary in any task', () {
       const forbidden = [
-        'interest', 'loan', 'penalty', 'due date', 'overdue',
-        'default', 'collection', 'recovery', 'installment', 'EMI',
-        'ब्याज', 'ऋण', 'जुर्माना', 'देय तिथि', 'क़िस्त',
+        'interest',
+        'loan',
+        'penalty',
+        'due date',
+        'overdue',
+        'default',
+        'collection',
+        'recovery',
+        'installment',
+        'EMI',
+        'ब्याज',
+        'ऋण',
+        'जुर्माना',
+        'देय तिथि',
+        'क़िस्त',
       ];
       for (final task in [
         ...TodaysTaskSeed.rampSequence,
@@ -152,8 +165,15 @@ void main() {
 
     test('no forbidden mythic vocabulary in any task', () {
       const forbidden = [
-        'शुभ', 'मंगल', 'मंदिर', 'धर्म', 'तीर्थ', 'स्वागतम्',
-        'उत्पाद', 'गुणवत्ता', 'श्रेष्ठ',
+        'शुभ',
+        'मंगल',
+        'मंदिर',
+        'धर्म',
+        'तीर्थ',
+        'स्वागतम्',
+        'उत्पाद',
+        'गुणवत्ता',
+        'श्रेष्ठ',
       ];
       for (final task in [
         ...TodaysTaskSeed.rampSequence,
@@ -218,21 +238,36 @@ void main() {
 
     test('no forbidden udhaar vocab in new ops strings', () {
       const forbidden = [
-        'interest', 'loan', 'penalty', 'due date',
-        'ब्याज', 'ऋण', 'जुर्माना',
+        'interest',
+        'loan',
+        'penalty',
+        'due date',
+        'ब्याज',
+        'ऋण',
+        'जुर्माना',
       ];
       const hi = AppStringsHi();
       const en = AppStringsEn();
 
       final hiStrings = [
-        hi.signInWithGoogle, hi.todaysTaskTitle, hi.todaysTaskDone,
-        hi.todaysTaskDismiss, hi.signOutLabel, hi.opsDashboardTitle,
-        hi.todaysTaskDay30Celebration, hi.opsPermissionRevoked,
+        hi.signInWithGoogle,
+        hi.todaysTaskTitle,
+        hi.todaysTaskDone,
+        hi.todaysTaskDismiss,
+        hi.signOutLabel,
+        hi.opsDashboardTitle,
+        hi.todaysTaskDay30Celebration,
+        hi.opsPermissionRevoked,
       ];
       final enStrings = [
-        en.signInWithGoogle, en.todaysTaskTitle, en.todaysTaskDone,
-        en.todaysTaskDismiss, en.signOutLabel, en.opsDashboardTitle,
-        en.todaysTaskDay30Celebration, en.opsPermissionRevoked,
+        en.signInWithGoogle,
+        en.todaysTaskTitle,
+        en.todaysTaskDone,
+        en.todaysTaskDismiss,
+        en.signOutLabel,
+        en.opsDashboardTitle,
+        en.todaysTaskDay30Celebration,
+        en.opsPermissionRevoked,
       ];
 
       for (final s in [...hiStrings, ...enStrings]) {
@@ -287,7 +322,8 @@ void main() {
       );
     });
 
-    testWidgets('shows permission-revoked banner when status is permissionRevoked',
+    testWidgets(
+        'shows permission-revoked banner when status is permissionRevoked',
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(

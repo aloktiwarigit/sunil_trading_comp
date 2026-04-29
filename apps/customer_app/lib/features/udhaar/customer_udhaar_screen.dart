@@ -270,7 +270,8 @@ class CustomerUdhaarScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: YugmaSpacing.s1),
                     Text(
-                      strings.udhaarPartialPaymentCount(ledger.partialPaymentReferences.length),
+                      strings.udhaarPartialPaymentCount(
+                          ledger.partialPaymentReferences.length),
                       style: theme.captionDeva,
                     ),
                   ],
@@ -291,7 +292,8 @@ class CustomerUdhaarScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: YugmaSpacing.s1),
                     Text(
-                      strings.udhaarRemindersSentCount(ledger.reminderCountLifetime),
+                      strings.udhaarRemindersSentCount(
+                          ledger.reminderCountLifetime),
                       style: theme.captionDeva,
                     ),
                   ],
@@ -312,5 +314,4 @@ class CustomerUdhaarScreen extends ConsumerWidget {
       ),
     );
   }
-
 }

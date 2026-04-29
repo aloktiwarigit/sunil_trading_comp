@@ -20,8 +20,8 @@ import 'package:lib_core/lib_core.dart';
 
 /// Resolves a customer display name from the project linked to a ledger.
 /// Falls back to the raw customerId if no project is found.
-final udhaarCustomerNameProvider =
-    FutureProvider.autoDispose.family<String, UdhaarLedger>((ref, ledger) async {
+final udhaarCustomerNameProvider = FutureProvider.autoDispose
+    .family<String, UdhaarLedger>((ref, ledger) async {
   final firestore = FirebaseFirestore.instance;
   final shopId = ref.read(shopIdProviderProvider).shopId;
 
@@ -95,7 +95,9 @@ class _UdhaarListScreenState extends ConsumerState<UdhaarListScreen> {
           TextButton(
             onPressed: () => setState(() => _showClosed = !_showClosed),
             child: Text(
-              _showClosed ? strings.shopUdhaarToggleOpen : strings.shopUdhaarToggleClosed,
+              _showClosed
+                  ? strings.shopUdhaarToggleOpen
+                  : strings.shopUdhaarToggleClosed,
               style: TextStyle(
                 fontFamily: YugmaFonts.devaBody,
                 color: YugmaColors.textOnPrimary,
@@ -189,7 +191,8 @@ class _UdhaarCard extends ConsumerWidget {
                 Expanded(
                   child: Consumer(
                     builder: (context, ref, _) {
-                      final nameAsync = ref.watch(udhaarCustomerNameProvider(ledger));
+                      final nameAsync =
+                          ref.watch(udhaarCustomerNameProvider(ledger));
                       return Text(
                         nameAsync.valueOrNull ?? ledger.customerId,
                         style: TextStyle(
@@ -302,5 +305,4 @@ class _UdhaarCard extends ConsumerWidget {
       ),
     );
   }
-
 }

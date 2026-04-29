@@ -58,16 +58,15 @@ class PaymentScreen extends ConsumerWidget {
         ),
         data: (flowState) {
           return switch (flowState.stage) {
-            PaymentFlowStage.idle => _buildPaymentOptions(
-                context, ref, theme, flowState),
+            PaymentFlowStage.idle =>
+              _buildPaymentOptions(context, ref, theme, flowState),
             PaymentFlowStage.launching => _buildLoading(theme, strings),
-            PaymentFlowStage.awaitingReturn => _buildAwaitingReturn(
-                context, ref, theme, flowState),
+            PaymentFlowStage.awaitingReturn =>
+              _buildAwaitingReturn(context, ref, theme, flowState),
             PaymentFlowStage.recording => _buildLoading(theme, strings),
-            PaymentFlowStage.paid => _buildSuccess(
-                context, theme, flowState),
-            PaymentFlowStage.error => _buildError(
-                context, ref, theme, flowState),
+            PaymentFlowStage.paid => _buildSuccess(context, theme, flowState),
+            PaymentFlowStage.error =>
+              _buildError(context, ref, theme, flowState),
           };
         },
       ),
@@ -249,9 +248,7 @@ class PaymentScreen extends ConsumerWidget {
           Center(
             child: TextButton(
               onPressed: () {
-                ref
-                    .read(paymentControllerProvider(projectId).notifier)
-                    .retry();
+                ref.read(paymentControllerProvider(projectId).notifier).retry();
               },
               child: Text(
                 strings.paymentOtherMethods,
@@ -427,9 +424,7 @@ class PaymentScreen extends ConsumerWidget {
             height: theme.tapTargetMin,
             child: ElevatedButton(
               onPressed: () {
-                ref
-                    .read(paymentControllerProvider(projectId).notifier)
-                    .retry();
+                ref.read(paymentControllerProvider(projectId).notifier).retry();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.shopPrimary,
@@ -657,7 +652,6 @@ class PaymentScreen extends ConsumerWidget {
       },
     );
   }
-
 }
 
 /// Tile for an alternative payment method in the bottom sheet.
@@ -730,7 +724,9 @@ class _BankDetailRow extends StatelessWidget {
           HapticFeedback.mediumImpact();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Copied', style: theme.bodyDeva.copyWith(color: theme.shopTextOnPrimary)),
+              content: Text('Copied',
+                  style:
+                      theme.bodyDeva.copyWith(color: theme.shopTextOnPrimary)),
               backgroundColor: theme.shopPrimary,
               duration: const Duration(seconds: 2),
             ),

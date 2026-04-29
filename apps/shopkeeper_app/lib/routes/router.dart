@@ -104,7 +104,8 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final projectId = state.pathParameters['projectId'];
               if (projectId == null) {
-                return const Scaffold(body: Center(child: Text('Missing route parameter')));
+                return const Scaffold(
+                    body: Center(child: Text('Missing route parameter')));
               }
               return ProjectDetailScreen(projectId: projectId);
             },
@@ -115,7 +116,8 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) {
                   final projectId = state.pathParameters['projectId'];
                   if (projectId == null) {
-                    return const Scaffold(body: Center(child: Text('Missing route parameter')));
+                    return const Scaffold(
+                        body: Center(child: Text('Missing route parameter')));
                   }
                   return ShopkeeperChatScreen(projectId: projectId);
                 },
@@ -150,7 +152,8 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final skuId = state.pathParameters['skuId'];
           if (skuId == null) {
-            return const Scaffold(body: Center(child: Text('Missing route parameter')));
+            return const Scaffold(
+                body: Center(child: Text('Missing route parameter')));
           }
           return GoldenHourCaptureScreen(
             skuId: skuId,
@@ -178,7 +181,8 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final ledgerId = state.pathParameters['ledgerId'];
               if (ledgerId == null) {
-                return const Scaffold(body: Center(child: Text('Missing route parameter')));
+                return const Scaffold(
+                    body: Center(child: Text('Missing route parameter')));
               }
               return UdhaarDetailScreen(ledgerId: ledgerId);
             },
@@ -199,7 +203,8 @@ final shopkeeperRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final skuId = state.pathParameters['skuId'];
               if (skuId == null) {
-                return const Scaffold(body: Center(child: Text('Missing route parameter')));
+                return const Scaffold(
+                    body: Center(child: Text('Missing route parameter')));
               }
               return EditSkuScreen(skuId: skuId);
             },

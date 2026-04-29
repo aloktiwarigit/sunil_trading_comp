@@ -95,7 +95,6 @@ class VoiceNote with _$VoiceNote {
     /// ID of the attached entity (SKU ID, Project ID, customer UID, etc.)
     /// Resolution depends on [attachmentType].
     required String attachmentRefId,
-
     required DateTime recordedAt,
 
     /// Transcription of the voice note. NULL in v1 — deferred to v1.5+

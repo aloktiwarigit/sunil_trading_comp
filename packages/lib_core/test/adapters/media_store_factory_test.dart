@@ -107,7 +107,8 @@ void main() {
       ).called(1);
     });
 
-    test('unknown strategy without crashlytics still falls back gracefully', () {
+    test('unknown strategy without crashlytics still falls back gracefully',
+        () {
       when(() => remoteConfig.getString('media_store_strategy'))
           .thenReturn('nope');
 

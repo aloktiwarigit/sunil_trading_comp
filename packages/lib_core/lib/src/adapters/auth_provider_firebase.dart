@@ -412,7 +412,8 @@ class AuthProviderFirebase implements AuthProvider {
         return AuthException(
             AuthErrorCode.providerAlreadyLinked, e.message ?? '', e);
       default:
-        _log.warning('Unmapped FirebaseAuthException: ${e.code} — ${e.message}');
+        _log.warning(
+            'Unmapped FirebaseAuthException: ${e.code} — ${e.message}');
         return AuthException(AuthErrorCode.unknown, e.message ?? e.code, e);
     }
   }

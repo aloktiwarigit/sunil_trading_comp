@@ -130,8 +130,9 @@ class _CreateSkuScreenState extends ConsumerState<CreateSkuScreen> {
               _DevanagariTextFormField(
                 controller: _nameDevanagariController,
                 label: strings.skuNameDevanagariLabel,
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? strings.validationRequired : null,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? strings.validationRequired
+                    : null,
               ),
               const SizedBox(height: YugmaSpacing.s4),
 
@@ -230,7 +231,8 @@ class _CreateSkuScreenState extends ConsumerState<CreateSkuScreen> {
                 validator: (v) {
                   if (v == null || v.isEmpty) return strings.validationRequired;
                   final n = int.tryParse(v);
-                  if (n == null || n <= 0) return strings.validationPricePositive;
+                  if (n == null || n <= 0)
+                    return strings.validationPricePositive;
                   return null;
                 },
               ),
@@ -243,7 +245,8 @@ class _CreateSkuScreenState extends ConsumerState<CreateSkuScreen> {
                 validator: (v) {
                   if (v == null || v.isEmpty) return strings.validationRequired;
                   final n = int.tryParse(v);
-                  if (n == null || n <= 0) return strings.validationPricePositive;
+                  if (n == null || n <= 0)
+                    return strings.validationPricePositive;
                   final base = int.tryParse(_basePriceController.text);
                   if (base != null && n >= base) {
                     return strings.validationFloorExceedsBase;
@@ -308,9 +311,10 @@ class _CreateSkuScreenState extends ConsumerState<CreateSkuScreen> {
                     MaterialPageRoute<void>(
                       builder: (_) => GoldenHourCaptureScreen(
                         skuId: savedSkuId,
-                        skuName: _nameDevanagariController.text.trim().isNotEmpty
-                            ? _nameDevanagariController.text.trim()
-                            : 'New SKU',
+                        skuName:
+                            _nameDevanagariController.text.trim().isNotEmpty
+                                ? _nameDevanagariController.text.trim()
+                                : 'New SKU',
                       ),
                     ),
                   );

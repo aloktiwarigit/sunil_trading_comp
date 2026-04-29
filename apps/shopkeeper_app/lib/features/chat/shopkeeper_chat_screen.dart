@@ -232,8 +232,7 @@ class _ProposePriceBar extends ConsumerWidget {
                   ? VoiceNoteAuthorRole.bhaiya
                   : VoiceNoteAuthorRole.beta,
               durationSeconds: result.durationSeconds,
-              audioStorageRef:
-                  'shops/$shopId/voice_notes/$voiceNoteId.m4a',
+              audioStorageRef: 'shops/$shopId/voice_notes/$voiceNoteId.m4a',
               audioSizeBytes: result.bytes.length,
               attachmentType: VoiceNoteAttachment.project,
               attachmentRefId: projectId,
@@ -304,8 +303,7 @@ class _ProposePriceBar extends ConsumerWidget {
                 .firstOrNull;
             if (lineItem == null) return;
             ref
-                .read(
-                    shopkeeperChatControllerProvider(projectId).notifier)
+                .read(shopkeeperChatControllerProvider(projectId).notifier)
                 .sendPriceProposal(
                   lineItemId: lineItemId,
                   proposedPrice: price,

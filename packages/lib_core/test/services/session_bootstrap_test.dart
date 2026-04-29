@@ -84,10 +84,10 @@ void main() {
       );
       final authProvider = AuthProviderFirebase(auth: mockAuth);
 
-      final r1 =
-          await SessionBootstrap.verifyPersistedUser(authProvider: authProvider);
-      final r2 =
-          await SessionBootstrap.verifyPersistedUser(authProvider: authProvider);
+      final r1 = await SessionBootstrap.verifyPersistedUser(
+          authProvider: authProvider);
+      final r2 = await SessionBootstrap.verifyPersistedUser(
+          authProvider: authProvider);
 
       expect(r1.outcome, r2.outcome);
       expect(r1.restoredUser?.uid, r2.restoredUser?.uid);

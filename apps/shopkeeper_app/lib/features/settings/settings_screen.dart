@@ -323,7 +323,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _operatorsSection(String shopId, AppStrings strings) {
-    final currentUid = ref.read(opsAuthControllerProvider).valueOrNull?.user?.uid;
+    final currentUid =
+        ref.read(opsAuthControllerProvider).valueOrNull?.user?.uid;
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('shops')
@@ -479,8 +480,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (xFile == null) return;
 
     final bytes = await xFile.readAsBytes();
-    final storageRef = FirebaseStorage.instance
-        .ref('shops/$shopId/branding/face.jpg');
+    final storageRef =
+        FirebaseStorage.instance.ref('shops/$shopId/branding/face.jpg');
     await storageRef.putData(bytes);
     final downloadUrl = await storageRef.getDownloadURL();
 
@@ -512,68 +513,70 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-        title: Text(
-          _strings.settingsAddOperator,
-          style: TextStyle(fontFamily: YugmaFonts.devaBody),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // SK007 fix: role dropdown
-            DropdownButtonFormField<String>(
-              value: selectedRole,
-              decoration: InputDecoration(
-                labelText: 'Role',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+          title: Text(
+            _strings.settingsAddOperator,
+            style: TextStyle(fontFamily: YugmaFonts.devaBody),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // SK007 fix: role dropdown
+              DropdownButtonFormField<String>(
+                value: selectedRole,
+                decoration: InputDecoration(
+                  labelText: 'Role',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'beta', child: Text('Beta (बेटा)')),
+                  DropdownMenuItem(
+                      value: 'munshi', child: Text('Munshi (मुंशी)')),
+                ],
+                onChanged: (v) =>
+                    setDialogState(() => selectedRole = v ?? 'beta'),
+              ),
+              const SizedBox(height: YugmaSpacing.s3),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  ),
                 ),
               ),
-              items: const [
-                DropdownMenuItem(value: 'beta', child: Text('Beta (बेटा)')),
-                DropdownMenuItem(value: 'munshi', child: Text('Munshi (मुंशी)')),
-              ],
-              onChanged: (v) => setDialogState(() => selectedRole = v ?? 'beta'),
-            ),
-            const SizedBox(height: YugmaSpacing.s3),
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(YugmaRadius.md),
+              const SizedBox(height: YugmaSpacing.s2),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(YugmaRadius.md),
+                  ),
                 ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(_strings.draftQtyHighCancel),
             ),
-            const SizedBox(height: YugmaSpacing.s2),
-            TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(YugmaRadius.md),
-                ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: YugmaColors.primary,
+              ),
+              child: Text(
+                _strings.settingsAddOperator,
+                style: TextStyle(color: YugmaColors.textOnPrimary),
               ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(_strings.draftQtyHighCancel),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: YugmaColors.primary,
-            ),
-            child: Text(
-              _strings.settingsAddOperator,
-              style: TextStyle(color: YugmaColors.textOnPrimary),
-            ),
-          ),
-        ],
-      ),
       ), // StatefulBuilder
     );
 

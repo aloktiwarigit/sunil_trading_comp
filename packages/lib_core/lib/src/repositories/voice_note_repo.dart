@@ -28,8 +28,10 @@ import '../shop_id_provider.dart';
 class VoiceNoteRepoException implements Exception {
   /// Wrap a code + message.
   const VoiceNoteRepoException(this.code, this.message);
+
   /// Stable error code.
   final String code;
+
   /// Human-readable message.
   final String message;
   @override
@@ -55,11 +57,10 @@ class VoiceNoteRepo {
   /// PRD B1.6 AC #2 maximum duration.
   static const int maxDurationSeconds = 60;
 
-  CollectionReference<Map<String, dynamic>> _collection() =>
-      _firestore
-          .collection('shops')
-          .doc(_shopIdProvider.shopId)
-          .collection('voiceNotes');
+  CollectionReference<Map<String, dynamic>> _collection() => _firestore
+      .collection('shops')
+      .doc(_shopIdProvider.shopId)
+      .collection('voiceNotes');
 
   /// Read one voice note metadata doc by ID. The audio URL is resolved
   /// separately via [MediaStore.getVoiceNoteUrl] using the stored
@@ -127,7 +128,7 @@ class VoiceNoteRepo {
       throw VoiceNoteRepoException(
         'invalid-duration',
         'durationSeconds must be in [$minDurationSeconds, $maxDurationSeconds] '
-        'per PRD B1.6 AC #2, got ${voiceNote.durationSeconds}',
+            'per PRD B1.6 AC #2, got ${voiceNote.durationSeconds}',
       );
     }
     try {

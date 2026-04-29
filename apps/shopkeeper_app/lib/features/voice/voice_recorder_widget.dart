@@ -82,7 +82,8 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
     }
 
     final dir = await getTemporaryDirectory();
-    final path = '${dir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    final path =
+        '${dir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
     await _recorder.start(
       const RecordConfig(
@@ -186,7 +187,8 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
               fontFamily: YugmaFonts.mono,
               fontSize: YugmaTypeScale.display,
               fontWeight: FontWeight.w700,
-              color: _isRecording ? YugmaColors.commit : YugmaColors.textPrimary,
+              color:
+                  _isRecording ? YugmaColors.commit : YugmaColors.textPrimary,
             ),
           ),
           const SizedBox(height: YugmaSpacing.s2),
@@ -244,7 +246,8 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
                   backgroundColor: YugmaColors.commit,
                   shape: const CircleBorder(),
                 ),
-                child: Icon(Icons.mic, color: YugmaColors.textOnPrimary, size: 36),
+                child:
+                    Icon(Icons.mic, color: YugmaColors.textOnPrimary, size: 36),
               ),
             ),
             const SizedBox(height: YugmaSpacing.s2),
@@ -271,7 +274,8 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
                       : YugmaColors.divider,
                   shape: const CircleBorder(),
                 ),
-                child: Icon(Icons.stop, color: YugmaColors.textOnPrimary, size: 36),
+                child: Icon(Icons.stop,
+                    color: YugmaColors.textOnPrimary, size: 36),
               ),
             ),
           ] else if (_hasRecording) ...[
@@ -284,7 +288,8 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
                   children: [
                     IconButton(
                       onPressed: _reRecord,
-                      icon: Icon(Icons.refresh, color: YugmaColors.textSecondary, size: 28),
+                      icon: Icon(Icons.refresh,
+                          color: YugmaColors.textSecondary, size: 28),
                     ),
                     Text(
                       widget.strings.voiceReRecord,
@@ -306,7 +311,8 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
                       backgroundColor: YugmaColors.primary,
                       shape: const CircleBorder(),
                     ),
-                    child: Icon(Icons.send, color: YugmaColors.textOnPrimary, size: 28),
+                    child: Icon(Icons.send,
+                        color: YugmaColors.textOnPrimary, size: 28),
                   ),
                 ),
                 // Cancel
@@ -314,7 +320,8 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget> {
                   children: [
                     IconButton(
                       onPressed: widget.onCancel,
-                      icon: Icon(Icons.close, color: YugmaColors.textMuted, size: 28),
+                      icon: Icon(Icons.close,
+                          color: YugmaColors.textMuted, size: 28),
                     ),
                     Text(
                       widget.strings.voiceCancelShort,

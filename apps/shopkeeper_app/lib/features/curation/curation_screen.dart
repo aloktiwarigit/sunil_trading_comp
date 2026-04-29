@@ -36,8 +36,8 @@ String _occasionLabel(String key, AppStrings strings) => switch (key) {
     };
 
 /// Provider for all shortlists in the shop.
-final shortlistsProvider = StreamProvider.autoDispose<
-    Map<String, List<String>>>((ref) {
+final shortlistsProvider =
+    StreamProvider.autoDispose<Map<String, List<String>>>((ref) {
   final firestore = FirebaseFirestore.instance;
   final shopId = ref.read(shopIdProviderProvider).shopId;
 
@@ -134,7 +134,8 @@ class _CurationScreenState extends ConsumerState<CurationScreen>
           isScrollable: true,
           indicatorColor: YugmaColors.textOnPrimary,
           labelColor: YugmaColors.textOnPrimary,
-          unselectedLabelColor: YugmaColors.textOnPrimary.withValues(alpha: 0.6),
+          unselectedLabelColor:
+              YugmaColors.textOnPrimary.withValues(alpha: 0.6),
           labelStyle: TextStyle(
             fontFamily: YugmaFonts.devaBody,
             fontSize: YugmaTypeScale.caption,
@@ -217,9 +218,8 @@ class _OccasionTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final inShortlist = skuIds.toSet();
-    final available = allInventory
-        .where((sku) => !inShortlist.contains(sku.skuId))
-        .toList();
+    final available =
+        allInventory.where((sku) => !inShortlist.contains(sku.skuId)).toList();
 
     return Column(
       children: [
@@ -256,25 +256,21 @@ class _OccasionTab extends ConsumerWidget {
                       background: Container(
                         color: YugmaColors.commit.withValues(alpha: 0.15),
                         alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(
-                            right: YugmaSpacing.s4),
+                        padding: const EdgeInsets.only(right: YugmaSpacing.s4),
                         child: Icon(Icons.delete_outline,
                             color: YugmaColors.commit),
                       ),
                       // AC #5: long-press or swipe to remove
                       onDismissed: (_) {
-                        final updated = List<String>.from(skuIds)
-                          ..removeAt(i);
+                        final updated = List<String>.from(skuIds)..removeAt(i);
                         _saveOrder(ref, updated);
                       },
                       child: Container(
-                        margin: const EdgeInsets.only(
-                            bottom: YugmaSpacing.s1),
+                        margin: const EdgeInsets.only(bottom: YugmaSpacing.s1),
                         padding: const EdgeInsets.all(YugmaSpacing.s3),
                         decoration: BoxDecoration(
                           color: YugmaColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(YugmaRadius.md),
+                          borderRadius: BorderRadius.circular(YugmaRadius.md),
                           boxShadow: YugmaShadows.card,
                         ),
                         child: Row(
@@ -329,8 +325,7 @@ class _OccasionTab extends ConsumerWidget {
                 final sku = available[i];
                 return InkWell(
                   onTap: () {
-                    final updated = List<String>.from(skuIds)
-                      ..add(sku.skuId);
+                    final updated = List<String>.from(skuIds)..add(sku.skuId);
                     _saveOrder(ref, updated);
                   },
                   borderRadius: BorderRadius.circular(YugmaRadius.md),
@@ -338,8 +333,7 @@ class _OccasionTab extends ConsumerWidget {
                     padding: const EdgeInsets.all(YugmaSpacing.s2),
                     decoration: BoxDecoration(
                       border: Border.all(color: YugmaColors.divider),
-                      borderRadius:
-                          BorderRadius.circular(YugmaRadius.md),
+                      borderRadius: BorderRadius.circular(YugmaRadius.md),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,

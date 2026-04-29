@@ -183,8 +183,7 @@ class OpsAuthController extends AsyncNotifier<OpsAuthState> {
       },
       onError: (Object error) {
         _log.warning('operator watch error for uid=$uid: $error');
-        if (error is FirebaseException &&
-            error.code == 'permission-denied') {
+        if (error is FirebaseException && error.code == 'permission-denied') {
           state = AsyncValue.data(
             OpsAuthState(
               status: OpsAuthStatus.permissionRevoked,

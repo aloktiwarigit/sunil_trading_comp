@@ -385,7 +385,8 @@ void main() {
           voiceNoteId: 'vn_01HXYZ',
         );
 
-        expect(url, equals('https://firebasestorage.googleapis.com/abc/voice.m4a'));
+        expect(url,
+            equals('https://firebasestorage.googleapis.com/abc/voice.m4a'));
         verify(
           () => mockStorage.ref(
             'shops/sunil-trading-company/voice_notes/vn_01HXYZ.m4a',

@@ -93,7 +93,8 @@ void _configureLogging() {
   Logger.root.onRecord.listen((record) {
     // Pretty-print in debug; JSON-ish in release for Crashlytics log capture.
     if (kDebugMode) {
-      debugPrint('[${record.level.name}] ${record.loggerName}: ${record.message}');
+      debugPrint(
+          '[${record.level.name}] ${record.loggerName}: ${record.message}');
     } else {
       Observability.crashlytics.log('${record.loggerName}: ${record.message}');
     }

@@ -96,7 +96,8 @@ void main() {
 
       expect(restored.shopId, equals('shop_0'));
       expect(restored.primaryColorHex, equals('#FF00FF'),
-          reason: 'shop_0 uses deliberately ugly magenta for leakage visibility');
+          reason:
+              'shop_0 uses deliberately ugly magenta for leakage visibility');
     });
   });
 

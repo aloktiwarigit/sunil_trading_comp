@@ -76,8 +76,9 @@ class _CollisionSimulatingAuthProvider implements AuthProvider {
                 ? null
                 : AppUser(
                     uid: u.uid,
-                    tier:
-                        u.isAnonymous ? AuthTier.anonymous : AuthTier.phoneVerified,
+                    tier: u.isAnonymous
+                        ? AuthTier.anonymous
+                        : AuthTier.phoneVerified,
                     isAnonymous: u.isAnonymous,
                     isPhoneVerified: !u.isAnonymous,
                     phoneNumber: u.phoneNumber,
@@ -229,8 +230,7 @@ void main() {
       await customerRepo.createAnonymous(user.uid);
     });
 
-    test('linkWithCredential preserves UID and marks phone-verified',
-        () async {
+    test('linkWithCredential preserves UID and marks phone-verified', () async {
       final anonUidBefore = authProvider.currentUser!.uid;
 
       final result = await coordinator.upgradeAnonymousToPhone(
@@ -260,8 +260,7 @@ void main() {
     });
   });
 
-  group('PhoneUpgradeCoordinator — collision merger (PRD I6.2 ACs #4-#5)',
-      () {
+  group('PhoneUpgradeCoordinator — collision merger (PRD I6.2 ACs #4-#5)', () {
     late FakeFirebaseFirestore firestore;
     late MockFirebaseAuth anonymousMockAuth;
     late _CollisionSimulatingAuthProvider authProvider;

@@ -70,8 +70,8 @@ class ChatState {
 }
 
 /// Family provider — one controller per projectId.
-final chatControllerProvider = AsyncNotifierProvider.autoDispose
-    .family<ChatController, ChatState, String>(
+final chatControllerProvider =
+    AsyncNotifierProvider.autoDispose.family<ChatController, ChatState, String>(
   ChatController.new,
 );
 
@@ -309,8 +309,7 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
             lineItemFound = true;
           }
           // Recompute using finalPrice if set, otherwise unitPriceInr.
-          final effectivePrice =
-              (item['finalPrice'] as num?)?.toInt() ??
+          final effectivePrice = (item['finalPrice'] as num?)?.toInt() ??
               (item['unitPriceInr'] as num?)?.toInt() ??
               0;
           final qty = (item['quantity'] as num?)?.toInt() ?? 1;
@@ -356,7 +355,8 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
           'sentAt': FieldValue.serverTimestamp(),
           // Hindi source-of-truth for system messages (persisted in Firestore,
           // not locale-switched at render time).
-          'textBody': '₹${formatInr(proposedPrice)} पर ${skuName ?? ''} पक्का हुआ',
+          'textBody':
+              '₹${formatInr(proposedPrice)} पर ${skuName ?? ''} पक्का हुआ',
           'readByUids': <String>[],
         });
       });
@@ -385,7 +385,9 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
   /// Load older messages (pagination — infinite scroll upward).
   Future<void> loadOlderMessages() async {
     final current = state.valueOrNull;
-    if (current == null || current.isLoadingOlder || !current.hasOlderMessages) {
+    if (current == null ||
+        current.isLoadingOlder ||
+        !current.hasOlderMessages) {
       return;
     }
 

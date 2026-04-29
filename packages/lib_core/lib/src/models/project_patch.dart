@@ -209,7 +209,6 @@ class ProjectOperatorPatch with _$ProjectOperatorPatch {
     /// Triple Zero invariant — at `paid` state, must equal `totalAmount`.
     /// CI cross-tenant integrity test verifies this invariant every PR.
     int? amountReceivedByShop,
-
     List<LineItem>? lineItems,
     DateTime? committedAt,
     DateTime? paidAt,

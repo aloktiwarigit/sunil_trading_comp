@@ -78,7 +78,9 @@ class OpsSignInScreen extends ConsumerWidget {
                 strings: strings,
                 isLoading: authState.isLoading,
                 onPressed: () {
-                  ref.read(opsAuthControllerProvider.notifier).signInWithGoogle();
+                  ref
+                      .read(opsAuthControllerProvider.notifier)
+                      .signInWithGoogle();
                 },
               ),
 
