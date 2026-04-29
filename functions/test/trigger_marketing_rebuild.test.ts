@@ -90,6 +90,9 @@ jest.mock('firebase-functions/params', () => ({
   defineSecret: jest.fn((_name: string) => ({
     value: () => mockSecretValue,
   })),
+  defineString: jest.fn((_name: string, opts?: { default?: string }) => ({
+    value: () => opts?.default ?? '',
+  })),
 }));
 
 // ---- Mock the Firestore trigger decorator ----

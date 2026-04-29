@@ -41,6 +41,8 @@ import {
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
+import { seedShopDoc } from './lib/seed_shop_doc';
+
 // -----------------------------------------------------------------------------
 // Initialization
 // -----------------------------------------------------------------------------
@@ -135,24 +137,14 @@ async function seedShop(shop: SyntheticShop): Promise<void> {
   const shopRef = db.collection('shops').doc(shop.shopId);
   const batch = db.batch();
 
-  // 2. /shops/{shopId}
-  // SAD v1.0.4 ADR-013 + §5 Shop lifecycle fields added:
-  //   shopLifecycle, shopLifecycleChangedAt, shopLifecycleReason,
-  //   dpdpRetentionUntil. "active" is the normal state; other states
-  //   freeze client writes via the shopIsWritable() rule helper.
-  batch.set(shopRef, {
+  // 2. /shops/{shopId} — SAD v1.0.4 ADR-013 lifecycle fields via shared helper.
+  seedShopDoc(batch, db, {
     shopId: shop.shopId,
     brandName: shop.brandName,
     brandNameDevanagari: shop.brandNameDevanagari,
     ownerUid: shop.ownerUid,
     market: 'Synthetic Market, Test City',
-    createdAt: new Date(),
     activeFromDay: new Date(),
-    // ---- SAD v1.0.4 ADR-013 lifecycle fields ----
-    shopLifecycle: 'active',
-    shopLifecycleChangedAt: new Date(),
-    shopLifecycleReason: null,
-    dpdpRetentionUntil: null,
   });
 
   // 3. /shops/{shopId}/theme/current

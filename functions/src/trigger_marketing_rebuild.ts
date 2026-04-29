@@ -26,18 +26,21 @@
 
 import * as admin from 'firebase-admin';
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
-import { defineSecret } from 'firebase-functions/params';
+import { defineSecret, defineString } from 'firebase-functions/params';
 import { logger } from 'firebase-functions/v2';
 
-// ─── Secrets ───
+// ─── Secrets & params ───
 
 const githubPat = defineSecret('GITHUB_PAT');
 
+// Repo coords are config, not secrets — set via firebase.json `params` or
+// `.env.{alias}` files. Defaults match the current production repo so
+// existing deployments need no action.
+const githubOwner = defineString('GITHUB_OWNER', { default: 'aloktiwarigit' });
+const githubRepo = defineString('GITHUB_REPO', { default: 'sunil_trading_comp' });
+
 // ─── Constants ───
 
-/// GitHub repo coordinates for workflow_dispatch.
-const GITHUB_OWNER = 'aloktiwarigit';
-const GITHUB_REPO = 'sunil_trading_comp';
 const GITHUB_WORKFLOW_FILE = 'ci-marketing.yml';
 
 /// Debounce tracking document path.
@@ -152,7 +155,7 @@ export const triggerMarketingRebuild = onDocumentWritten(
     }
 
     const dispatchUrl =
-      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}` +
+      `https://api.github.com/repos/${githubOwner.value()}/${githubRepo.value()}` +
       `/actions/workflows/${GITHUB_WORKFLOW_FILE}/dispatches`;
 
     try {

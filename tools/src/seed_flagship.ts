@@ -26,6 +26,8 @@ import {
 } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
+import { seedShopDoc } from './lib/seed_shop_doc';
+
 // -----------------------------------------------------------------------------
 // Initialization
 // -----------------------------------------------------------------------------
@@ -83,23 +85,14 @@ async function seedFlagship(): Promise<void> {
   const batch = db.batch();
 
   // ---- 1. Shop doc ----
-  batch.set(
-    shopRef,
-    {
-      shopId: SHOP_ID,
-      brandName: 'Sunil Trading Company',
-      brandNameDevanagari: 'सुनील ट्रेडिंग कंपनी',
-      ownerUid: '', // no operator linked in customer-only context
-      market: 'Harringtonganj, Ayodhya',
-      createdAt: new Date(),
-      activeFromDay: new Date('2003-01-01'),
-      shopLifecycle: 'active',
-      shopLifecycleChangedAt: new Date(),
-      shopLifecycleReason: null,
-      dpdpRetentionUntil: null,
-    },
-    { merge: true },
-  );
+  seedShopDoc(batch, db, {
+    shopId: SHOP_ID,
+    brandName: 'Sunil Trading Company',
+    brandNameDevanagari: 'सुनील ट्रेडिंग कंपनी',
+    ownerUid: '', // no operator linked in customer-only context
+    market: 'Harringtonganj, Ayodhya',
+    activeFromDay: new Date('2003-01-01'),
+  });
   console.log('  + shop doc');
 
   // ---- 2. Theme doc (matches ShopThemeTokens.sunilTradingCompanyDefault) ----
