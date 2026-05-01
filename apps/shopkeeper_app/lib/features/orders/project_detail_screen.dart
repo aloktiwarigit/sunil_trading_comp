@@ -578,9 +578,11 @@ class ProjectDetailScreen extends ConsumerWidget {
           ),
           const SizedBox(height: YugmaSpacing.s2),
         ],
-        // C3.11: Delivery confirmation — visible for paid/committed/delivering.
+        // C3.11 + Phase 3: Delivery confirmation visible only for paid /
+        // delivering. For COD, the operator first runs Mark Paid (which
+        // sets paymentMethod=cod + amountReceivedByShop=totalAmount), then
+        // Mark Delivered.
         if (project.state == ProjectState.paid ||
-            project.state == ProjectState.committed ||
             project.state == ProjectState.delivering)
           SizedBox(
             height: YugmaSpacing.s12,
@@ -692,17 +694,15 @@ class ProjectDetailScreen extends ConsumerWidget {
               Navigator.of(ctx).pop();
 
               try {
-                final patchMap = const ProjectOperatorPatch(
-                  state: ProjectState.delivering,
-                ).toFirestoreMap();
-                patchMap['updatedAt'] = FieldValue.serverTimestamp();
-
-                await FirebaseFirestore.instance
-                    .collection('shops')
-                    .doc(ref.read(shopIdProviderProvider).shopId)
-                    .collection('projects')
-                    .doc(project.projectId)
-                    .set(patchMap, SetOptions(merge: true));
+                final shopId = ref.read(shopIdProviderProvider).shopId;
+                final projectRepo = ProjectRepo(
+                  firestore: FirebaseFirestore.instance,
+                  shopIdProvider: ShopIdProvider(shopId),
+                );
+                await projectRepo.applyOperatorPatch(
+                  project.projectId,
+                  const ProjectOperatorPatch(state: ProjectState.delivering),
+                );
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -762,18 +762,20 @@ class ProjectDetailScreen extends ConsumerWidget {
               Navigator.of(ctx).pop();
 
               try {
-                final patchMap = const ProjectOperatorPatch(
-                  state: ProjectState.paid,
-                ).toFirestoreMap();
-                patchMap['paidAt'] = FieldValue.serverTimestamp();
-                patchMap['updatedAt'] = FieldValue.serverTimestamp();
-
-                await FirebaseFirestore.instance
-                    .collection('shops')
-                    .doc(ref.read(shopIdProviderProvider).shopId)
-                    .collection('projects')
-                    .doc(project.projectId)
-                    .set(patchMap, SetOptions(merge: true));
+                final shopId = ref.read(shopIdProviderProvider).shopId;
+                final projectRepo = ProjectRepo(
+                  firestore: FirebaseFirestore.instance,
+                  shopIdProvider: ShopIdProvider(shopId),
+                );
+                // Phase 3: typed mark-paid patch atomically sets state, paidAt,
+                // amountReceivedByShop, and paymentMethod inside a transaction
+                // that re-asserts the Triple Zero invariant.
+                await projectRepo.applyOperatorMarkPaidPatch(
+                  project.projectId,
+                  ProjectOperatorMarkPaidPatch(
+                    paymentMethod: project.paymentMethod ?? 'cash',
+                  ),
+                );
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -833,20 +835,17 @@ class ProjectDetailScreen extends ConsumerWidget {
               Navigator.of(ctx).pop();
 
               try {
-                // CR F1+F3: use server timestamps, include closedAt.
-                final patchMap = const ProjectOperatorPatch(
-                  state: ProjectState.closed,
-                ).toFirestoreMap();
-                patchMap['deliveredAt'] = FieldValue.serverTimestamp();
-                patchMap['closedAt'] = FieldValue.serverTimestamp();
-                patchMap['updatedAt'] = FieldValue.serverTimestamp();
-
-                await FirebaseFirestore.instance
-                    .collection('shops')
-                    .doc(ref.read(shopIdProviderProvider).shopId)
-                    .collection('projects')
-                    .doc(project.projectId)
-                    .set(patchMap, SetOptions(merge: true));
+                // Phase 3: typed close patch re-asserts Triple Zero
+                // transactionally and back-fills deliveredAt if needed.
+                final shopId = ref.read(shopIdProviderProvider).shopId;
+                final projectRepo = ProjectRepo(
+                  firestore: FirebaseFirestore.instance,
+                  shopIdProvider: ShopIdProvider(shopId),
+                );
+                await projectRepo.applyOperatorClosePatch(
+                  project.projectId,
+                  const ProjectOperatorClosePatch(),
+                );
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
