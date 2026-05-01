@@ -12,6 +12,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lib_core/src/models/line_item.dart';
+import 'package:lib_core/src/models/project.dart';
 import 'package:lib_core/src/models/project_patch.dart';
 import 'package:lib_core/src/repositories/project_repo.dart';
 import 'package:lib_core/src/shop_id_provider.dart';
@@ -616,6 +617,130 @@ void main() {
           'invalid-state-transition',
         )),
       );
+    });
+  });
+
+  // ===========================================================================
+  // applyOperatorPatch runtime guards — Phase 3 (defense-in-depth)
+  // ===========================================================================
+
+  group('applyOperatorPatch runtime guards', () {
+    Future<String> seedAt(String state, {int rec = 0, int total = 1000}) async {
+      final ref = projectsCol.doc();
+      await ref.set({
+        'projectId': ref.id,
+        'shopId': shopId,
+        'customerId': 'u',
+        'customerUid': 'u',
+        'state': state,
+        'totalAmount': total,
+        'amountReceivedByShop': rec,
+        'lineItems': <Map<String, dynamic>>[],
+        'createdAt': Timestamp.fromDate(DateTime(2026, 4, 12)),
+      });
+      return ref.id;
+    }
+
+    test('rejects state=paid via generic operator patch (use typed method)',
+        () async {
+      final id = await seedAt('committed');
+      expect(
+        () => repo.applyOperatorPatch(
+          id,
+          const ProjectOperatorPatch(state: ProjectState.paid),
+        ),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code, 'code', 'use-typed-method',
+        )),
+      );
+    });
+
+    test('rejects state=closed via generic operator patch', () async {
+      final id = await seedAt('paid', rec: 1000);
+      expect(
+        () => repo.applyOperatorPatch(
+          id,
+          const ProjectOperatorPatch(state: ProjectState.closed),
+        ),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code, 'code', 'use-typed-method',
+        )),
+      );
+    });
+
+    test('rejects amountReceivedByShop write via generic operator patch',
+        () async {
+      final id = await seedAt('committed');
+      expect(
+        () => repo.applyOperatorPatch(
+          id,
+          const ProjectOperatorPatch(amountReceivedByShop: 1000),
+        ),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code, 'code', 'use-typed-method',
+        )),
+      );
+    });
+
+    test('rejects paidAt write via generic operator patch', () async {
+      final id = await seedAt('committed');
+      expect(
+        () => repo.applyOperatorPatch(
+          id,
+          ProjectOperatorPatch(paidAt: DateTime(2026, 4, 30)),
+        ),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code, 'code', 'use-typed-method',
+        )),
+      );
+    });
+
+    test('rejects closedAt write via generic operator patch', () async {
+      final id = await seedAt('paid', rec: 1000);
+      expect(
+        () => repo.applyOperatorPatch(
+          id,
+          ProjectOperatorPatch(closedAt: DateTime(2026, 4, 30)),
+        ),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code, 'code', 'use-typed-method',
+        )),
+      );
+    });
+
+    test('rejects paymentMethod write via generic operator patch', () async {
+      final id = await seedAt('committed');
+      expect(
+        () => repo.applyOperatorPatch(
+          id,
+          const ProjectOperatorPatch(paymentMethod: 'cash'),
+        ),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code, 'code', 'use-typed-method',
+        )),
+      );
+    });
+
+    test('allows state=delivering via generic operator patch (no guard)',
+        () async {
+      final id = await seedAt('paid', rec: 1000);
+      await repo.applyOperatorPatch(
+        id,
+        const ProjectOperatorPatch(state: ProjectState.delivering),
+      );
+      final data = (await projectsCol.doc(id).get()).data()!;
+      expect(data['state'], 'delivering');
+    });
+
+    test('allows customer-info fields via generic operator patch (no guard)',
+        () async {
+      final id = await seedAt('committed');
+      await repo.applyOperatorPatch(
+        id,
+        const ProjectOperatorPatch(customerDisplayName: 'Sunita ji'),
+      );
+      final data = (await projectsCol.doc(id).get()).data()!;
+      expect(data['customerDisplayName'], 'Sunita ji');
     });
   });
 

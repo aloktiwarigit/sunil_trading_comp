@@ -129,6 +129,36 @@ class ProjectRepo {
     String projectId,
     ProjectOperatorPatch patch,
   ) async {
+    // Phase 3 (2026-04-30): state-transitions to `paid` and `closed` must go
+    // through the typed transactional patches that enforce Triple Zero
+    // atomically. The generic patch is for non-money state moves (e.g.
+    // paid → delivering), customer-info fields, the revert path, and the
+    // Phase 2 transitional last-message-preview write.
+    if (patch.state == ProjectState.paid ||
+        patch.state == ProjectState.closed) {
+      throw ProjectRepoException(
+        'use-typed-method',
+        'state=${patch.state!.name} requires '
+            'applyOperatorMarkPaidPatch / applyOperatorClosePatch',
+      );
+    }
+    // Phase 3: settlement fields can only be written atomically by the
+    // typed mark-paid / close transactions. Catching them here closes the
+    // attack vector where a generic patch silently sets paidAt or
+    // amountReceivedByShop without the matching state move + Triple Zero
+    // re-check. The typed methods build their Firestore maps directly via
+    // txn.set(...), so they bypass this guard by construction.
+    if (patch.amountReceivedByShop != null ||
+        patch.paidAt != null ||
+        patch.closedAt != null ||
+        patch.paymentMethod != null) {
+      throw const ProjectRepoException(
+        'use-typed-method',
+        'settlement fields (amountReceivedByShop, paidAt, closedAt, '
+            'paymentMethod) require applyOperatorMarkPaidPatch / '
+            'applyOperatorClosePatch',
+      );
+    }
     final map = patch.toFirestoreMap();
     if (map.isEmpty) {
       _log.fine(
