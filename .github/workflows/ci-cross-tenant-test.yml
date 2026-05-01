@@ -71,30 +71,39 @@ jobs:
         working-directory: tools
         run: npm run build
 
-      - name: Start Firestore emulator
+      - name: Start Firebase emulators (firestore + storage)
         run: |
           firebase emulators:start \
-            --only firestore \
+            --only firestore,storage \
             --project yugma-dukaan-rules-test &
-          # Wait for Firestore emulator to become ready (up to 120s).
-          # First run downloads the emulator JAR (~30s), so we need more time.
+          # Wait for BOTH emulators to become ready (up to 180s).
+          # First run downloads each emulator JAR (~30s each), so we need
+          # more time than a single-emulator boot. cross_tenant_storage.test.ts
+          # (Phase 1) needs Storage at 9199 in addition to Firestore at 8080.
           # The @firebase/rules-unit-testing library handles auth simulation
           # internally — no separate auth emulator required.
-          ready=0
-          for i in $(seq 1 120); do
-            if curl -sf http://127.0.0.1:8080 > /dev/null 2>&1; then
+          firestore_ready=0
+          storage_ready=0
+          for i in $(seq 1 180); do
+            if [ "$firestore_ready" -ne 1 ] && curl -sf http://127.0.0.1:8080 > /dev/null 2>&1; then
               echo "Firestore emulator ready (after ${i}s)"
-              ready=1
+              firestore_ready=1
+            fi
+            if [ "$storage_ready" -ne 1 ] && curl -sf http://127.0.0.1:9199 > /dev/null 2>&1; then
+              echo "Storage emulator ready (after ${i}s)"
+              storage_ready=1
+            fi
+            if [ "$firestore_ready" -eq 1 ] && [ "$storage_ready" -eq 1 ]; then
               break
             fi
-            echo "Waiting for Firestore emulator... ($i)"
+            echo "Waiting for emulators... firestore=$firestore_ready storage=$storage_ready ($i)"
             sleep 1
           done
-          if [ "$ready" -ne 1 ]; then
-            echo "::error::Firestore emulator failed to start within 120s"
+          if [ "$firestore_ready" -ne 1 ] || [ "$storage_ready" -ne 1 ]; then
+            echo "::error::Emulators failed to start within 180s (firestore=$firestore_ready storage=$storage_ready)"
             exit 1
           fi
-          echo "Firestore emulator is up"
+          echo "Both Firestore and Storage emulators are up"
 
       - name: Run TS rules test
         working-directory: tools
