@@ -1339,6 +1339,50 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
 
+    test('Phase 5B r4 (Codex r3 #1) — anonymous user cannot commit own draft (Five Truths #2 OTP-at-commit gate)', async () => {
+      // Regression test for the OTP-at-commit gate. Phase 5B r1 enabled
+      // anonymous /projects create; without the isPhoneVerified() gate
+      // on the commit transition, the same anonymous caller could move
+      // draft -> committed via REST and bypass the OTP step that
+      // applyCustomerCommitPatch enforces client-side. Five Truths #2:
+      // "Anon -> Phone OTP at commit -> silent forever".
+      //
+      // Seed a draft project owned by anon uid 'alice', then have anon
+      // 'alice' try to commit it. Rule must reject because the caller is
+      // not phone-verified.
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .doc('shops/shop_1/projects/p-anon-commit')
+          .set({
+            projectId: 'p-anon-commit',
+            shopId: 'shop_1',
+            customerUid: 'alice',
+            customerId: 'alice',
+            state: 'draft',
+            totalAmount: 0,
+            amountReceivedByShop: 0,
+            lineItemsCount: 0,
+            lineItems: [],
+            unreadCountForCustomer: 0,
+            unreadCountForShopkeeper: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+      });
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/p-anon-commit').update({
+          state: 'committed',
+          committedAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
     test('Phase 5B — project create succeeds with full ProjectRepo.createDraft body (no false positive)', async () => {
       // Mirrors the EXACT body that ProjectRepo.createDraft writes
       // (apps/customer_app + packages/lib_core project_repo.dart). If this

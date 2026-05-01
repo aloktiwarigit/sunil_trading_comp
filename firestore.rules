@@ -547,7 +547,19 @@ service cloud.firestore {
                            //     Excludes lineItems (server-authoritative),
                            //     paymentMethod, customerVpa,
                            //     amountReceivedByShop, paidAt.
+                           //
+                           //     Phase 5B r4 (Codex r3 #1): isPhoneVerified()
+                           //     is the OTP-at-commit gate (Five Truths #2 —
+                           //     "Anon → Phone OTP at commit → silent
+                           //     forever"). Without it, an anonymous caller
+                           //     who created a draft via the Phase 5B path
+                           //     could immediately commit it via REST,
+                           //     bypassing the OTP requirement that the Dart
+                           //     applyCustomerCommitPatch enforces
+                           //     client-side. The check is defensive against
+                           //     REST clients that bypass Dart.
                            (request.resource.data.state == 'committed'
+                            && isPhoneVerified()
                             && isValidProjectStateTransition(
                                  resource.data.state,
                                  request.resource.data.state
