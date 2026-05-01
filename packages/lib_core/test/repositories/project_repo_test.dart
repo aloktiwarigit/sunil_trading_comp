@@ -239,10 +239,11 @@ void main() {
   // ===========================================================================
 
   group('applyCustomerPaymentPatch', () {
-    /// Helper: seed a committed project (post-C3.4).
+    /// Helper: seed a committed project. Phase 3: amountReceivedByShop = 0
+    /// at commit by design.
     Future<String> seedCommittedProject({
       int totalAmount = 18000,
-      int? amountReceivedByShop,
+      int amountReceivedByShop = 0,
     }) async {
       final ref = projectsCol.doc();
       await ref.set({
@@ -252,7 +253,7 @@ void main() {
         'customerUid': 'test-customer-uid',
         'state': 'committed',
         'totalAmount': totalAmount,
-        'amountReceivedByShop': amountReceivedByShop ?? totalAmount,
+        'amountReceivedByShop': amountReceivedByShop,
         'lineItems': <Map<String, dynamic>>[],
         'unreadCountForCustomer': 0,
         'unreadCountForShopkeeper': 0,
@@ -261,7 +262,7 @@ void main() {
       return ref.id;
     }
 
-    test('transitions committed â†’ paid', () async {
+    test('UPI claim transitions committed → awaiting_verification', () async {
       final projectId = await seedCommittedProject();
 
       await repo.applyCustomerPaymentPatch(
@@ -270,63 +271,16 @@ void main() {
       );
 
       final snap = await projectsCol.doc(projectId).get();
-      expect(snap.data()!['state'], 'paid');
+      expect(snap.data()!['state'], 'awaiting_verification');
+      expect(snap.data()!['paymentMethod'], 'upi');
       expect(snap.data()!['customerVpa'], 'sunita@okicici');
+      // Critically, the customer cannot self-write amountReceivedByShop; it
+      // stays at the committed-time value (0).
+      expect((snap.data()!['amountReceivedByShop'] as num?)?.toInt() ?? 0, 0);
     });
 
-    test('Triple Zero invariant re-verified at paid transition', () async {
-      final projectId = await seedCommittedProject(totalAmount: 22000);
-
-      // The transaction internally asserts amountReceivedByShop == totalAmount
-      // before writing. If the invariant were violated, this would throw
-      // ProjectRepoException('triple-zero-violation'). The fact that it
-      // succeeds IS the assertion.
-      await repo.applyCustomerPaymentPatch(
-        projectId,
-        const ProjectCustomerPaymentPatch(),
-      );
-
-      final snap = await projectsCol.doc(projectId).get();
-      expect(snap.data()!['state'], 'paid');
-    });
-
-    test('rejects paid transition if Triple Zero violated', () async {
-      // Artificially break the invariant.
-      final projectId = await seedCommittedProject(
-        totalAmount: 22000,
-        amountReceivedByShop: 21000, // != totalAmount â€” violation
-      );
-
-      expect(
-        () => repo.applyCustomerPaymentPatch(
-          projectId,
-          const ProjectCustomerPaymentPatch(),
-        ),
-        throwsA(isA<ProjectRepoException>().having(
-          (e) => e.code,
-          'code',
-          'triple-zero-violation',
-        )),
-      );
-    });
-
-    test('rejects payment on draft Project', () async {
-      final projectId = await seedDraftProject(lineItems: []);
-
-      expect(
-        () => repo.applyCustomerPaymentPatch(
-          projectId,
-          const ProjectCustomerPaymentPatch(),
-        ),
-        throwsA(isA<ProjectRepoException>().having(
-          (e) => e.code,
-          'code',
-          'invalid-state-transition',
-        )),
-      );
-    });
-
-    test('rejects payment on already-paid Project', () async {
+    test('rejects UPI claim from non-committed state (e.g. paid already)',
+        () async {
       final ref = projectsCol.doc();
       await ref.set({
         'projectId': ref.id,
@@ -345,7 +299,27 @@ void main() {
           ref.id,
           const ProjectCustomerPaymentPatch(),
         ),
-        throwsA(isA<ProjectRepoException>()),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code,
+          'code',
+          'invalid-state-transition',
+        )),
+      );
+    });
+
+    test('rejects UPI claim on draft Project', () async {
+      final projectId = await seedDraftProject(lineItems: []);
+
+      expect(
+        () => repo.applyCustomerPaymentPatch(
+          projectId,
+          const ProjectCustomerPaymentPatch(),
+        ),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code,
+          'code',
+          'invalid-state-transition',
+        )),
       );
     });
   });

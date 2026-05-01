@@ -128,16 +128,16 @@ class ProjectCustomerCommitPatch with _$ProjectCustomerCommitPatch {
   }
 }
 
-/// The third cross-partition customer mutation: recording UPI payment.
+/// The third cross-partition customer mutation: recording a UPI payment claim.
 ///
-/// PRD C3.5 "committed → paid" transition. The customer_app writes
-/// operator-partition fields (`state`, `paidAt`, `customerVpa`) for this
-/// gated transition. Security rule gate: `state == 'committed' &&
-/// request.auth.uid == resource.data.customerUid`.
+/// **Phase 3 (2026-04-30):** customer self-attestation cannot move a project to
+/// `paid` without an operator confirmation or a verified PSP webhook (future).
+/// The claim parks the project in `awaiting_verification`; the operator then
+/// verifies and runs `applyOperatorMarkPaidPatch` to advance to `paid`.
 ///
-/// Triple Zero invariant re-verified: the repo transaction asserts
-/// `amountReceivedByShop == totalAmount` (set at commit time by C3.4)
-/// before allowing the transition. If they diverge, the transition fails.
+/// Security rule gate (D.2 branch (3)): source state == 'committed', target
+/// state == 'awaiting_verification', paymentMethod ∈ {upi, bank_transfer},
+/// affectedKeys ⊆ {state, paymentMethod, customerVpa, updatedAt}.
 @freezed
 class ProjectCustomerPaymentPatch with _$ProjectCustomerPaymentPatch {
   const factory ProjectCustomerPaymentPatch({
@@ -148,8 +148,11 @@ class ProjectCustomerPaymentPatch with _$ProjectCustomerPaymentPatch {
   const ProjectCustomerPaymentPatch._();
 
   Map<String, Object?> toFirestoreMap() {
+    // Phase 3: customer self-attestation parks at awaiting_verification.
+    // Operator's typed mark-paid is the only path to `paid`.
     return <String, Object?>{
-      'state': 'paid',
+      'state': 'awaiting_verification',
+      'paymentMethod': 'upi',
       if (customerVpa != null) 'customerVpa': customerVpa,
     };
   }

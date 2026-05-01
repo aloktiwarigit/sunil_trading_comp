@@ -39,6 +39,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logging/logging.dart';
 
+import '../models/line_item.dart';
 import '../models/project.dart';
 import '../models/project_patch.dart';
 import '../services/read_budget_meter.dart';
@@ -207,12 +208,14 @@ class ProjectRepo {
     _log.info('customer bank transfer patch applied: projectId=$projectId');
   }
 
-  /// Typed customer cross-partition payment — the committed → paid transition
-  /// per PRD C3.5. Re-verifies the Triple Zero invariant at transition time:
-  /// `amountReceivedByShop == totalAmount` must hold (set at commit by C3.4).
+  /// Customer's UPI self-attestation. Per PRD C3.5 + Phase 3 hardening, this
+  /// transitions `committed → awaiting_verification` (NOT paid). The operator
+  /// must confirm the payment via `applyOperatorMarkPaidPatch` before the
+  /// project moves to `paid`.
   ///
-  /// Throws [ProjectRepoException] if the precondition fails or if the
-  /// Triple Zero invariant is violated.
+  /// Future PSP path: a Cloud Function with App Check + signed receipt
+  /// verification will write `state: paid` via `applySystemPatch`. That path
+  /// does not exist yet; until it does, every customer claim is just a claim.
   Future<void> applyCustomerPaymentPatch(
     String projectId,
     ProjectCustomerPaymentPatch patch,
@@ -226,33 +229,20 @@ class ProjectRepo {
           'Project does not exist',
         );
       }
-      final data = snap.data()!;
-      final currentState = data['state'] as String?;
+      final currentState = snap.data()!['state'] as String?;
       if (currentState != 'committed') {
         throw ProjectRepoException(
           'invalid-state-transition',
-          'Cannot pay Project in state $currentState — '
-              'only committed can transition to paid',
+          'Cannot claim UPI payment in state $currentState — '
+              'only committed can transition to awaiting_verification',
         );
       }
-
-      // Re-verify Triple Zero invariant before allowing paid transition.
-      final totalAmount = (data['totalAmount'] as num?)?.toInt() ?? 0;
-      final received = (data['amountReceivedByShop'] as num?)?.toInt() ?? 0;
-      if (received != totalAmount) {
-        throw ProjectRepoException(
-          'triple-zero-violation',
-          'amountReceivedByShop ($received) != totalAmount ($totalAmount) — '
-              'Triple Zero invariant violated, refusing paid transition',
-        );
-      }
-
       final map = patch.toFirestoreMap();
-      map['paidAt'] = FieldValue.serverTimestamp();
       map['updatedAt'] = FieldValue.serverTimestamp();
+      // Note: NO paidAt write here — payment is not confirmed yet.
       txn.set(ref, map, SetOptions(merge: true));
     });
-    _log.info('customer payment patch applied: projectId=$projectId');
+    _log.info('customer UPI claim recorded (awaiting_verification): $projectId');
   }
 
   /// Typed customer cross-partition commit — the draft/negotiating → committed
@@ -320,6 +310,160 @@ class ProjectRepo {
       txn.set(ref, map, SetOptions(merge: true));
     });
     _log.info('customer commit patch applied: projectId=$projectId');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 2 new methods — all callsites that were previously direct writes.
+  // ---------------------------------------------------------------------------
+
+  /// Creates a new draft Project document.
+  ///
+  /// Called only from customer_app via DraftController._createDraftProject.
+  /// Returns the generated projectId (also stored as a field in the document).
+  Future<String> createDraft({
+    required String customerUid,
+    required List<LineItem> items,
+  }) async {
+    final projectId = _firestore.collection('_').doc().id;
+    final totalAmount = items.fold<int>(0, (s, i) => s + i.lineTotalInr);
+    final data = <String, dynamic>{
+      'projectId': projectId,
+      'shopId': _shopIdProvider.shopId,
+      'customerId': customerUid,
+      'customerUid': customerUid,
+      'state': 'draft',
+      'totalAmount': totalAmount,
+      'amountReceivedByShop': 0,
+      'lineItemsCount': items.length,
+      'lineItems': items.map((e) => e.toJson()).toList(),
+      'unreadCountForCustomer': 0,
+      'unreadCountForShopkeeper': 0,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    await _projectsCollection().doc(projectId).set(data);
+    _log.info('createDraft: projectId=$projectId totalAmount=$totalAmount');
+    return projectId;
+  }
+
+  /// Updates lineItems and totalAmount on a draft Project.
+  ///
+  /// Transaction-backed: verifies the document exists and state == 'draft'
+  /// before writing. Throws [ProjectRepoException] if missing or non-draft.
+  /// Does NOT write lineItemsCount (not in the customer update allowlist).
+  Future<void> applyCustomerDraftLineItemPatch(
+    String projectId,
+    List<LineItem> items,
+  ) async {
+    final ref = _projectsCollection().doc(projectId);
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (!snap.exists) {
+        throw const ProjectRepoException('not-found', 'Project does not exist');
+      }
+      final currentState = snap.data()!['state'] as String?;
+      if (currentState != 'draft') {
+        throw ProjectRepoException(
+          'invalid-state',
+          'applyCustomerDraftLineItemPatch requires draft, got $currentState',
+        );
+      }
+      final totalAmount = items.fold<int>(0, (s, i) => s + i.lineTotalInr);
+      txn.update(ref, <String, dynamic>{
+        'lineItems': items.map((e) => e.toJson()).toList(),
+        'totalAmount': totalAmount,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+    _log.info(
+      'applyCustomerDraftLineItemPatch: projectId=$projectId '
+      'items=${items.length}',
+    );
+  }
+
+  /// Deletes a draft Project (state must be 'draft').
+  ///
+  /// Transaction-backed: verifies the document exists and state == 'draft'
+  /// before deleting. Throws [ProjectRepoException] if missing or non-draft.
+  Future<void> deleteDraft(String projectId) async {
+    final ref = _projectsCollection().doc(projectId);
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (!snap.exists) {
+        throw const ProjectRepoException('not-found', 'Project does not exist');
+      }
+      final currentState = snap.data()!['state'] as String?;
+      if (currentState != 'draft') {
+        throw ProjectRepoException(
+          'invalid-state',
+          'deleteDraft requires draft, got $currentState',
+        );
+      }
+      txn.delete(ref);
+    });
+    _log.info('deleteDraft: projectId=$projectId');
+  }
+
+  /// Accepts a shopkeeper price proposal on one line item.
+  ///
+  /// Transaction: reads the project, verifies state is draft or negotiating,
+  /// sets finalPrice on the target line item, recomputes totalAmount, and
+  /// transitions state to 'negotiating'.
+  ///
+  /// Throws [ProjectRepoException] if the project is missing, state is
+  /// invalid, or the target line item is not found.
+  Future<void> applyCustomerPriceAcceptancePatch(
+    String projectId,
+    String lineItemId,
+    int proposedPrice,
+  ) async {
+    final ref = _projectsCollection().doc(projectId);
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (!snap.exists) {
+        throw const ProjectRepoException('not-found', 'Project does not exist');
+      }
+      final currentState = snap.data()!['state'] as String?;
+      if (currentState != 'draft' && currentState != 'negotiating') {
+        throw ProjectRepoException(
+          'invalid-state',
+          'Price acceptance requires draft or negotiating, got $currentState',
+        );
+      }
+      final rawItems =
+          snap.data()!['lineItems'] as List<dynamic>? ?? <dynamic>[];
+      final updated = <Map<String, dynamic>>[];
+      var found = false;
+      var total = 0;
+      for (final raw in rawItems) {
+        final item = Map<String, dynamic>.from(raw as Map);
+        if (item['lineItemId'] == lineItemId) {
+          item['finalPrice'] = proposedPrice;
+          found = true;
+        }
+        final price = (item['finalPrice'] as num?)?.toInt() ??
+            (item['unitPriceInr'] as num?)?.toInt() ??
+            0;
+        total += price * ((item['quantity'] as num?)?.toInt() ?? 1);
+        updated.add(item);
+      }
+      if (!found) {
+        throw ProjectRepoException(
+          'line-item-not-found',
+          'lineItemId=$lineItemId not found in project=$projectId',
+        );
+      }
+      txn.update(ref, <String, dynamic>{
+        'lineItems': updated,
+        'totalAmount': total,
+        'state': 'negotiating',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+    _log.info(
+      'applyCustomerPriceAcceptancePatch: projectId=$projectId '
+      'lineItemId=$lineItemId proposedPrice=$proposedPrice',
+    );
   }
 
   /// Typed customer cross-partition cancel — the ONE cross-partition
