@@ -64,7 +64,7 @@ class PaymentScreen extends ConsumerWidget {
             PaymentFlowStage.awaitingReturn =>
               _buildAwaitingReturn(context, ref, theme, flowState),
             PaymentFlowStage.recording => _buildLoading(theme, strings),
-            PaymentFlowStage.paid => _buildSuccess(context, theme, flowState),
+            PaymentFlowStage.submitted => _buildSuccess(context, theme, flowState),
             PaymentFlowStage.error =>
               _buildError(context, ref, theme, flowState),
           };
@@ -400,7 +400,7 @@ class PaymentScreen extends ConsumerWidget {
   // Phase 3 success-stage copy helpers — branch on the actual project state
   // because the customer's tap may park the project in awaiting_verification
   // (UPI / bank transfer) or leave it in committed (COD). The local
-  // PaymentFlowStage.paid only means "the customer's flow finished".
+  // PaymentFlowStage.submitted only means "the customer's flow finished".
   // ---------------------------------------------------------------------------
 
   String _successHeadline(PaymentFlowState flowState, AppStrings strings) {

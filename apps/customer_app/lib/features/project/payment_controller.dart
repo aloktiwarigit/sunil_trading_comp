@@ -20,38 +20,52 @@ import 'package:url_launcher/url_launcher.dart';
 
 /// Stages of the payment flow.
 ///
-/// **Phase 3 naming caveat (TODO follow-up — see GitHub issue #2):**
-/// `paid` here means "the customer's flow finished from their perspective",
-/// NOT that the project's state is `ProjectState.paid`. Under Phase 3 the
-/// resulting project state may be:
+/// **Phase 4 (2026-05-01):** the previously misleading `paid` value was
+/// renamed to `submitted` — the customer's flow finishing does NOT mean
+/// the project's state is `ProjectState.paid`. Under Phase 3 the resulting
+/// project state may be:
 ///   - `awaiting_verification` (UPI / bank-transfer claim — operator must
 ///     still confirm via `applyOperatorMarkPaidPatch`)
 ///   - `committed` (COD self-tag — operator marks paid at cash collection)
 ///   - `paid` (only via the future PSP webhook path; not reachable today)
 ///
-/// `payment_screen.dart` `_successHeadline` already branches on the actual
-/// project state to render the right copy, so behaviour is correct. The
-/// rename / split is tracked in issue #2 as a Medium follow-up.
+/// `payment_screen.dart` `_successHeadline` branches on the actual project
+/// state to render the right copy, so behaviour is unchanged. Issue #2
+/// tracked the rename; this enum is the resolution.
+///
+/// A `@Deprecated` static getter `paid` is kept for one release so any
+/// in-flight branch with `PaymentFlowStage.paid` callsites still compiles.
+/// Removed in Phase 5.
 enum PaymentFlowStage {
-  /// Ready â€” UPI button visible.
+  /// Ready — UPI button visible.
   idle,
 
   /// UPI intent launching.
   launching,
 
-  /// UPI app opened â€” waiting for the customer to return.
+  /// UPI app opened — waiting for the customer to return.
   awaitingReturn,
 
   /// Recording payment in Firestore.
   recording,
 
-  /// The customer's flow finished. Despite the name, the project may be in
-  /// `awaiting_verification`, `committed` (COD), or `paid` — see enum
-  /// docstring. Issue #2 tracks renaming.
-  paid,
+  /// The customer's flow finished. Despite the historical name `paid`, the
+  /// project may be in `awaiting_verification`, `committed` (COD), or `paid`
+  /// — see enum docstring.
+  submitted,
 
   /// Something failed.
-  error,
+  error;
+
+  /// Phase 4 deprecation alias for the historical `paid` value. Kept for
+  /// one release per Phase 4 plan §D1. Remove in Phase 5.
+  ///
+  /// Dart 3 enhanced-enum form: a static getter inside the enum body lets
+  /// `PaymentFlowStage.paid` resolve to `PaymentFlowStage.submitted`
+  /// without polluting the value set or introducing an extension.
+  @Deprecated('Renamed to PaymentFlowStage.submitted in Phase 4. '
+      'Will be removed in Phase 5.')
+  static PaymentFlowStage get paid => PaymentFlowStage.submitted;
 }
 
 /// Immutable state for the payment flow.
@@ -180,7 +194,7 @@ class PaymentController extends FamilyAsyncNotifier<PaymentFlowState, String> {
       final updated = await projectRepo.getById(_projectId);
       _log.info('COD selected: $_projectId');
       state = AsyncData(PaymentFlowState(
-        stage: PaymentFlowStage.paid,
+        stage: PaymentFlowStage.submitted,
         project: updated,
       ));
     } on ProjectRepoException catch (e) {
@@ -221,7 +235,7 @@ class PaymentController extends FamilyAsyncNotifier<PaymentFlowState, String> {
       final updated = await projectRepo.getById(_projectId);
       _log.info('bank transfer reported: $_projectId');
       state = AsyncData(PaymentFlowState(
-        stage: PaymentFlowStage.paid,
+        stage: PaymentFlowStage.submitted,
         project: updated,
       ));
     } on ProjectRepoException catch (e) {
@@ -266,7 +280,7 @@ class PaymentController extends FamilyAsyncNotifier<PaymentFlowState, String> {
       _log.info('payment recorded: $_projectId');
 
       state = AsyncData(PaymentFlowState(
-        stage: PaymentFlowStage.paid,
+        stage: PaymentFlowStage.submitted,
         project: paid,
       ));
     } on ProjectRepoException catch (e) {

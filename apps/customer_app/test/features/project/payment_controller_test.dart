@@ -13,6 +13,7 @@
 // =============================================================================
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:customer_app/features/project/payment_controller.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lib_core/lib_core.dart';
@@ -93,5 +94,13 @@ void main() {
     expect(data['paymentMethod'], 'bank_transfer');
     expect(data['paidAt'], isNull);
     expect((data['amountReceivedByShop'] as num?)?.toInt() ?? 0, 0);
+  });
+
+  test('PaymentFlowStage.paid alias resolves to .submitted (deprecated)', () {
+    // Phase 4 G2: `paid` was renamed to `submitted`. The old name remains
+    // as a deprecated static getter inside the enum body for one release
+    // so any in-flight branch still compiles. Removed in Phase 5.
+    // ignore: deprecated_member_use_from_same_package
+    expect(PaymentFlowStage.paid, PaymentFlowStage.submitted);
   });
 }
