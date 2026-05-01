@@ -21,6 +21,7 @@ service firebase.storage {
 
     function isShopOperator(shopId) {
       return isShopMember(shopId)
+        && request.auth.token.keys().hasAny(['role'])
         && (request.auth.token.role == 'bhaiya'
             || request.auth.token.role == 'beta'
             || request.auth.token.role == 'munshi');
@@ -38,6 +39,12 @@ service firebase.storage {
       return request.resource.contentType.matches('audio/.*');
     }
 
+    // Mirrors the Firestore helper — freezes Storage writes when the shop is
+    // not active (deactivating / purge_scheduled / purged).
+    function shopIsWritable(shopId) {
+      return firestore.get(/databases/(default)/documents/shops/$(shopId)).data.shopLifecycle == 'active';
+    }
+
     // ---------- Catch-all default deny ----------
 
     match /{allPaths=**} {
@@ -51,7 +58,8 @@ service firebase.storage {
       allow read: if isShopMember(shopId);
       allow write: if isShopOperator(shopId)
                    && isReasonableSize()
-                   && isAudio();
+                   && isAudio()
+                   && shopIsWritable(shopId);
     }
 
     // ---------- Shop branding (logo, shopkeeper face, hero image) ----------
@@ -61,7 +69,8 @@ service firebase.storage {
       allow read: if true; // public — used by marketing site at build time
       allow write: if isShopOperator(shopId)
                    && isReasonableSize()
-                   && isImage();
+                   && isImage()
+                   && shopIsWritable(shopId);
     }
 
     // Catalog images go to Cloudinary, NOT Firebase Storage — see ADR-006
