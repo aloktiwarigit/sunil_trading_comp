@@ -416,8 +416,6 @@ service cloud.firestore {
         // Create: customer creates draft. Anonymous or phone-verified.
         // callerShopMatchesOrUnset: anonymous users (no claim) may create;
         // authenticated users from another shop are blocked.
-        // shopIsWritable intentionally omitted to avoid an extra read that
-        // can fail for anonymous users who lack the shopId claim.
         //
         // Phase 5B hardening (PR #4):
         //   1. customerId == auth.uid   — closes the customerUid/customerId
@@ -434,9 +432,17 @@ service cloud.firestore {
         //      non-zero value at create is money-state pre-pollution and is
         //      rejected; the Triple Zero invariant remains enforced at the
         //      paid/closed state transitions in `allow update` below.
+        //   4. shopIsWritable(shopId) — Phase 5B r3 (Codex r2 #1).
+        //      Honours the ADR-013 lifecycle freeze for anonymous callers
+        //      too. Previously omitted on the (incorrect) premise that
+        //      shopIsWritable's internal get() required the caller's
+        //      shopId claim — it does not. Without this gate, an anonymous
+        //      caller could create projects in a missing or deactivated
+        //      shop, bypassing the documented write-freeze.
         allow create: if isSignedIn()
                       && shopIdMatches(shopId)
                       && callerShopMatchesOrUnset(shopId)
+                      && shopIsWritable(shopId)
                       && request.resource.data.customerUid == request.auth.uid
                       && request.resource.data.customerId == request.auth.uid
                       && request.resource.data.state == 'draft'

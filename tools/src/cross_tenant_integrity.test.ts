@@ -1308,6 +1308,37 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
 
+    test('Phase 5B r3 (Codex r2 #1) — anonymous user cannot create project when shop is deactivating', async () => {
+      // Regression test for the shopIsWritable() gate. Without it an
+      // anonymous caller could create /projects under a shop whose
+      // shopLifecycle != 'active', bypassing the ADR-013 write-freeze
+      // that the rest of the rule set honours. This test sets shop_2 to
+      // 'deactivating' and verifies the create is denied for an anon
+      // user even though every other Phase 5B condition is satisfied.
+      await setShopLifecycle('shop_2', 'deactivating');
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_2/projects/p-frozen').set({
+          projectId: 'p-frozen',
+          shopId: 'shop_2',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
     test('Phase 5B — project create succeeds with full ProjectRepo.createDraft body (no false positive)', async () => {
       // Mirrors the EXACT body that ProjectRepo.createDraft writes
       // (apps/customer_app + packages/lib_core project_repo.dart). If this
