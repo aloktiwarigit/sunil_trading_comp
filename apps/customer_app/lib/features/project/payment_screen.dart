@@ -316,11 +316,23 @@ class PaymentScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: YugmaSpacing.s4),
+            // Phase 3: customer's tap completes the flow, but the project may
+            // be in awaiting_verification (UPI/bank-transfer claim) or stay
+            // in committed (COD). Pick the right copy from the project state
+            // rather than always claiming "paid".
             Text(
-              strings.paymentSuccessPakka,
+              _successHeadline(flowState, strings),
               style: theme.h2Deva.copyWith(color: theme.shopCommit),
               textAlign: TextAlign.center,
             ),
+            if (_successSubtitle(flowState, strings) != null) ...[
+              const SizedBox(height: YugmaSpacing.s2),
+              Text(
+                _successSubtitle(flowState, strings)!,
+                style: theme.bodyDeva,
+                textAlign: TextAlign.center,
+              ),
+            ],
             const SizedBox(height: YugmaSpacing.s2),
             if (flowState.project != null)
               Text(
@@ -382,6 +394,38 @@ class PaymentScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Phase 3 success-stage copy helpers — branch on the actual project state
+  // because the customer's tap may park the project in awaiting_verification
+  // (UPI / bank transfer) or leave it in committed (COD). The local
+  // PaymentFlowStage.paid only means "the customer's flow finished".
+  // ---------------------------------------------------------------------------
+
+  String _successHeadline(PaymentFlowState flowState, AppStrings strings) {
+    final state = flowState.project?.state;
+    if (state == ProjectState.awaitingVerification) {
+      return strings.awaitingVerificationMessage;
+    }
+    if (state == ProjectState.committed &&
+        flowState.project?.paymentMethod == 'cod') {
+      return strings.codConfirmNote;
+    }
+    return strings.paymentSuccessPakka;
+  }
+
+  String? _successSubtitle(PaymentFlowState flowState, AppStrings strings) {
+    final state = flowState.project?.state;
+    // For awaiting_verification + COD we already conveyed the wait in the
+    // headline; no subtitle needed. The "paid" path keeps no subtitle to
+    // match prior behavior.
+    if (state == ProjectState.awaitingVerification ||
+        (state == ProjectState.committed &&
+            flowState.project?.paymentMethod == 'cod')) {
+      return null;
+    }
+    return null;
   }
 
   // ---------------------------------------------------------------------------

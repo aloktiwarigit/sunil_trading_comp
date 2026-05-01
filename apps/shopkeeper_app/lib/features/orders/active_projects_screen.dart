@@ -310,6 +310,32 @@ class _ProjectCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: YugmaSpacing.s2),
+            // Phase 3: COD-tagged committed projects show a "नकद —
+            // डिलीवरी पर" hint so the operator knows to collect cash at
+            // delivery and run Mark Paid.
+            if (project.state == ProjectState.committed &&
+                project.paymentMethod == 'cod') ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: YugmaSpacing.s2,
+                  vertical: YugmaSpacing.s1,
+                ),
+                decoration: BoxDecoration(
+                  color: YugmaColors.accent.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(YugmaRadius.sm),
+                ),
+                child: Text(
+                  'नकद — डिलीवरी पर',
+                  style: TextStyle(
+                    fontFamily: YugmaFonts.devaBody,
+                    fontSize: YugmaTypeScale.caption,
+                    fontWeight: FontWeight.w600,
+                    color: YugmaColors.accent,
+                  ),
+                ),
+              ),
+              const SizedBox(height: YugmaSpacing.s2),
+            ],
             // Amount + item count
             Row(
               children: [
