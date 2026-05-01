@@ -63,6 +63,15 @@ forbid_pattern_in_dir "$CUSTOMER_APP" \
   'ProjectOperatorRevertPatch' \
   'customer_app cannot construct revert patches (PRD I6.12 edge case #2)'
 
+# Phase 3 (2026-04-30): typed mark-paid + close patches are operator-only.
+forbid_pattern_in_dir "$CUSTOMER_APP" \
+  'ProjectOperatorMarkPaidPatch' \
+  'customer_app cannot construct mark-paid patches (Phase 3 — operator confirms payment)'
+
+forbid_pattern_in_dir "$CUSTOMER_APP" \
+  'ProjectOperatorClosePatch' \
+  'customer_app cannot construct close patches (Phase 3 — operator closes after Triple Zero)'
+
 # -----------------------------------------------------------------------------
 # shopkeeper_app must NOT import ProjectCustomerPatch, ProjectSystemPatch,
 # or ProjectCustomerCancelPatch.
