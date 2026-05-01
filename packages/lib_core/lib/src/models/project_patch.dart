@@ -158,12 +158,17 @@ class ProjectCustomerPaymentPatch with _$ProjectCustomerPaymentPatch {
   }
 }
 
-/// The fourth cross-partition customer mutation: selecting COD payment.
+/// Customer self-tags COD on a committed project.
 ///
-/// PRD C3.6 — committed → delivering transition. Skips `paid` state entirely;
-/// the shopkeeper marks `paid` after collecting cash on delivery.
-/// Security rule gate: `state == 'committed' &&
-/// request.auth.uid == resource.data.customerUid`.
+/// **Phase 3 (2026-04-30):** COD is a payment-method tag only — state stays
+/// `committed`. The project sits in the operator's queue with a "नकद —
+/// डिलीवरी पर" badge; the operator marks paid (and increments
+/// amountReceivedByShop) when cash is collected at handoff via
+/// `applyOperatorMarkPaidPatch`.
+///
+/// Security rule gate (D.1 same-state COD branch): source state == 'committed',
+/// target state == 'committed', paymentMethod == 'cod', affectedKeys ⊆
+/// {paymentMethod, updatedAt}.
 @freezed
 class ProjectCustomerCodPatch with _$ProjectCustomerCodPatch {
   const factory ProjectCustomerCodPatch() = _ProjectCustomerCodPatch;
@@ -171,8 +176,8 @@ class ProjectCustomerCodPatch with _$ProjectCustomerCodPatch {
   const ProjectCustomerCodPatch._();
 
   Map<String, Object?> toFirestoreMap() {
+    // Phase 3: paymentMethod-only; no state change.
     return <String, Object?>{
-      'state': 'delivering',
       'paymentMethod': 'cod',
     };
   }

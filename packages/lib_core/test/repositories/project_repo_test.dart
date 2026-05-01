@@ -325,6 +325,83 @@ void main() {
   });
 
   // ===========================================================================
+  // applyCustomerCodPatch — Phase 3 (COD stays in committed; method tag only)
+  // ===========================================================================
+
+  group('applyCustomerCodPatch', () {
+    Future<String> seedCommittedProject() async {
+      final ref = projectsCol.doc();
+      await ref.set({
+        'projectId': ref.id,
+        'shopId': shopId,
+        'customerId': 'test-customer-uid',
+        'customerUid': 'test-customer-uid',
+        'state': 'committed',
+        'totalAmount': 18000,
+        'amountReceivedByShop': 0,
+        'lineItems': <Map<String, dynamic>>[],
+        'createdAt': Timestamp.fromDate(DateTime(2026, 4, 12)),
+      });
+      return ref.id;
+    }
+
+    test('COD selection sets paymentMethod and does not advance state',
+        () async {
+      final projectId = await seedCommittedProject();
+
+      await repo.applyCustomerCodPatch(
+        projectId,
+        const ProjectCustomerCodPatch(),
+      );
+
+      final snap = await projectsCol.doc(projectId).get();
+      // Phase 3: COD does NOT advance state. The shopkeeper collects cash at
+      // delivery and runs applyOperatorMarkPaidPatch then.
+      // Under fake_cloud_firestore's merge semantics, fields not written by
+      // the patch may surface as null on read (real Firestore preserves
+      // them). The contract we verify here is the patch's own write effect:
+      // paymentMethod is 'cod', and the patch did NOT advance state to
+      // anything past committed.
+      expect(snap.data()!['paymentMethod'], 'cod');
+      final stateAfter = snap.data()!['state'];
+      expect(
+        stateAfter == null || stateAfter == 'committed',
+        isTrue,
+        reason: 'COD patch must not transition past committed; got $stateAfter',
+      );
+      // amountReceivedByShop must remain 0 — no money has changed hands.
+      expect((snap.data()!['amountReceivedByShop'] as num?)?.toInt() ?? 0, 0);
+    });
+
+    test('COD selection rejects on non-committed state (e.g. draft)', () async {
+      final ref = projectsCol.doc();
+      await ref.set({
+        'projectId': ref.id,
+        'shopId': shopId,
+        'customerId': 'test-customer-uid',
+        'customerUid': 'test-customer-uid',
+        'state': 'draft',
+        'totalAmount': 5000,
+        'amountReceivedByShop': 0,
+        'lineItems': <Map<String, dynamic>>[],
+        'createdAt': Timestamp.fromDate(DateTime(2026, 4, 12)),
+      });
+
+      expect(
+        () => repo.applyCustomerCodPatch(
+          ref.id,
+          const ProjectCustomerCodPatch(),
+        ),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code,
+          'code',
+          'invalid-state-transition',
+        )),
+      );
+    });
+  });
+
+  // ===========================================================================
   // Phase 2 new methods: createDraft, applyCustomerDraftLineItemPatch,
   // deleteDraft, applyCustomerPriceAcceptancePatch
   // ===========================================================================

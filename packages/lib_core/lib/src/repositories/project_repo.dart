@@ -156,8 +156,9 @@ class ProjectRepo {
         .set(map, SetOptions(merge: true));
   }
 
-  /// Typed customer cross-partition COD — committed → delivering per C3.6.
-  /// Skips `paid` state; the shopkeeper marks paid after collecting cash.
+  /// Customer self-tags the project as cash-on-delivery. Phase 3: state stays
+  /// `committed`; the operator advances state when cash is collected at
+  /// delivery via `applyOperatorMarkPaidPatch` (committed → paid).
   Future<void> applyCustomerCodPatch(
     String projectId,
     ProjectCustomerCodPatch patch,
@@ -179,7 +180,7 @@ class ProjectRepo {
       map['updatedAt'] = FieldValue.serverTimestamp();
       txn.set(ref, map, SetOptions(merge: true));
     });
-    _log.info('customer COD patch applied: projectId=$projectId');
+    _log.info('customer COD tag applied (state stays committed): $projectId');
   }
 
   /// Typed customer cross-partition bank transfer — committed → awaiting_verification
