@@ -392,8 +392,15 @@ class ProjectRepo {
   ///   1. Reads the current Project snapshot
   ///   2. Asserts state is 'draft' or 'negotiating'
   ///   3. Computes totalAmount from sum(lineItems[].quantity * unitPriceInr)
-  ///   4. Sets amountReceivedByShop = totalAmount (Triple Zero invariant)
-  ///   5. Sets state = 'committed' + committedAt + customerPhone/DisplayName
+  ///   4. Sets state = 'committed' + committedAt + customerPhone/DisplayName
+  ///
+  /// **Phase 3 (2026-04-30):** the commit deliberately does NOT set
+  /// `amountReceivedByShop`. The field stays at 0 from creation through
+  /// commit; only `applyOperatorMarkPaidPatch` (run by an authenticated
+  /// operator) flips it to `totalAmount`. Pre-setting here would disarm
+  /// the Triple Zero invariant on every later checkpoint — do not
+  /// reintroduce. See `docs/superpowers/plans/2026-04-30-phase3-payment-correctness.md`
+  /// audit finding F1.
   ///
   /// Throws [ProjectRepoException] if the precondition fails.
   Future<void> applyCustomerCommitPatch(

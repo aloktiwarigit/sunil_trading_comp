@@ -19,6 +19,19 @@ import 'package:logging/logging.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Stages of the payment flow.
+///
+/// **Phase 3 naming caveat (TODO follow-up — see GitHub issue #2):**
+/// `paid` here means "the customer's flow finished from their perspective",
+/// NOT that the project's state is `ProjectState.paid`. Under Phase 3 the
+/// resulting project state may be:
+///   - `awaiting_verification` (UPI / bank-transfer claim — operator must
+///     still confirm via `applyOperatorMarkPaidPatch`)
+///   - `committed` (COD self-tag — operator marks paid at cash collection)
+///   - `paid` (only via the future PSP webhook path; not reachable today)
+///
+/// `payment_screen.dart` `_successHeadline` already branches on the actual
+/// project state to render the right copy, so behaviour is correct. The
+/// rename / split is tracked in issue #2 as a Medium follow-up.
 enum PaymentFlowStage {
   /// Ready â€” UPI button visible.
   idle,
@@ -32,7 +45,9 @@ enum PaymentFlowStage {
   /// Recording payment in Firestore.
   recording,
 
-  /// Payment succeeded â€” Project is now paid.
+  /// The customer's flow finished. Despite the name, the project may be in
+  /// `awaiting_verification`, `committed` (COD), or `paid` — see enum
+  /// docstring. Issue #2 tracks renaming.
   paid,
 
   /// Something failed.
