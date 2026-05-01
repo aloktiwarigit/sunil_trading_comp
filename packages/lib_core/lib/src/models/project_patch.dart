@@ -85,14 +85,17 @@ class ProjectCustomerCancelPatch with _$ProjectCustomerCancelPatch {
 /// The second cross-partition customer mutation: committing a draft Project.
 ///
 /// This is the PRD C3.4 "promote-to-operator-patch" — the customer_app writes
-/// operator-partition fields (`state`, `committedAt`, `amountReceivedByShop`,
+/// operator-partition fields (`state`, `totalAmount`, `committedAt`,
 /// `customerPhone`, `customerDisplayName`) for this ONE gated transition.
 ///
 /// Security rule gate: `state in ['draft', 'negotiating'] &&
 /// request.auth.uid == resource.data.customerUid`.
 ///
-/// The repo method computes `totalAmount` from line items and enforces the
-/// Triple Zero invariant (`amountReceivedByShop == totalAmount`) at write time.
+/// **Phase 3 (2026-04-30):** the customer commit no longer pre-sets
+/// `amountReceivedByShop`. That field stays at 0 from creation through
+/// commit; it only becomes nonzero when the operator confirms cash/UPI/
+/// transfer received via `applyOperatorMarkPaidPatch`. Pre-setting it here
+/// would disarm the Triple Zero invariant on every later checkpoint.
 @freezed
 class ProjectCustomerCommitPatch with _$ProjectCustomerCommitPatch {
   const factory ProjectCustomerCommitPatch({
@@ -114,9 +117,10 @@ class ProjectCustomerCommitPatch with _$ProjectCustomerCommitPatch {
   }) {
     return <String, Object?>{
       'state': 'committed',
-      // Triple Zero invariant — no commission, no platform fee.
+      // Phase 3: totalAmount is set at commit; amountReceivedByShop stays at
+      // 0 until the operator confirms cash/UPI/transfer received. Setting it
+      // here would disarm the Triple Zero invariant downstream.
       'totalAmount': totalAmount,
-      'amountReceivedByShop': totalAmount,
       if (customerPhone != null) 'customerPhone': customerPhone,
       if (customerDisplayName != null)
         'customerDisplayName': customerDisplayName,

@@ -11,6 +11,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lib_core/src/models/line_item.dart';
 import 'package:lib_core/src/models/project_patch.dart';
 import 'package:lib_core/src/repositories/project_repo.dart';
 import 'package:lib_core/src/shop_id_provider.dart';
@@ -122,10 +123,16 @@ void main() {
       final snap = await projectsCol.doc(projectId).get();
       final data = snap.data()!;
 
-      // THE invariant â€” zero commission, zero platform fee.
-      expect(data['amountReceivedByShop'], data['totalAmount']);
-      expect(data['amountReceivedByShop'], 18000);
+      // Phase 3: amountReceivedByShop is NOT set by the commit patch. The
+      // field stays at whatever createDraft seeded (0). The Triple Zero
+      // invariant is now non-trivial — it is only satisfied when the
+      // operator confirms the money has actually been received via
+      // applyOperatorMarkPaidPatch. Use ?? 0 to tolerate fake_cloud_firestore
+      // merge behavior where unwritten fields may surface as null.
+      expect((data['amountReceivedByShop'] as num?)?.toInt() ?? 0, 0);
       expect(data['totalAmount'], 18000);
+      // Critical: must NOT equal totalAmount (the Phase 2 bug).
+      expect(data['amountReceivedByShop'], isNot(equals(data['totalAmount'])));
     });
 
     test('rejects commit on Project in committed state', () async {
@@ -192,7 +199,8 @@ void main() {
       final snap = await projectsCol.doc(projectId).get();
       expect(snap.data()!['state'], 'committed');
       expect(snap.data()!['totalAmount'], 30000);
-      expect(snap.data()!['amountReceivedByShop'], 30000);
+      // Phase 3: stays 0 at commit (or null under fake-firestore merge).
+      expect((snap.data()!['amountReceivedByShop'] as num?)?.toInt() ?? 0, 0);
     });
 
     test('throws on non-existent Project', () async {
@@ -337,6 +345,221 @@ void main() {
           ref.id,
           const ProjectCustomerPaymentPatch(),
         ),
+        throwsA(isA<ProjectRepoException>()),
+      );
+    });
+  });
+
+  // ===========================================================================
+  // Phase 2 new methods: createDraft, applyCustomerDraftLineItemPatch,
+  // deleteDraft, applyCustomerPriceAcceptancePatch
+  // ===========================================================================
+
+  group('Phase 2 new methods', () {
+    const customerUid = 'cust-phase2-uid';
+
+    List<LineItem> _oneItem() => [
+          LineItem(
+            lineItemId: 'li-1',
+            skuId: 'sku-1',
+            skuName: 'अलमारी',
+            quantity: 2,
+            unitPriceInr: 5000,
+          ),
+        ];
+
+    // -------------------------------------------------------------------------
+    // createDraft
+    // -------------------------------------------------------------------------
+
+    test('createDraft stores document with correct fields', () async {
+      final id = await repo.createDraft(
+        customerUid: customerUid,
+        items: _oneItem(),
+      );
+      expect(id, isNotEmpty);
+
+      final snap = await projectsCol.doc(id).get();
+      expect(snap.exists, isTrue);
+      final data = snap.data()!;
+      expect(data['customerUid'], equals(customerUid));
+      expect(data['state'], equals('draft'));
+      expect(data['totalAmount'], equals(10000)); // 2 × 5000
+      expect(data['amountReceivedByShop'], equals(0));
+      expect((data['lineItems'] as List).length, equals(1));
+      expect(data['lineItemsCount'], equals(1));
+    });
+
+    // -------------------------------------------------------------------------
+    // applyCustomerDraftLineItemPatch
+    // -------------------------------------------------------------------------
+
+    test('applyCustomerDraftLineItemPatch updates lineItems and totalAmount on draft',
+        () async {
+      final id = await repo.createDraft(
+        customerUid: customerUid,
+        items: _oneItem(), // 1 item, totalAmount = 10000
+      );
+      // lineItemsCount == 1 after create.
+
+      final twoItems = [
+        LineItem(
+          lineItemId: 'li-1',
+          skuId: 'sku-1',
+          skuName: 'अलमारी',
+          quantity: 2,
+          unitPriceInr: 5000,
+        ),
+        LineItem(
+          lineItemId: 'li-2',
+          skuId: 'sku-2',
+          skuName: 'पलंग',
+          quantity: 1,
+          unitPriceInr: 8000,
+        ),
+      ];
+      await repo.applyCustomerDraftLineItemPatch(id, twoItems);
+
+      final data = (await projectsCol.doc(id).get()).data()!;
+      expect(data['lineItems'] as List, hasLength(2));
+      expect(data['totalAmount'], equals(18000)); // 2×5000 + 8000
+      // lineItemsCount is NOT updated by the patch — remains at create-time value.
+      expect(data['lineItemsCount'], equals(1));
+    });
+
+    test('applyCustomerDraftLineItemPatch throws on non-draft (committed)',
+        () async {
+      await projectsCol.doc('p-committed').set({
+        'projectId': 'p-committed',
+        'shopId': shopId,
+        'state': 'committed',
+        'lineItems': <dynamic>[],
+      });
+      expect(
+        () => repo.applyCustomerDraftLineItemPatch('p-committed', _oneItem()),
+        throwsA(isA<ProjectRepoException>()),
+      );
+    });
+
+    test('applyCustomerDraftLineItemPatch throws on non-draft (paid)', () async {
+      await projectsCol.doc('p-paid').set({
+        'projectId': 'p-paid',
+        'shopId': shopId,
+        'state': 'paid',
+        'lineItems': <dynamic>[],
+      });
+      expect(
+        () => repo.applyCustomerDraftLineItemPatch('p-paid', _oneItem()),
+        throwsA(isA<ProjectRepoException>()),
+      );
+    });
+
+    // -------------------------------------------------------------------------
+    // deleteDraft
+    // -------------------------------------------------------------------------
+
+    test('deleteDraft removes a draft project', () async {
+      final id = await repo.createDraft(
+        customerUid: customerUid,
+        items: _oneItem(),
+      );
+      expect((await projectsCol.doc(id).get()).exists, isTrue);
+      await repo.deleteDraft(id);
+      expect((await projectsCol.doc(id).get()).exists, isFalse);
+    });
+
+    test('deleteDraft throws on non-draft (committed)', () async {
+      await projectsCol.doc('p-del-committed').set({
+        'projectId': 'p-del-committed',
+        'shopId': shopId,
+        'state': 'committed',
+        'lineItems': <dynamic>[],
+      });
+      expect(
+        () => repo.deleteDraft('p-del-committed'),
+        throwsA(isA<ProjectRepoException>()),
+      );
+    });
+
+    test('deleteDraft throws on non-draft (delivering)', () async {
+      await projectsCol.doc('p-del-delivering').set({
+        'projectId': 'p-del-delivering',
+        'shopId': shopId,
+        'state': 'delivering',
+        'lineItems': <dynamic>[],
+      });
+      expect(
+        () => repo.deleteDraft('p-del-delivering'),
+        throwsA(isA<ProjectRepoException>()),
+      );
+    });
+
+    // -------------------------------------------------------------------------
+    // applyCustomerPriceAcceptancePatch
+    // -------------------------------------------------------------------------
+
+    test('applyCustomerPriceAcceptancePatch updates finalPrice, totalAmount, and state',
+        () async {
+      await projectsCol.doc('p-negotiate').set({
+        'projectId': 'p-negotiate',
+        'shopId': shopId,
+        'state': 'draft',
+        'totalAmount': 10000,
+        'amountReceivedByShop': 0,
+        'lineItems': [
+          {
+            'lineItemId': 'li-a',
+            'skuId': 'sku-1',
+            'skuName': 'अलमारी',
+            'quantity': 1,
+            'unitPriceInr': 10000,
+          },
+        ],
+      });
+
+      await repo.applyCustomerPriceAcceptancePatch('p-negotiate', 'li-a', 9000);
+
+      final data = (await projectsCol.doc('p-negotiate').get()).data()!;
+      expect(data['state'], equals('negotiating'));
+      expect(data['totalAmount'], equals(9000));
+      final items = data['lineItems'] as List<dynamic>;
+      expect((items.first as Map)['finalPrice'], equals(9000));
+    });
+
+    test('applyCustomerPriceAcceptancePatch throws when line item not found',
+        () async {
+      await projectsCol.doc('p-neg-missing').set({
+        'projectId': 'p-neg-missing',
+        'shopId': shopId,
+        'state': 'draft',
+        'lineItems': <dynamic>[],
+      });
+      expect(
+        () => repo.applyCustomerPriceAcceptancePatch(
+            'p-neg-missing', 'non-existent', 100),
+        throwsA(isA<ProjectRepoException>()),
+      );
+    });
+
+    test('applyCustomerPriceAcceptancePatch throws on non-draft/negotiating state',
+        () async {
+      await projectsCol.doc('p-neg-committed').set({
+        'projectId': 'p-neg-committed',
+        'shopId': shopId,
+        'state': 'committed',
+        'lineItems': [
+          {
+            'lineItemId': 'li-b',
+            'skuId': 'sku-1',
+            'skuName': 'Test',
+            'quantity': 1,
+            'unitPriceInr': 5000,
+          },
+        ],
+      });
+      expect(
+        () => repo.applyCustomerPriceAcceptancePatch(
+            'p-neg-committed', 'li-b', 4000),
         throwsA(isA<ProjectRepoException>()),
       );
     });
