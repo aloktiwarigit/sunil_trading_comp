@@ -122,6 +122,28 @@ final chatPreviewProvider =
   });
 });
 
+/// Phase 3 — pure visibility predicates for the project detail action
+/// buttons. Top-level so they're directly unit-testable without spinning up
+/// the widget, Firestore providers, theme, or router.
+///
+/// Mark Paid is the operator's only path to ProjectState.paid. It's available
+/// for `committed` (operator collects cash / takes UPI in person) AND for
+/// `awaitingVerification` (customer has claimed UPI/bank transfer; operator
+/// confirms the receipt before tapping). The repo's
+/// `applyOperatorMarkPaidPatch` accepts both source states; the rule layer
+/// requires Triple Zero in the same write.
+bool isMarkPaidVisibleFor(ProjectState state) =>
+    state == ProjectState.committed ||
+    state == ProjectState.awaitingVerification;
+
+/// Mark Delivered (close) is only available after Mark Paid has run, i.e.
+/// once the project is in `paid` or `delivering`. Phase 3 F8 fix:
+/// `committed` and `awaitingVerification` MUST be excluded — the operator
+/// must pay first so amountReceivedByShop is set, otherwise the typed close
+/// patch's Triple Zero re-check would reject.
+bool isMarkDeliveredVisibleFor(ProjectState state) =>
+    state == ProjectState.paid || state == ProjectState.delivering;
+
 /// S4.7 — Project detail screen.
 class ProjectDetailScreen extends ConsumerWidget {
   const ProjectDetailScreen({
@@ -529,8 +551,13 @@ class ProjectDetailScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: YugmaSpacing.s2),
-        // Mark as Paid — visible only for committed projects.
-        if (project.state == ProjectState.committed) ...[
+        // Phase 3: Mark Paid is the operator's only path to ProjectState.paid.
+        // The predicate is extracted as `isMarkPaidVisibleFor` for direct
+        // unit testing. The mark-paid call forwards project.paymentMethod
+        // (set to 'upi' or 'bank_transfer' by the customer's claim, 'cod' by
+        // the customer's COD self-tag, or null/cash for in-person commits)
+        // so the audit trail records the actual method.
+        if (isMarkPaidVisibleFor(project.state)) ...[
           SizedBox(
             height: YugmaSpacing.s12,
             child: OutlinedButton.icon(
@@ -581,9 +608,8 @@ class ProjectDetailScreen extends ConsumerWidget {
         // C3.11 + Phase 3: Delivery confirmation visible only for paid /
         // delivering. For COD, the operator first runs Mark Paid (which
         // sets paymentMethod=cod + amountReceivedByShop=totalAmount), then
-        // Mark Delivered.
-        if (project.state == ProjectState.paid ||
-            project.state == ProjectState.delivering)
+        // Mark Delivered. Predicate extracted for unit testing.
+        if (isMarkDeliveredVisibleFor(project.state))
           SizedBox(
             height: YugmaSpacing.s12,
             child: OutlinedButton.icon(
