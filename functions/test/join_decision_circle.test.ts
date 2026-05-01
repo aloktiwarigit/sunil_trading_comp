@@ -79,7 +79,6 @@ const mockShopRef: any = {
       // Support both the legacy where().get() path and the token path
       // doc(id).get() (Codex P1-2 — direct fetch avoids composite index).
       const emptySnap = { empty: true, docs: [], size: 0 };
-      const emptyDocSnap = { exists: false };
       const q: any = { where: () => q, get: async () => emptySnap };
       return {
         where: () => q,

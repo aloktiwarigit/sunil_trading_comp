@@ -153,15 +153,7 @@ export function verifyJoinToken(
     return { ok: false, error: 'malformed' };
   }
 
-  let secret: string;
-  try {
-    secret = readSecret();
-  } catch (err) {
-    // Re-raise — a missing secret is an operational failure, not a token
-    // verification failure. Don't swallow it as `bad_signature` (that
-    // would mask the real cause).
-    throw err;
-  }
+  const secret = readSecret();
 
   const expected = signPayload(payloadBase64, secret);
   let signaturesMatch = false;
