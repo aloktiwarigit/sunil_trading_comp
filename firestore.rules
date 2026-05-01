@@ -50,11 +50,19 @@ service cloud.firestore {
       return request.auth.token.role;
     }
 
-    // True when the caller either has no shopId claim (anonymous pre-OTP) or
-    // their claim matches the target shopId. Prevents authenticated users from
-    // a different shop writing into this shop's namespace.
+    // True when the caller's shopId claim matches the target shopId, OR the
+    // caller is *anonymous and* has no shopId claim (the pre-OTP customer
+    // path documented by PRD P2.1).
+    //
+    // Phase 5B r2 (Codex r1 #1): the previous form `callerShopId() == null`
+    // also passed for non-anonymous signed-in users whose token had not yet
+    // received a shopId claim (phone-OTP or Google operator pre-claim-issue),
+    // opening a cross-tenant pollution path on /projects, /chatThreads, and
+    // /decision_circles. The null-claim bypass is now gated on isAnonymous(),
+    // so non-anonymous users without a shopId claim are rejected.
     function callerShopMatchesOrUnset(shopId) {
-      return callerShopId() == null || callerShopId() == shopId;
+      return callerShopId() == shopId
+          || (isAnonymous() && callerShopId() == null);
     }
 
     function isShopMember(shopId) {

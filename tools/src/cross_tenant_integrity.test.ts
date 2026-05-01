@@ -1277,6 +1277,37 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
 
+    test('Phase 5B r2 (Codex r1 #1) — phone-OTP user without shopId claim cannot create project (locks down null-claim bypass)', async () => {
+      // Regression test for the over-broad helper fix. The pre-r2 form
+      // `callerShopId() == null` returned true for ANY missing claim,
+      // which let phone-OTP or Google users without a shopId claim
+      // (e.g. during claim refresh windows) create projects in arbitrary
+      // shops. Post-r2 the null-claim bypass is gated on isAnonymous(),
+      // so this caller is rejected.
+      const ctx = testEnv.authenticatedContext('phone-no-claim', {
+        firebase: { sign_in_provider: 'phone' },
+        // Intentionally NO shopId claim — simulates the pre-claim window.
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/p-noclaim').set({
+          projectId: 'p-noclaim',
+          shopId: 'shop_1',
+          customerUid: 'phone-no-claim',
+          customerId: 'phone-no-claim',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
     test('Phase 5B — project create succeeds with full ProjectRepo.createDraft body (no false positive)', async () => {
       // Mirrors the EXACT body that ProjectRepo.createDraft writes
       // (apps/customer_app + packages/lib_core project_repo.dart). If this
