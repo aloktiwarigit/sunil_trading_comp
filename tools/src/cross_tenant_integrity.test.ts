@@ -161,6 +161,7 @@ beforeEach(async () => {
         .set({
           shopId,
           projectId: 'proj-seed',
+          customerId: `cust-${shopId}-uid`,
           customerUid: `cust-${shopId}-uid`,
           state: 'draft',
           totalAmount: 25000,
@@ -739,6 +740,7 @@ describe('Cross-tenant integrity (rules.test)', () => {
           .set({
             shopId,
             projectId,
+            customerId: `cust-${shopId}-uid`,
             customerUid: `cust-${shopId}-uid`,
             state: 'delivering',
             totalAmount,
@@ -1118,6 +1120,1339 @@ describe('Cross-tenant integrity (rules.test)', () => {
     test('shop_2 operator can read own /shops/shop_2 doc (no false positive)', async () => {
       const db = ctxAsShopOperator('shop_2').firestore();
       await assertSucceeds(db.collection('shops').doc('shop_2').get());
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 1 — cross-tenant write hardening
+  // These tests are RED against the pre-Phase-1 rules. Each asserts a write
+  // that must be denied but was previously allowed due to missing guards.
+  // -------------------------------------------------------------------------
+
+  describe('Phase 1 — projects: cross-tenant create + ownership immutability', () => {
+    test('shop_1 operator cannot create project under shop_0 (missing callerShopId check)', async () => {
+      // shop_1 op has shopId:'shop_1' claim — they must not be able to write
+      // into another shop's projects namespace even by setting shopId in data.
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.collection('shops').doc('shop_0').collection('projects').add({
+          shopId: 'shop_0',
+          customerUid: 'op-shop_1-owner',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    test('operator cannot mutate shopId on own project (ownership immutability)', async () => {
+      const db = ctxAsShopOperator('shop_0').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('projects')
+          .doc('proj-seed')
+          .update({ shopId: 'shop_1', updatedAt: new Date() }),
+      );
+    });
+
+    test('operator cannot mutate customerUid on own project (ownership immutability)', async () => {
+      const db = ctxAsShopOperator('shop_0').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('projects')
+          .doc('proj-seed')
+          .update({ customerUid: 'op-shop_0-owner', updatedAt: new Date() }),
+      );
+    });
+  });
+
+  describe('Phase 1 — chatThreads: cross-tenant create + field allowlist + lifecycle', () => {
+    test('shop_1 operator cannot create chatThread under shop_0 (cross-tenant)', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.collection('shops').doc('shop_0').collection('chatThreads').add({
+          shopId: 'shop_0',
+          customerUid: 'op-shop_1-owner',
+          participantUids: [],
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    test('chatThread create requires customerUid to match caller uid', async () => {
+      const db = ctxAsCustomer('shop_1').firestore();
+      await assertFails(
+        db.collection('shops').doc('shop_1').collection('chatThreads').add({
+          shopId: 'shop_1',
+          customerUid: 'some-other-user',
+          participantUids: [],
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    test('chatThread create is frozen when shop is deactivating', async () => {
+      await setShopLifecycle('shop_1', 'deactivating');
+      const db = ctxAsCustomer('shop_1').firestore();
+      await assertFails(
+        db.collection('shops').doc('shop_1').collection('chatThreads').add({
+          shopId: 'shop_1',
+          customerUid: 'cust-shop_1-uid',
+          participantUids: [],
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    test('chatThread update cannot mutate shopId (field allowlist)', async () => {
+      const db = ctxAsShopOperator('shop_0').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .update({ shopId: 'shop_1' }),
+      );
+    });
+
+    test('chatThread update cannot mutate customerUid (field allowlist)', async () => {
+      const db = ctxAsShopOperator('shop_0').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .update({ customerUid: 'attacker-uid' }),
+      );
+    });
+
+    test('chatThread update is frozen when shop is deactivating', async () => {
+      await setShopLifecycle('shop_1', 'deactivating');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .update({ unreadCountForOperator: 0 }),
+      );
+    });
+
+    test('chatThread update of allowed field succeeds (no false positive)', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .update({ unreadCountForOperator: 0, updatedAt: new Date() }),
+      );
+    });
+  });
+
+  describe('Phase 1 — messages: cross-tenant create + thread membership', () => {
+    test('shop_1 operator cannot create message in shop_0 thread (cross-tenant)', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .collection('messages')
+          .add({
+            authorUid: 'op-shop_1-owner',
+            text: 'Intruder message',
+            createdAt: new Date(),
+          }),
+      );
+    });
+
+    test('non-member (wrong uid, same shop) cannot send message in a thread they do not own', async () => {
+      // stranger-uid has shopId:'shop_1' claim but is NOT thread-p1's customerUid
+      // and is not an operator (phone sign-in). Must be denied.
+      const db = testEnv
+        .authenticatedContext('stranger-uid', {
+          shopId: 'shop_1',
+          firebase: { sign_in_provider: 'phone' },
+        })
+        .firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .collection('messages')
+          .add({
+            authorUid: 'stranger-uid',
+            text: 'Sneaking in',
+            createdAt: new Date(),
+          }),
+      );
+    });
+
+    test('thread owner can send message (no false positive)', async () => {
+      const uid = 'cust-shop_1-uid';
+      const db = ctxAsCustomer('shop_1', uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .collection('messages')
+          .add({
+            authorUid: uid,
+            text: 'Hello from the owner',
+            createdAt: new Date(),
+          }),
+      );
+    });
+  });
+
+  describe('Phase 1 — customers: ownership field immutability', () => {
+    test('customer cannot mutate own shopId field', async () => {
+      const uid = 'cust-shop_0-uid';
+      const db = ctxAsCustomer('shop_0', uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('customers')
+          .doc(uid)
+          .update({ shopId: 'shop_1' }),
+      );
+    });
+
+    test('customer cannot mutate own customerId field', async () => {
+      const uid = 'cust-shop_0-uid';
+      const db = ctxAsCustomer('shop_0', uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('customers')
+          .doc(uid)
+          .update({ customerId: 'attacker-uid' }),
+      );
+    });
+
+    test('customer can update own allowed profile fields (no false positive)', async () => {
+      // isPhoneVerified is NOT a safe self-update field — only safe fields in
+      // the customer branch allowlist (displayName, updatedAt) should pass.
+      const uid = 'cust-shop_1-uid';
+      const db = ctxAsCustomer('shop_1', uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('customers')
+          .doc(uid)
+          .update({ displayName: 'Ramesh Kumar', updatedAt: new Date() }),
+      );
+    });
+  });
+
+  describe('Phase 1 — decision_circles: cross-tenant create + field allowlist', () => {
+    test('shop_1 authenticated user cannot create DC in shop_0 (callerShopId mismatch)', async () => {
+      // phone-verified shop_1 customer has shopId:'shop_1' claim — must not
+      // be able to pollute shop_0's decision_circles namespace.
+      const db = ctxAsCustomer('shop_1').firestore();
+      await assertFails(
+        db.collection('shops').doc('shop_0').collection('decision_circles').add({
+          shopId: 'shop_0',
+          creatorUid: 'cust-shop_1-uid',
+          personas: [],
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    test('same-shop customer can create DC (no false positive)', async () => {
+      const uid = 'cust-shop_1-uid';
+      const db = ctxAsCustomer('shop_1', uid).firestore();
+      await assertSucceeds(
+        db.collection('shops').doc('shop_1').collection('decision_circles').add({
+          shopId: 'shop_1',
+          creatorUid: uid,
+          personas: [],
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    test('DC update cannot mutate creatorUid (ownership immutability)', async () => {
+      const db = ctxAsShopOperator('shop_0').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('decision_circles')
+          .doc('dc-p1')
+          .update({ creatorUid: 'attacker', shopId: 'shop_0' }),
+      );
+    });
+
+    test('DC update cannot mutate shopId (ownership immutability)', async () => {
+      const db = ctxAsShopOperator('shop_0').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('decision_circles')
+          .doc('dc-p1')
+          .update({ shopId: 'shop_1', personas: [] }),
+      );
+    });
+
+    test('DC update of personas succeeds (no false positive)', async () => {
+      const uid = 'cust-shop_1-uid';
+      const db = ctxAsCustomer('shop_1', uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('decision_circles')
+          .doc('dc-p1')
+          .update({ personas: [{ role: 'mummy-ji', uid }], updatedAt: new Date() }),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 1 correction A — messages: update must verify thread membership
+  // The original message update rule only checked isSignedIn + shopIsWritable
+  // + readByUids allowlist. Any signed-in user who knew a message path could
+  // update readByUids cross-tenant.
+  // -------------------------------------------------------------------------
+
+  describe('Phase 1 correction A — messages: update requires thread membership', () => {
+    const MESSAGE_ID = 'msg-seed-1';
+
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        for (const shopId of ['shop_0', 'shop_1']) {
+          await ctx
+            .firestore()
+            .collection('shops')
+            .doc(shopId)
+            .collection('chatThreads')
+            .doc('thread-p1')
+            .collection('messages')
+            .doc(MESSAGE_ID)
+            .set({
+              shopId,
+              messageId: MESSAGE_ID,
+              threadId: 'thread-p1',
+              authorUid: `cust-${shopId}-uid`,
+              text: 'नमस्ते',
+              readByUids: [],
+              createdAt: new Date(),
+            });
+        }
+      });
+    });
+
+    test('shop_1 operator cannot update readByUids on shop_0 message (cross-tenant)', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .collection('messages')
+          .doc(MESSAGE_ID)
+          .update({ readByUids: ['op-shop_1-owner'] }),
+      );
+    });
+
+    test('same-shop stranger (not thread owner, not operator) cannot update readByUids', async () => {
+      // stranger-uid has shopId:'shop_1' claim but is not thread-p1's customerUid
+      // and is not a shop operator (phone sign-in).
+      const db = testEnv
+        .authenticatedContext('stranger-uid', {
+          shopId: 'shop_1',
+          firebase: { sign_in_provider: 'phone' },
+        })
+        .firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .collection('messages')
+          .doc(MESSAGE_ID)
+          .update({ readByUids: ['stranger-uid'] }),
+      );
+    });
+
+    test('thread owner (customerUid) can update readByUids (no false positive)', async () => {
+      const uid = 'cust-shop_1-uid';
+      const db = ctxAsCustomer('shop_1', uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .collection('messages')
+          .doc(MESSAGE_ID)
+          .update({ readByUids: [uid] }),
+      );
+    });
+
+    test('same-shop operator can update readByUids (no false positive)', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .collection('messages')
+          .doc(MESSAGE_ID)
+          .update({ readByUids: ['op-shop_1-owner'] }),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 1 correction B — customers: field allowlist
+  // The original customer update rule protected shopId/customerId but allowed
+  // arbitrary field mutation — including isPhoneVerified and previousProjectIds
+  // which must only be managed by Cloud Functions (Admin SDK).
+  // -------------------------------------------------------------------------
+
+  describe('Phase 1 correction B — customers: field allowlist enforcement', () => {
+    test('customer cannot self-set isPhoneVerified (CF-only field)', async () => {
+      const uid = 'cust-shop_0-uid';
+      const db = ctxAsCustomer('shop_0', uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('customers')
+          .doc(uid)
+          .update({ isPhoneVerified: true }),
+      );
+    });
+
+    test('customer cannot self-mutate previousProjectIds (CF-only field)', async () => {
+      const uid = 'cust-shop_0-uid';
+      const db = ctxAsCustomer('shop_0', uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('customers')
+          .doc(uid)
+          .update({ previousProjectIds: ['proj-injected'] }),
+      );
+    });
+
+    test('customer can update displayName and updatedAt (no false positive)', async () => {
+      const uid = 'cust-shop_1-uid';
+      const db = ctxAsCustomer('shop_1', uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('customers')
+          .doc(uid)
+          .update({ displayName: 'Sunita Devi', updatedAt: new Date() }),
+      );
+    });
+
+    test('operator can update customer displayName (no false positive)', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('customers')
+          .doc('cust-shop_1-uid')
+          .update({ displayName: 'Sunita ji', updatedAt: new Date() }),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 2 — customer same-state lineItems gate: draft-only
+  // lineItems and totalAmount must only be customer-writable in draft state.
+  // Committed/paid/delivering projects must not accept customer line-item edits
+  // even when the customer matches and state does not change.
+  // -------------------------------------------------------------------------
+
+  describe('Phase 2 — customer lineItems/totalAmount: draft-only gate', () => {
+    async function seedCustomerProject(
+      shopId: string,
+      projectId: string,
+      state: string,
+    ): Promise<void> {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc(projectId)
+          .set({
+            shopId,
+            projectId,
+            customerId: `cust-${shopId}-uid`,
+            customerUid: `cust-${shopId}-uid`,
+            state,
+            totalAmount: 15000,
+            amountReceivedByShop: state === 'draft' ? 0 : 15000,
+            lineItems: [{ lineItemId: 'li-1', skuId: 'sku-1', quantity: 1, unitPriceInr: 15000 }],
+            createdAt: new Date(),
+          });
+      });
+    }
+
+    test('customer can update lineItems and totalAmount on own draft project', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p-li-draft', 'draft');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p-li-draft')
+          .update({
+            lineItems: [{ lineItemId: 'li-2', skuId: 'sku-2', quantity: 2, unitPriceInr: 8000 }],
+            totalAmount: 16000,
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('customer cannot update lineItems/totalAmount on own committed project', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p-li-committed', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p-li-committed')
+          .update({
+            lineItems: [],
+            totalAmount: 0,
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('customer cannot update lineItems/totalAmount on own paid project', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p-li-paid', 'paid');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p-li-paid')
+          .update({
+            lineItems: [],
+            totalAmount: 0,
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('customer cannot update lineItems/totalAmount on own delivering project', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p-li-delivering', 'delivering');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p-li-delivering')
+          .update({
+            lineItems: [],
+            totalAmount: 0,
+            updatedAt: new Date(),
+          }),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 2 — operator allowlist: identity immutability + system-field fence
+  // + committed→draft revert transition
+  // -------------------------------------------------------------------------
+
+  describe('Phase 2 — operator branch: identity + allowlist + revert', () => {
+    test('operator cannot mutate projectId (identity field)', async () => {
+      const db = ctxAsShopOperator('shop_0').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('projects')
+          .doc('proj-seed')
+          .update({ projectId: 'injected-id', state: 'draft' }),
+      );
+    });
+
+    test('operator cannot mutate customerId (identity field)', async () => {
+      const db = ctxAsShopOperator('shop_0').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('projects')
+          .doc('proj-seed')
+          .update({ customerId: 'attacker-uid', state: 'draft' }),
+      );
+    });
+
+    test('operator CAN write lastMessagePreview (transitional — Phase 3 CF target)', async () => {
+      // shopkeeper_chat_screen.dart writes this client-side after voice-note send.
+      // Included in allowlist until Phase 3 CF migration. This assertSucceeds
+      // documents the current intentional policy.
+      const db = ctxAsShopOperator('shop_0').firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('projects')
+          .doc('proj-seed')
+          .update({ lastMessagePreview: '🎤 आवाज़ नोट', updatedAt: new Date() }),
+      );
+    });
+
+    test('operator CAN write lastMessageAt (transitional — Phase 3 CF target)', async () => {
+      const db = ctxAsShopOperator('shop_0').firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_0')
+          .collection('projects')
+          .doc('proj-seed')
+          .update({ lastMessageAt: new Date(), updatedAt: new Date() }),
+      );
+    });
+
+    test('operator can update state + paidAt + updatedAt (no false positive)', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .collection('shops')
+          .doc('shop_1')
+          .collection('projects')
+          .doc('p2-committed')
+          .set({
+            shopId: 'shop_1',
+            projectId: 'p2-committed',
+            customerId: 'cust-shop_1-uid',
+            customerUid: 'cust-shop_1-uid',
+            state: 'committed',
+            totalAmount: 15000,
+            amountReceivedByShop: 15000,
+            lineItems: [],
+            createdAt: new Date(),
+          });
+      });
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('projects')
+          .doc('p2-committed')
+          .update({ state: 'paid', paidAt: new Date(), updatedAt: new Date() }),
+      );
+    });
+
+    test('operator can revert committed project to draft (ProjectOperatorRevertPatch)', async () => {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .collection('shops')
+          .doc('shop_1')
+          .collection('projects')
+          .doc('p2-revert')
+          .set({
+            shopId: 'shop_1',
+            projectId: 'p2-revert',
+            customerId: 'cust-shop_1-uid',
+            customerUid: 'cust-shop_1-uid',
+            state: 'committed',
+            totalAmount: 15000,
+            amountReceivedByShop: 15000,
+            committedAt: new Date(),
+            lineItems: [],
+            createdAt: new Date(),
+          });
+      });
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('projects')
+          .doc('p2-revert')
+          .update({
+            state: 'draft',
+            committedAt: null,
+            paidAt: null,
+            deliveredAt: null,
+            closedAt: null,
+            amountReceivedByShop: 0,
+            revertedByUid: 'op-shop_1-owner',
+            revertReason: 'Customer changed mind',
+            updatedAt: new Date(),
+          }),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 3 — payment correctness: customer cannot write state=paid/delivering/
+  // closed, cannot mutate amountReceivedByShop or paidAt; operator paid/closed
+  // require Triple Zero in same write; D.2 four-branch transition isolation;
+  // explicit source-state check on price-acceptance; COD same-state branch.
+  // -------------------------------------------------------------------------
+
+  describe('Phase 3 — payment-state hardening', () => {
+    async function seedCustomerProject(
+      shopId: string,
+      projectId: string,
+      state: string,
+      overrides: Record<string, unknown> = {},
+    ): Promise<void> {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc(projectId)
+          .set({
+            shopId,
+            projectId,
+            customerId: `cust-${shopId}-uid`,
+            customerUid: `cust-${shopId}-uid`,
+            state,
+            totalAmount: 15000,
+            amountReceivedByShop: 0,
+            lineItems: [],
+            createdAt: new Date(),
+            ...overrides,
+          });
+      });
+    }
+
+    test('customer cannot write state=paid via REST', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-paid', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-paid')
+          .update({ state: 'paid', updatedAt: new Date() }),
+      );
+    });
+
+    test('customer cannot write state=delivering via REST', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-deliver', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-deliver')
+          .update({ state: 'delivering', updatedAt: new Date() }),
+      );
+    });
+
+    test('customer cannot write state=closed via REST', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-close', 'committed', {
+        amountReceivedByShop: 15000,
+      });
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-close')
+          .update({ state: 'closed', updatedAt: new Date() }),
+      );
+    });
+
+    test('customer cannot move awaiting_verification → paid via REST', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-av-paid', 'awaiting_verification');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-av-paid')
+          .update({
+            state: 'paid',
+            amountReceivedByShop: 15000,
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('customer cannot mutate amountReceivedByShop via REST', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-arc', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-arc')
+          .update({ amountReceivedByShop: 15000, updatedAt: new Date() }),
+      );
+    });
+
+    test('customer cannot mutate paidAt via REST', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-pa', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-pa')
+          .update({ paidAt: new Date(), updatedAt: new Date() }),
+      );
+    });
+
+    test('customer CAN move committed → awaiting_verification (UPI claim)',
+        async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-upi', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-upi')
+          .update({
+            state: 'awaiting_verification',
+            paymentMethod: 'upi',
+            customerVpa: 'sunita@okicici',
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('customer COD: paymentMethod-only update succeeds while in committed',
+        async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-cod', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-cod')
+          .update({ paymentMethod: 'cod', updatedAt: new Date() }),
+      );
+    });
+
+    test('customer COD: paymentMethod="upi" same-state write is REJECTED',
+        async () => {
+      // The same-state COD branch only allows paymentMethod == 'cod'. A
+      // customer cannot self-tag UPI without going through the
+      // committed → awaiting_verification transition.
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-cod-upi', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-cod-upi')
+          .update({ paymentMethod: 'upi', updatedAt: new Date() }),
+      );
+    });
+
+    test('customer COD same-state write REJECTED on paid project', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-cod-paid', 'paid', {
+        amountReceivedByShop: 15000,
+        paymentMethod: 'cash',
+      });
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-cod-paid')
+          .update({ paymentMethod: 'cod', updatedAt: new Date() }),
+      );
+    });
+
+    // ----- Price acceptance: explicit source-state branch -----
+
+    test('customer price acceptance: draft → negotiating succeeds', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-price-draft', 'draft');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-price-draft')
+          .update({
+            state: 'negotiating',
+            lineItems: [
+              { lineItemId: 'li-1', skuId: 'sku-1', quantity: 1, unitPriceInr: 14000, finalPrice: 14000 },
+            ],
+            totalAmount: 14000,
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('customer price acceptance: negotiating → negotiating (re-propose) succeeds',
+        async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-price-neg', 'negotiating');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-price-neg')
+          .update({
+            state: 'negotiating',
+            lineItems: [
+              { lineItemId: 'li-1', skuId: 'sku-1', quantity: 1, unitPriceInr: 14000, finalPrice: 13500 },
+            ],
+            totalAmount: 13500,
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('customer price acceptance: committed → negotiating REJECTED', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-price-committed', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-price-committed')
+          .update({
+            state: 'negotiating',
+            lineItems: [
+              { lineItemId: 'li-1', skuId: 'sku-1', quantity: 1, unitPriceInr: 1000 },
+            ],
+            totalAmount: 1000,
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    // ----- customerVpa scoping: write only with the awaiting_verification move -----
+
+    test('customer cannot mutate customerVpa same-state on paid project',
+        async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-vpa-paid', 'paid', {
+        amountReceivedByShop: 15000,
+        paymentMethod: 'cash',
+      });
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-vpa-paid')
+          .update({ customerVpa: 'attacker@okhdfc', updatedAt: new Date() }),
+      );
+    });
+
+    test('customer cannot mutate customerVpa same-state on committed project',
+        async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-vpa-committed', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-vpa-committed')
+          .update({ customerVpa: 'sunita@okicici', updatedAt: new Date() }),
+      );
+    });
+
+    // ----- Branch-isolation: each target's allowlist is narrow -----
+
+    test('committed → awaiting_verification cannot mutate lineItems', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-av-li', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-av-li')
+          .update({
+            state: 'awaiting_verification',
+            paymentMethod: 'upi',
+            customerVpa: 'sunita@okicici',
+            // smuggled — must trip the hasOnly check
+            lineItems: [{ lineItemId: 'l1', skuId: 's1', quantity: 1, unitPriceInr: 1 }],
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('committed → awaiting_verification cannot mutate totalAmount', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-av-total', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-av-total')
+          .update({
+            state: 'awaiting_verification',
+            paymentMethod: 'upi',
+            totalAmount: 100, // smuggled
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('committed → awaiting_verification SUCCEEDS with paymentMethod + customerVpa only',
+        async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-av-min', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-av-min')
+          .update({
+            state: 'awaiting_verification',
+            paymentMethod: 'upi',
+            customerVpa: 'sunita@okicici',
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('committed → awaiting_verification REJECTED if paymentMethod is cod',
+        async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-av-cod', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-av-cod')
+          .update({
+            state: 'awaiting_verification',
+            paymentMethod: 'cod',
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('draft → committed cannot mutate paymentMethod', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-c-pm', 'draft');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-c-pm')
+          .update({
+            state: 'committed',
+            totalAmount: 15000,
+            customerPhone: '+919876543210',
+            paymentMethod: 'upi', // smuggled — not in commit branch allowlist
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('draft → committed cannot mutate customerVpa', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-c-vpa', 'draft');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-c-vpa')
+          .update({
+            state: 'committed',
+            totalAmount: 15000,
+            customerVpa: 'sunita@okicici', // smuggled
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('draft → committed cannot mutate lineItems (server-authoritative on commit)',
+        async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-c-li', 'draft');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-c-li')
+          .update({
+            state: 'committed',
+            lineItems: [{ lineItemId: 'l1', skuId: 's1', quantity: 1, unitPriceInr: 1 }],
+            totalAmount: 1,
+            customerPhone: '+919876543210',
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('draft → committed SUCCEEDS with the commit-branch allowlist exactly',
+        async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-c-ok', 'draft');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-c-ok')
+          .update({
+            state: 'committed',
+            totalAmount: 15000,
+            customerPhone: '+919876543210',
+            customerDisplayName: 'Sunita',
+            committedAt: new Date(),
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('committed → cancelled cannot mutate lineItems', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      // Seed a non-empty lineItems so the smuggled update is a real diff.
+      await seedCustomerProject(shopId, 'p3-x-li', 'committed', {
+        lineItems: [{ lineItemId: 'l0', skuId: 's0', quantity: 1, unitPriceInr: 1000 }],
+      });
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-x-li')
+          .update({
+            state: 'cancelled',
+            lineItems: [], // smuggled — not in cancel branch allowlist
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('committed → cancelled cannot mutate totalAmount', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-x-total', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-x-total')
+          .update({
+            state: 'cancelled',
+            totalAmount: 0, // smuggled
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('committed → cancelled cannot mutate paymentMethod', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-x-pm', 'committed');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-x-pm')
+          .update({
+            state: 'cancelled',
+            paymentMethod: 'upi', // smuggled
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('draft → cancelled SUCCEEDS with state-only write', async () => {
+      const shopId = 'shop_1';
+      const uid = `cust-${shopId}-uid`;
+      await seedCustomerProject(shopId, 'p3-x-ok', 'draft');
+      const db = ctxAsCustomer(shopId, uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-x-ok')
+          .update({
+            state: 'cancelled',
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    // ----- Operator paid path Triple Zero gating -----
+
+    test('operator mark-paid REJECTED if amountReceivedByShop != totalAmount',
+        async () => {
+      const shopId = 'shop_1';
+      await seedCustomerProject(shopId, 'p3-op-paid-bad', 'committed');
+      const db = ctxAsShopOperator(shopId).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-op-paid-bad')
+          .update({
+            state: 'paid',
+            amountReceivedByShop: 14000, // != totalAmount 15000
+            paidAt: new Date(),
+            paymentMethod: 'cash',
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('operator mark-paid SUCCEEDS with matched Triple Zero', async () => {
+      const shopId = 'shop_1';
+      await seedCustomerProject(shopId, 'p3-op-paid-ok', 'committed');
+      const db = ctxAsShopOperator(shopId).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-op-paid-ok')
+          .update({
+            state: 'paid',
+            amountReceivedByShop: 15000,
+            paidAt: new Date(),
+            paymentMethod: 'cash',
+            updatedAt: new Date(),
+          }),
+      );
+    });
+
+    test('operator mark-paid from awaiting_verification succeeds', async () => {
+      const shopId = 'shop_1';
+      await seedCustomerProject(shopId, 'p3-av-confirm', 'awaiting_verification');
+      const db = ctxAsShopOperator(shopId).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc(shopId)
+          .collection('projects')
+          .doc('p3-av-confirm')
+          .update({
+            state: 'paid',
+            amountReceivedByShop: 15000,
+            paidAt: new Date(),
+            paymentMethod: 'upi',
+            updatedAt: new Date(),
+          }),
+      );
     });
   });
 });
