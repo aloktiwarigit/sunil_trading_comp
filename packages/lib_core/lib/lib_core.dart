@@ -34,6 +34,7 @@ export 'src/adapters/comms_channel_factory.dart';
 
 // ---------- Infrastructure ----------
 export 'src/firebase_client.dart';
+export 'src/firestore_provider.dart';
 export 'src/shop_id_provider.dart';
 export 'src/feature_flags/remote_config_loader.dart';
 export 'src/feature_flags/feature_flags.dart';

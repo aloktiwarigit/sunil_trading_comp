@@ -57,6 +57,8 @@ dev_dependencies:
   riverpod_generator: ^2.4.3
   custom_lint: ^0.7.3
   riverpod_lint: ^2.3.13
+  # Phase 4 G3: in-process Firestore for project_detail_screen widget test.
+  fake_cloud_firestore: ^3.0.3
 
 flutter:
   uses-material-design: true

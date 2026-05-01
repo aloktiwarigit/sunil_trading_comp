@@ -47,7 +47,10 @@ Map<String, dynamic> _normalizeProjectTimestamps(Map<String, dynamic> raw) {
 /// S4.9 — Provider for customer memory, streamed by customerUid.
 final customerMemoryProvider = StreamProvider.autoDispose
     .family<CustomerMemory?, String>((ref, customerUid) {
-  final firestore = FirebaseFirestore.instance;
+  // Phase 4 G3: read firestore from the provider so widget tests can
+  // override with a FakeFirebaseFirestore and have all three stream
+  // providers + the typed-patch writes see the same fake.
+  final firestore = ref.watch(firestoreProvider);
   final shopId = ref.read(shopIdProviderProvider).shopId;
 
   return firestore
@@ -72,9 +75,11 @@ final customerMemoryProvider = StreamProvider.autoDispose
 
 /// Provider for a single project, streamed by ID.
 /// CR #2: reads shopId from provider instead of hardcoding.
+/// Phase 4 G3: reads firestore from firestoreProvider so widget tests can
+/// override.
 final projectDetailProvider =
     StreamProvider.autoDispose.family<Project?, String>((ref, projectId) {
-  final firestore = FirebaseFirestore.instance;
+  final firestore = ref.watch(firestoreProvider);
   final shopId = ref.read(shopIdProviderProvider).shopId;
 
   return firestore
@@ -95,9 +100,10 @@ final projectDetailProvider =
 
 /// Provider for chat preview messages (last 10).
 /// CR #2: reads shopId from provider instead of hardcoding.
+/// Phase 4 G3: reads firestore from firestoreProvider.
 final chatPreviewProvider =
     StreamProvider.autoDispose.family<List<Message>, String>((ref, projectId) {
-  final firestore = FirebaseFirestore.instance;
+  final firestore = ref.watch(firestoreProvider);
   final shopId = ref.read(shopIdProviderProvider).shopId;
 
   return firestore
@@ -720,11 +726,9 @@ class ProjectDetailScreen extends ConsumerWidget {
               Navigator.of(ctx).pop();
 
               try {
-                final shopId = ref.read(shopIdProviderProvider).shopId;
-                final projectRepo = ProjectRepo(
-                  firestore: FirebaseFirestore.instance,
-                  shopIdProvider: ShopIdProvider(shopId),
-                );
+                // Phase 4 G3: repo from provider so widget tests can override
+                // firestore.
+                final projectRepo = ref.read(projectRepoProvider);
                 await projectRepo.applyOperatorPatch(
                   project.projectId,
                   const ProjectOperatorPatch(state: ProjectState.delivering),
@@ -788,14 +792,11 @@ class ProjectDetailScreen extends ConsumerWidget {
               Navigator.of(ctx).pop();
 
               try {
-                final shopId = ref.read(shopIdProviderProvider).shopId;
-                final projectRepo = ProjectRepo(
-                  firestore: FirebaseFirestore.instance,
-                  shopIdProvider: ShopIdProvider(shopId),
-                );
-                // Phase 3: typed mark-paid patch atomically sets state, paidAt,
-                // amountReceivedByShop, and paymentMethod inside a transaction
-                // that re-asserts the Triple Zero invariant.
+                // Phase 4 G3: repo from provider. Phase 3: typed mark-paid
+                // patch atomically sets state, paidAt, amountReceivedByShop,
+                // and paymentMethod inside a transaction that re-asserts
+                // the Triple Zero invariant.
+                final projectRepo = ref.read(projectRepoProvider);
                 await projectRepo.applyOperatorMarkPaidPatch(
                   project.projectId,
                   ProjectOperatorMarkPaidPatch(
@@ -861,13 +862,10 @@ class ProjectDetailScreen extends ConsumerWidget {
               Navigator.of(ctx).pop();
 
               try {
-                // Phase 3: typed close patch re-asserts Triple Zero
-                // transactionally and back-fills deliveredAt if needed.
-                final shopId = ref.read(shopIdProviderProvider).shopId;
-                final projectRepo = ProjectRepo(
-                  firestore: FirebaseFirestore.instance,
-                  shopIdProvider: ShopIdProvider(shopId),
-                );
+                // Phase 4 G3: repo from provider. Phase 3: typed close patch
+                // re-asserts Triple Zero transactionally and back-fills
+                // deliveredAt if needed.
+                final projectRepo = ref.read(projectRepoProvider);
                 await projectRepo.applyOperatorClosePatch(
                   project.projectId,
                   const ProjectOperatorClosePatch(),
