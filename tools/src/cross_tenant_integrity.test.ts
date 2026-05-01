@@ -1277,24 +1277,30 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
 
-    test('Phase 5B r2 (Codex r1 #1) — phone-OTP user without shopId claim cannot create project (locks down null-claim bypass)', async () => {
-      // Regression test for the over-broad helper fix. The pre-r2 form
-      // `callerShopId() == null` returned true for ANY missing claim,
-      // which let phone-OTP or Google users without a shopId claim
-      // (e.g. during claim refresh windows) create projects in arbitrary
-      // shops. Post-r2 the null-claim bypass is gated on isAnonymous(),
-      // so this caller is rejected.
-      const ctx = testEnv.authenticatedContext('phone-no-claim', {
-        firebase: { sign_in_provider: 'phone' },
-        // Intentionally NO shopId claim — simulates the pre-claim window.
+    test('Phase 5B r2/r4 (Codex r1 #1, narrowed by r4) — Google-signed user without shopId claim cannot create project (operator pre-claim window)', async () => {
+      // Regression test for the null-claim bypass. The original r1 form
+      // `callerShopId() == null` allowed any missing-claim caller through;
+      // r2 narrowed to isAnonymous() only; r4 widened to also include
+      // isPhoneVerified() (returning customer flow — see the Phase 5B r5
+      // test below). What MUST remain rejected after r4 is the
+      // Google-signed caller without a shopId claim — that's the
+      // operator pre-claim window, where setCustomUserClaims has not yet
+      // been issued or the token has not refreshed. Letting this caller
+      // through would re-open the cross-tenant pollution path on
+      // /projects, /chatThreads, /decision_circles.
+      const ctx = testEnv.authenticatedContext('google-no-claim', {
+        firebase: { sign_in_provider: 'google.com' },
+        // Intentionally NO shopId claim — simulates a Google-signed
+        // operator before provisionNewShop / signupNewOperator finishes
+        // issuing their claim, or a random Google user trying to write.
       });
       const db = ctx.firestore();
       await assertFails(
         db.doc('shops/shop_1/projects/p-noclaim').set({
           projectId: 'p-noclaim',
           shopId: 'shop_1',
-          customerUid: 'phone-no-claim',
-          customerId: 'phone-no-claim',
+          customerUid: 'google-no-claim',
+          customerId: 'google-no-claim',
           state: 'draft',
           totalAmount: 0,
           amountReceivedByShop: 0,
@@ -1378,6 +1384,41 @@ describe('Cross-tenant integrity (rules.test)', () => {
         db.doc('shops/shop_1/projects/p-anon-commit').update({
           state: 'committed',
           committedAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B r5 (Codex r4 #1) — phone-verified customer WITHOUT shopId claim can create draft (returning customer flow)', async () => {
+      // Regression test for the r4 customerShopMatchesOrUnset widening.
+      // Customer UIDs (anonymous or phone-verified) never receive a shopId
+      // custom claim — only operators do (provisionNewShop / signupNewOperator).
+      // The Phase 5B r2 form gated null-claim solely on isAnonymous(),
+      // breaking the returning-customer flow: post-OTP the sign_in_provider
+      // changes from 'anonymous' to 'phone' but the shopId claim never
+      // arrives, so create operations would 401. r4 widens the gate to
+      // (isAnonymous() OR isPhoneVerified()) without a claim.
+      const ctx = testEnv.authenticatedContext('returning-customer', {
+        firebase: { sign_in_provider: 'phone' },
+        // Intentionally NO shopId claim — auth flow does not issue one
+        // for customer UIDs. This is the production state for any
+        // customer who signed in via OTP after browsing anonymously.
+      });
+      const db = ctx.firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/projects/p-returning').set({
+          projectId: 'p-returning',
+          shopId: 'shop_1',
+          customerUid: 'returning-customer',
+          customerId: 'returning-customer',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
           updatedAt: new Date(),
         }),
       );
