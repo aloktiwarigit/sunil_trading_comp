@@ -33,8 +33,17 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
     }
 
+    // Phase 5B: defensive read of the shopId custom claim.
+    //
+    // Firestore rules `Map.foo` member-access THROWS when the key is absent
+    // (per rules.Map docs); `Map.get('foo', default)` returns the default.
+    // Anonymous customers (pre-OTP) genuinely have no shopId claim, and the
+    // /projects create rule is documented as allowing them. Returning null
+    // here keeps `callerShopMatchesOrUnset(shopId)` evaluating cleanly for
+    // anonymous users instead of erroring and forcing the rule into deny.
+    // No behavior change for authenticated callers (operator + phone-OTP).
     function callerShopId() {
-      return request.auth.token.shopId;
+      return request.auth.token.get('shopId', null);
     }
 
     function callerRole() {
@@ -401,11 +410,40 @@ service cloud.firestore {
         // authenticated users from another shop are blocked.
         // shopIsWritable intentionally omitted to avoid an extra read that
         // can fail for anonymous users who lack the shopId claim.
+        //
+        // Phase 5B hardening (PR #4):
+        //   1. customerId == auth.uid   — closes the customerUid/customerId
+        //      mismatch attack via REST API where one identity field bypassed
+        //      the partition check while the other tagged the doc to a victim.
+        //   2. keys().hasOnly([...])    — exact-keys allowlist. Settlement
+        //      timestamps (paidAt / closedAt / committedAt / deliveredAt),
+        //      paymentMethod, customerVpa, decisionCircleId, udhaarLedgerId,
+        //      revertedByUid, revertReason, lastMessagePreview, lastMessageAt,
+        //      upiTransactionId cannot be pre-set at create — they belong to
+        //      operator-update or system-patch flows.
+        //   3. amountReceivedByShop IS allowed at create but constrained to
+        //      == 0 (matches ProjectRepo.createDraft which writes 0). Any
+        //      non-zero value at create is money-state pre-pollution and is
+        //      rejected; the Triple Zero invariant remains enforced at the
+        //      paid/closed state transitions in `allow update` below.
         allow create: if isSignedIn()
                       && shopIdMatches(shopId)
                       && callerShopMatchesOrUnset(shopId)
                       && request.resource.data.customerUid == request.auth.uid
-                      && request.resource.data.state == 'draft';
+                      && request.resource.data.customerId == request.auth.uid
+                      && request.resource.data.state == 'draft'
+                      && (
+                        !('amountReceivedByShop' in request.resource.data)
+                        || request.resource.data.amountReceivedByShop == 0
+                      )
+                      && request.resource.data.keys().hasOnly([
+                           'projectId', 'shopId', 'customerUid', 'customerId',
+                           'state', 'totalAmount', 'amountReceivedByShop',
+                           'lineItems', 'lineItemsCount',
+                           'unreadCountForCustomer', 'unreadCountForShopkeeper',
+                           'occasion', 'customerDisplayName', 'customerPhone',
+                           'createdAt', 'updatedAt'
+                         ]);
 
         // Update: partitioned by identity + state machine + field restriction.
         // SEC004 fix: customer updates are now field-restricted via

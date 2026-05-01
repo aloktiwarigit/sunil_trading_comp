@@ -1170,6 +1170,139 @@ describe('Cross-tenant integrity (rules.test)', () => {
           .update({ customerUid: 'op-shop_0-owner', updatedAt: new Date() }),
       );
     });
+
+    // -------------------------------------------------------------------------
+    // Phase 5B — /projects create identity + money-state allowlist
+    //
+    // Adds three negative tests (customerId mismatch, amountReceivedByShop
+    // pre-pollution, settlement-field pre-set) and two green-path tests
+    // (amountReceivedByShop == 0 minimal body, full ProjectRepo.createDraft
+    // body — guards against the rule accidentally rejecting the live customer
+    // flow). See docs/superpowers/plans/2026-05-01-enterprise-hardening-...
+    // -------------------------------------------------------------------------
+
+    test('Phase 5B — project create rejects customerId mismatch', async () => {
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/p1').set({
+          projectId: 'p1',
+          shopId: 'shop_1',
+          customerUid: 'alice', // matches caller
+          customerId: 'mallory', // does NOT match caller — should be rejected
+          state: 'draft',
+          totalAmount: 0,
+          lineItems: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B — project create rejects amountReceivedByShop != 0', async () => {
+      // The Phase 5B rule allows amountReceivedByShop in the keys allowlist
+      // (it is part of the existing ProjectRepo.createDraft body) but
+      // constrains the value to == 0. Any non-zero value at create is
+      // money-state pre-pollution.
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/p2').set({
+          projectId: 'p2',
+          shopId: 'shop_1',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 99999, // non-zero pre-pollution — rejected
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B — project create accepts amountReceivedByShop == 0 (matches existing createDraft)', async () => {
+      // Guards against accidentally tightening the rule to exclude
+      // amountReceivedByShop entirely, which would break the existing
+      // ProjectRepo.createDraft body (which writes 0).
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/projects/p2b').set({
+          projectId: 'p2b',
+          shopId: 'shop_1',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0, // explicitly 0 — must be allowed
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B — project create rejects pre-set paidAt', async () => {
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/p3').set({
+          projectId: 'p3',
+          shopId: 'shop_1',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          paidAt: new Date(), // settlement field — should be rejected at create
+          lineItems: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B — project create succeeds with full ProjectRepo.createDraft body (no false positive)', async () => {
+      // Mirrors the EXACT body that ProjectRepo.createDraft writes
+      // (apps/customer_app + packages/lib_core project_repo.dart). If this
+      // test fails, customer draft creation is broken in production.
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/projects/p4').set({
+          projectId: 'p4',
+          shopId: 'shop_1',
+          customerId: 'alice',
+          customerUid: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
   });
 
   describe('Phase 1 — chatThreads: cross-tenant create + field allowlist + lifecycle', () => {
