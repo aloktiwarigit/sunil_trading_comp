@@ -873,7 +873,7 @@ I considered three structural options:
   // `amountReceivedByShop == totalAmount` on every closed project, which
   // makes the "zero commission" promise a machine-verifiable invariant,
   // not a marketing claim. If the math ever diverges, CI fails loudly.
-  amountReceivedByShop: 22000,              // INR, denormalized; invariant: == totalAmount
+  amountReceivedByShop: 22000,              // INR, denormalized; invariant: == totalAmount AT paid|closed (Phase 3, 2026-04-30)
 
   // Denormalized for ops dashboard read-budget efficiency
   customerDisplayName: "Sunita Devi",
@@ -3195,3 +3195,16 @@ The PRD should focus on user stories, acceptance criteria, success metrics per s
 
 — Winston, System Architect
 2026-04-11 (v1.0.4 back-fill)
+
+---
+
+## Phase 3 patch note (2026-04-30 → 2026-05-01)
+
+The `amountReceivedByShop` field semantics tightened in Phase 3:
+
+- Set **only** inside `applyOperatorMarkPaidPatch` (operator typed patch). Customer-driven paths (`applyCustomerCommitPatch`, `applyCustomerPaymentPatch`, `applyCustomerCodPatch`, `applyCustomerBankTransferPatch`) leave it at `0`.
+- Triple Zero invariant (`amountReceivedByShop == totalAmount`) asserted at the rule layer for any transition into `state ∈ {paid, closed}`. Earlier states allow transient mismatch.
+- Customer rules cannot write `state ∈ {paid, delivering, closed}` or mutate `amountReceivedByShop` / `paidAt` — closes the REST-bypass attack vector noted in §15.1.B (now resolved).
+
+Any v1.0.x SAD passage that frames the field as written by the customer commit patch (e.g., setting it on the commit transition, or describing the Triple Zero invariant as a client-side commit-time guarantee) predates Phase 3 and is contradicted by `firestore.rules` + `packages/lib_core/lib/src/repositories/project_repo.dart:applyOperatorMarkPaidPatch`. Update on next SAD revision (v1.0.5 candidate).
+

@@ -47,7 +47,7 @@ For **everything else**, the planning artifacts under `_bmad-output/planning-art
 The architecture is built on **Five Truths** (multi-tenant by `shopId`, layered swappable auth, offline-first ≤30-read sessions, Decision Circle as a feature flag not a schema, udhaar khaata as an accounting mirror with a forbidden-vocabulary list) and **Three Adapters** (`AuthProvider`, `CommsChannel`, `MediaStore`) that allow every billable or risk-bearing dependency to be swapped at runtime via a real-time-listened Firestore feature flag.
 
 Two product invariants are load-bearing:
-1. **Triple Zero** — `amountReceivedByShop == totalAmount` on every closed Project. Zero commission, zero customer fees, zero ops cost (operationally, through ~shop #10–33).
+1. **Triple Zero** — `amountReceivedByShop == totalAmount` on every project that reaches `paid` or `closed`. The field is set ONLY inside `applyOperatorMarkPaidPatch` (Phase 3, 2026-04-30); customer-driven paths leave it at `0`. Zero commission, zero customer fees, zero ops cost (operationally, through ~shop #10–33).
 2. **Forbidden vocabulary** — eight English field names (`interest`, `dueDate`, `overdueFee`, …) and seven Hindi terms (`ब्याज`, `पेनल्टी`, …) MUST NOT exist anywhere in the codebase, enforced at the security-rule layer.
 
 The system is not yet enterprise-floor complete. **§15 lists 30+ drift items** prioritized P0–P3 — including unimplemented HMAC join tokens (ADR-009), absent server-side App Check enforcement, and a 24h-vs-30-day DPDP grace-period mismatch. Resolve §15.1 (P0) before any production user beyond Sunil-bhaiya touches the system.
@@ -518,7 +518,7 @@ erDiagram
         string customerUid FK
         enum state
         int totalAmount
-        int amountReceivedByShop "Triple Zero == totalAmount on close"
+        int amountReceivedByShop "Triple Zero == totalAmount on paid|closed (set in applyOperatorMarkPaidPatch)"
         array lineItems
         enum occasion
         string paymentMethod
@@ -670,7 +670,7 @@ function shopIsWritable(shopId) {
 ```
 ANDed onto every mutation block. **Drift**: rules check only `== 'active'`, but the function `shop_deactivation_sweep.ts` uses `deactivating | purgeScheduled | purged`, while the SAD uses `active | deactivating | deactivated | retained_for_dpdp | purge_scheduled`. The freeze still triggers correctly because anything not `'active'` is non-writable, but vocabulary is fragmented across three sources.
 
-**The Triple Zero invariant is NOT enforced at the rule layer.** The string `amountReceivedByShop` only appears in the customer-update field allowlist (line 424); there is no `==` predicate against `totalAmount`. A REST client bypassing the typed Dart patches could close a project with mismatched values. The invariant lives only in the Dart shape test (`cross_tenant_integrity_test.dart:145–169`). See §15.1.B.
+**The Triple Zero invariant is now enforced at the rule layer (Phase 3, 2026-04-30).** `firestore.rules` (post-Phase-3) gates every transition into `paid` or `closed` on `request.resource.data.amountReceivedByShop == request.resource.data.totalAmount`. Customer rules cannot write `state ∈ {paid, delivering, closed}` and cannot write `amountReceivedByShop` or `paidAt` at all. The field is set client-side by `ProjectRepo.applyOperatorMarkPaidPatch` (operator-only typed transactional patch) which atomically writes `state=paid`, `amountReceivedByShop=totalAmount`, `paidAt=server`, and `paymentMethod=arg`. The earlier rule-layer gap noted in §15.1.B was closed by Phase 3 task D.3. The Dart shape test at `cross_tenant_integrity_test.dart` remains for defense-in-depth.
 
 ### 6.5 Storage layout
 
@@ -802,8 +802,8 @@ sequenceDiagram
     else fresh link
         FB-->>PUC: phoneVerified User (same UID)
     end
-    PUC->>FS: ProjectCustomerCommitPatch{state:'committed', amountReceivedByShop=totalAmount}
-    Note over PUC,FS: Triple Zero invariant set client-side
+    PUC->>FS: ProjectCustomerCommitPatch{state:'committed', totalAmount}
+    Note over PUC,FS: Phase 3: amountReceivedByShop stays 0 at commit
     
     Note right of U: Days later — app reopened
     U->>App: Open app
@@ -990,7 +990,7 @@ stateDiagram-v2
     negotiating --> cancelled: bhaiya
     committed --> cancelled: bhaiya only
     
-    note right of committed: Triple Zero set:<br/>amountReceivedByShop = totalAmount<br/>(client-only — not in rules — §15.1.B)
+    note right of committed: Phase 3: amountReceivedByShop = 0<br/>flips to totalAmount inside<br/>applyOperatorMarkPaidPatch (operator)
 ```
 
 ### 8.11 Shop lifecycle
@@ -1150,8 +1150,10 @@ The codebase uses **three deliberately-distinct (NOT sealed-union) Freezed class
 
 - `ProjectCustomerPatch` — customer_app only — `occasion`, `unreadCountForCustomer`
 - `ProjectCustomerCancelPatch` — customer_app only — `draft → cancelled` only
-- `ProjectCustomerCommitPatch` — customer_app only — sets `state='committed'` and Triple Zero invariant
-- `ProjectOperatorPatch` — shopkeeper_app only — `state`, `totalAmount`, `amountReceivedByShop`, `lineItems`, etc.
+- `ProjectCustomerCommitPatch` — customer_app only — sets `state='committed'` and `totalAmount` (Phase 3: does NOT set amountReceivedByShop)
+- `ProjectOperatorPatch` — shopkeeper_app only — `state`, `totalAmount`, `lineItems`, etc. (settlement fields gated by runtime guard — see ProjectOperatorMarkPaidPatch / ProjectOperatorClosePatch)
+- `ProjectOperatorMarkPaidPatch` — shopkeeper_app only — atomically sets `state='paid'`, `amountReceivedByShop=totalAmount`, `paidAt`, `paymentMethod` (Phase 3 operator's-only path to paid)
+- `ProjectOperatorClosePatch` — shopkeeper_app only — re-asserts Triple Zero, sets `state='closed'`, `closedAt` (Phase 3)
 - `ProjectOperatorRevertPatch` — shopkeeper_app only — limited revert
 - `ProjectSystemPatch` — Cloud Functions only — `lastMessagePreview`, `lastMessageAt`, `updatedAt`
 

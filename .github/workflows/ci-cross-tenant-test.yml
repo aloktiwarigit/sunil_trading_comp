@@ -150,3 +150,6 @@ jobs:
 
       - name: Run import audit
         run: bash tools/audit_project_patch_imports.sh
+
+      - name: Phase 3 doc-drift audit
+        run: bash tools/audit_phase3_doc_drift.sh
