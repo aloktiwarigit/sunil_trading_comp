@@ -266,6 +266,42 @@ class ProjectOperatorPatch with _$ProjectOperatorPatch {
   }
 }
 
+/// Operator's typed payment confirmation. Per Phase 3 (2026-04-30), this is
+/// the ONLY repo path that can move a project to `paid`. The repo transaction:
+///   1. Asserts state ∈ {committed, awaiting_verification}
+///   2. Asserts paymentMethod ∈ {cash, upi, cod, bank_transfer}
+///   3. Reads totalAmount from server snapshot
+///   4. Writes state=paid, amountReceivedByShop=totalAmount, paidAt=server,
+///      paymentMethod=arg in one atomic write.
+///
+/// Triple Zero invariant becomes non-trivial: the field flips from 0 to
+/// totalAmount only at this moment, and only by an authenticated operator.
+@freezed
+class ProjectOperatorMarkPaidPatch with _$ProjectOperatorMarkPaidPatch {
+  const factory ProjectOperatorMarkPaidPatch({
+    /// One of: `cash`, `upi`, `cod`, `bank_transfer`.
+    required String paymentMethod,
+  }) = _ProjectOperatorMarkPaidPatch;
+
+  const ProjectOperatorMarkPaidPatch._();
+
+  static const _allowedMethods = {'cash', 'upi', 'cod', 'bank_transfer'};
+
+  bool get hasValidMethod => _allowedMethods.contains(paymentMethod);
+
+  /// The repo supplies `totalAmount` from the server snapshot — never the
+  /// client. Mirrors the commit patch's totalAmount-from-snapshot pattern.
+  Map<String, Object?> toFirestoreMap({
+    required int totalAmount,
+  }) {
+    return <String, Object?>{
+      'state': 'paid',
+      'amountReceivedByShop': totalAmount,
+      'paymentMethod': paymentMethod,
+    };
+  }
+}
+
 /// Operator cross-partition mutation: reverting a committed Project back to
 /// `draft` (PRD I6.12 edge case #2). Writes an audit log entry to
 /// `shops/{shopId}/audit/{eventId}` as part of the same transaction.

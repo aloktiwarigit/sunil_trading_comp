@@ -402,6 +402,120 @@ void main() {
   });
 
   // ===========================================================================
+  // applyOperatorMarkPaidPatch — Phase 3 (operator's typed payment confirmation)
+  // ===========================================================================
+
+  group('applyOperatorMarkPaidPatch', () {
+    Future<String> seedProject({
+      required String state,
+      int totalAmount = 18000,
+      int amountReceivedByShop = 0,
+    }) async {
+      final ref = projectsCol.doc();
+      await ref.set({
+        'projectId': ref.id,
+        'shopId': shopId,
+        'customerId': 'test-customer-uid',
+        'customerUid': 'test-customer-uid',
+        'state': state,
+        'totalAmount': totalAmount,
+        'amountReceivedByShop': amountReceivedByShop,
+        'lineItems': <Map<String, dynamic>>[],
+        'createdAt': Timestamp.fromDate(DateTime(2026, 4, 12)),
+      });
+      return ref.id;
+    }
+
+    test('committed → paid sets state, paidAt, amountReceivedByShop, paymentMethod',
+        () async {
+      final projectId = await seedProject(state: 'committed');
+
+      await repo.applyOperatorMarkPaidPatch(
+        projectId,
+        const ProjectOperatorMarkPaidPatch(paymentMethod: 'cod'),
+      );
+
+      final data = (await projectsCol.doc(projectId).get()).data()!;
+      expect(data['state'], 'paid');
+      expect(data['paymentMethod'], 'cod');
+      expect(data['amountReceivedByShop'], 18000); // == totalAmount
+      expect(data['paidAt'], isNotNull);
+    });
+
+    test('awaiting_verification → paid succeeds (operator confirms UPI/bank)',
+        () async {
+      final projectId = await seedProject(state: 'awaiting_verification');
+
+      await repo.applyOperatorMarkPaidPatch(
+        projectId,
+        const ProjectOperatorMarkPaidPatch(paymentMethod: 'upi'),
+      );
+
+      final data = (await projectsCol.doc(projectId).get()).data()!;
+      expect(data['state'], 'paid');
+      expect(data['amountReceivedByShop'], 18000);
+    });
+
+    test('rejects mark-paid from draft state', () async {
+      final projectId = await seedProject(state: 'draft');
+      expect(
+        () => repo.applyOperatorMarkPaidPatch(
+          projectId,
+          const ProjectOperatorMarkPaidPatch(paymentMethod: 'cash'),
+        ),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code,
+          'code',
+          'invalid-state-transition',
+        )),
+      );
+    });
+
+    test('rejects mark-paid from already-paid state', () async {
+      final projectId = await seedProject(
+        state: 'paid',
+        amountReceivedByShop: 18000,
+      );
+      expect(
+        () => repo.applyOperatorMarkPaidPatch(
+          projectId,
+          const ProjectOperatorMarkPaidPatch(paymentMethod: 'cash'),
+        ),
+        throwsA(isA<ProjectRepoException>()),
+      );
+    });
+
+    test('rejects unknown payment method', () async {
+      final projectId = await seedProject(state: 'committed');
+      expect(
+        () => repo.applyOperatorMarkPaidPatch(
+          projectId,
+          const ProjectOperatorMarkPaidPatch(paymentMethod: 'crypto'),
+        ),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code,
+          'code',
+          'invalid-payment-method',
+        )),
+      );
+    });
+
+    test('throws on non-existent project', () async {
+      expect(
+        () => repo.applyOperatorMarkPaidPatch(
+          'does-not-exist',
+          const ProjectOperatorMarkPaidPatch(paymentMethod: 'cash'),
+        ),
+        throwsA(isA<ProjectRepoException>().having(
+          (e) => e.code,
+          'code',
+          'not-found',
+        )),
+      );
+    });
+  });
+
+  // ===========================================================================
   // Phase 2 new methods: createDraft, applyCustomerDraftLineItemPatch,
   // deleteDraft, applyCustomerPriceAcceptancePatch
   // ===========================================================================

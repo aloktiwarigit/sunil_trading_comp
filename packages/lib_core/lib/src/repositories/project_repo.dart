@@ -156,6 +156,62 @@ class ProjectRepo {
         .set(map, SetOptions(merge: true));
   }
 
+  /// Operator's typed payment confirmation. Phase 3 (2026-04-30): the only
+  /// repo path that can move a project to `paid`. Atomically writes
+  /// state=paid, amountReceivedByShop=totalAmount, paidAt=server,
+  /// paymentMethod=arg.
+  ///
+  /// Throws ProjectRepoException with codes:
+  ///   - 'not-found': project does not exist
+  ///   - 'invalid-state-transition': source state ≠ committed/awaiting_verification
+  ///   - 'invalid-payment-method': method not in {cash, upi, cod, bank_transfer}
+  ///   - 'zero-amount': totalAmount ≤ 0
+  Future<void> applyOperatorMarkPaidPatch(
+    String projectId,
+    ProjectOperatorMarkPaidPatch patch,
+  ) async {
+    if (!patch.hasValidMethod) {
+      throw ProjectRepoException(
+        'invalid-payment-method',
+        'paymentMethod=${patch.paymentMethod} is not in '
+            '{cash, upi, cod, bank_transfer}',
+      );
+    }
+    final ref = _projectsCollection().doc(projectId);
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (!snap.exists) {
+        throw const ProjectRepoException(
+          'not-found',
+          'Project does not exist',
+        );
+      }
+      final data = snap.data()!;
+      final currentState = data['state'] as String?;
+      if (currentState != 'committed' &&
+          currentState != 'awaiting_verification') {
+        throw ProjectRepoException(
+          'invalid-state-transition',
+          'Cannot mark paid in state $currentState — '
+              'only committed or awaiting_verification allowed',
+        );
+      }
+      final totalAmount = (data['totalAmount'] as num?)?.toInt() ?? 0;
+      if (totalAmount <= 0) {
+        throw ProjectRepoException(
+          'zero-amount',
+          'Cannot mark paid with totalAmount=$totalAmount',
+        );
+      }
+      final map = patch.toFirestoreMap(totalAmount: totalAmount);
+      map['paidAt'] = FieldValue.serverTimestamp();
+      map['updatedAt'] = FieldValue.serverTimestamp();
+      txn.set(ref, map, SetOptions(merge: true));
+    });
+    _log.info('operator mark-paid: projectId=$projectId '
+        'method=${patch.paymentMethod}');
+  }
+
   /// Customer self-tags the project as cash-on-delivery. Phase 3: state stays
   /// `committed`; the operator advances state when cash is collected at
   /// delivery via `applyOperatorMarkPaidPatch` (committed → paid).
