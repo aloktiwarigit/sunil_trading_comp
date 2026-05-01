@@ -71,47 +71,22 @@ jobs:
         working-directory: tools
         run: npm run build
 
-      - name: Start Firebase emulators (firestore + storage)
-        run: |
-          firebase emulators:start \
-            --only firestore,storage \
-            --project yugma-dukaan-rules-test &
-          # Wait for BOTH emulators to become ready (up to 180s).
-          # First run downloads each emulator JAR (~30s each), so we need
-          # more time than a single-emulator boot. cross_tenant_storage.test.ts
-          # (Phase 1) needs Storage at 9199 in addition to Firestore at 8080.
-          # The @firebase/rules-unit-testing library handles auth simulation
-          # internally — no separate auth emulator required.
-          firestore_ready=0
-          storage_ready=0
-          for i in $(seq 1 180); do
-            if [ "$firestore_ready" -ne 1 ] && curl -sf http://127.0.0.1:8080 > /dev/null 2>&1; then
-              echo "Firestore emulator ready (after ${i}s)"
-              firestore_ready=1
-            fi
-            if [ "$storage_ready" -ne 1 ] && curl -sf http://127.0.0.1:9199 > /dev/null 2>&1; then
-              echo "Storage emulator ready (after ${i}s)"
-              storage_ready=1
-            fi
-            if [ "$firestore_ready" -eq 1 ] && [ "$storage_ready" -eq 1 ]; then
-              break
-            fi
-            echo "Waiting for emulators... firestore=$firestore_ready storage=$storage_ready ($i)"
-            sleep 1
-          done
-          if [ "$firestore_ready" -ne 1 ] || [ "$storage_ready" -ne 1 ]; then
-            echo "::error::Emulators failed to start within 180s (firestore=$firestore_ready storage=$storage_ready)"
-            exit 1
-          fi
-          echo "Both Firestore and Storage emulators are up"
-
-      - name: Run TS rules test
+      - name: Run TS rules test (firestore + storage emulators)
         working-directory: tools
         env:
-          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
-          FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
           GCLOUD_PROJECT: yugma-dukaan-rules-test
-        run: npm run test:rules
+        run: |
+          # Use `firebase emulators:exec` so the CLI owns the lifecycle
+          # (start, wait-for-ready, run wrapped command, tear down). This
+          # matches the documented local invocation in
+          # tools/src/cross_tenant_storage.test.ts:18-20 and avoids
+          # endpoint-specific readiness probes — Storage's "/" route does
+          # not return 2xx, so curl-based polling is unreliable (see
+          # codex review of PR #3 r2).
+          firebase emulators:exec \
+            --only firestore,storage \
+            --project yugma-dukaan-rules-test \
+            "npm run test:rules"
 
   # ---------------------------------------------------------------------------
   # Job 2 -- Dart shape test
