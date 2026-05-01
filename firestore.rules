@@ -41,6 +41,13 @@ service cloud.firestore {
       return request.auth.token.role;
     }
 
+    // True when the caller either has no shopId claim (anonymous pre-OTP) or
+    // their claim matches the target shopId. Prevents authenticated users from
+    // a different shop writing into this shop's namespace.
+    function callerShopMatchesOrUnset(shopId) {
+      return callerShopId() == null || callerShopId() == shopId;
+    }
+
     function isShopMember(shopId) {
       return isSignedIn() && callerShopId() == shopId;
     }
@@ -364,7 +371,7 @@ service cloud.firestore {
       function isValidProjectStateTransition(fromState, toState) {
         return (fromState == 'draft' && toState in ['negotiating', 'committed', 'cancelled'])
             || (fromState == 'negotiating' && toState in ['committed', 'cancelled', 'draft'])
-            || (fromState == 'committed' && toState in ['paid', 'delivering', 'awaiting_verification', 'cancelled'])
+            || (fromState == 'committed' && toState in ['paid', 'delivering', 'awaiting_verification', 'cancelled', 'draft'])
             || (fromState == 'paid' && toState in ['delivering', 'closed'])
             || (fromState == 'delivering' && toState in ['closed'])
             || (fromState == 'awaiting_verification' && toState in ['paid', 'cancelled']);
@@ -390,10 +397,13 @@ service cloud.firestore {
                         || isShopOperator(shopId));
 
         // Create: customer creates draft. Anonymous or phone-verified.
-        // Single-shop: removed shopIsWritable gate from create to avoid
-        // extra Firestore read that can fail for anonymous users.
+        // callerShopMatchesOrUnset: anonymous users (no claim) may create;
+        // authenticated users from another shop are blocked.
+        // shopIsWritable intentionally omitted to avoid an extra read that
+        // can fail for anonymous users who lack the shopId claim.
         allow create: if isSignedIn()
                       && shopIdMatches(shopId)
+                      && callerShopMatchesOrUnset(shopId)
                       && request.resource.data.customerUid == request.auth.uid
                       && request.resource.data.state == 'draft';
 
@@ -409,10 +419,17 @@ service cloud.firestore {
         // patches enforce this client-side; this rule blocks REST clients
         // that bypass them. Earlier states (draft, negotiating) are
         // allowed to have the values diverge transiently.
+        // §15.1.B + Phase 3 (2026-04-30) Triple Zero invariant.
+        // Whenever a project transitions into (or remains in) `paid` or
+        // `closed`, amountReceivedByShop MUST equal totalAmount. The Dart
+        // typed patches enforce this client-side; this rule blocks REST
+        // clients that bypass them. Earlier states (draft, negotiating,
+        // committed, awaiting_verification) are allowed to have the values
+        // diverge transiently.
         allow update: if isSignedIn()
                       && shopIsWritable(shopId)
                       && (
-                        request.resource.data.state != 'closed'
+                        !(request.resource.data.state in ['paid', 'closed'])
                         || request.resource.data.amountReceivedByShop
                              == request.resource.data.totalAmount
                       )
@@ -423,49 +440,139 @@ service cloud.firestore {
                         // the security-rule layer, not just the Dart layer.
                         (resource.data.customerUid == request.auth.uid
                          && (
-                           // Customer-partition fields (no state change)
+                           // Customer same-state writes — three sub-branches.
                            (request.resource.data.state == resource.data.state
+                            && (
+                              // (a) General metadata: allowed in any state.
+                              //     customerVpa is NOT here — it travels with
+                              //     the awaiting_verification UPI claim only.
+                              request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                                'occasion', 'unreadCountForCustomer',
+                                'updatedAt', 'customerDisplayName',
+                                'customerPhone'
+                              ])
+                              ||
+                              // (b) Draft-only commerce fields: lineItems + totalAmount.
+                              (resource.data.state == 'draft'
+                               && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                                    'lineItems', 'totalAmount', 'updatedAt'
+                                  ]))
+                              ||
+                              // (c) Phase 3 COD same-state branch: customer
+                              //     self-tags COD on a committed project.
+                              //     Stays in committed; only paymentMethod
+                              //     flips, and only to 'cod'. Mirrors the
+                              //     Dart applyCustomerCodPatch surface.
+                              (resource.data.state == 'committed'
+                               && request.resource.data.paymentMethod == 'cod'
+                               && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                                    'paymentMethod', 'updatedAt'
+                                  ]))
+                            ))
+                           ||
+                           // State transitions: each target gets its own branch
+                           // with a narrow hasOnly allowlist mirroring the
+                           // corresponding Dart typed patch. Phase 3: customer
+                           // can NEVER write paid, delivering, or closed.
+
+                           // (1) Price acceptance — draft|negotiating →
+                           //     negotiating. Mirrors applyCustomerPriceAcceptancePatch
+                           //     which writes state='negotiating' from EITHER
+                           //     draft OR negotiating (subsequent re-propose).
+                           //     Uses an explicit source-state check rather
+                           //     than the global state-machine helper, because
+                           //     the helper intentionally does not include
+                           //     negotiating → negotiating.
+                           (request.resource.data.state == 'negotiating'
+                            && resource.data.state in ['draft', 'negotiating']
                             && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                                 'occasion', 'unreadCountForCustomer',
-                                 'updatedAt', 'customerDisplayName',
-                                 'customerPhone', 'customerVpa',
-                                 'lineItems', 'totalAmount', 'selectedSkuIds'
+                                 'state', 'lineItems', 'totalAmount', 'updatedAt'
                                ]))
                            ||
-                           // State transitions: customer can commit, pay, cancel, negotiate
-                           (isValidProjectStateTransition(
-                             resource.data.state,
-                             request.resource.data.state
-                           )
+                           // (2) Commit — draft|negotiating → committed.
+                           //     Mirrors applyCustomerCommitPatch (computes
+                           //     totalAmount from server-side line items).
+                           //     Excludes lineItems (server-authoritative),
+                           //     paymentMethod, customerVpa,
+                           //     amountReceivedByShop, paidAt.
+                           (request.resource.data.state == 'committed'
+                            && isValidProjectStateTransition(
+                                 resource.data.state,
+                                 request.resource.data.state
+                               )
                             && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                                 'state', 'updatedAt',
-                                 // negotiate fields (price proposal acceptance)
-                                 'lineItems', 'totalAmount',
-                                 // commit fields
+                                 'state', 'totalAmount',
                                  'customerPhone', 'committedAt',
-                                 'customerDisplayName',
-                                 // payment fields
-                                 'customerVpa', 'paymentMethod',
-                                 'amountReceivedByShop', 'paidAt',
-                                 'paymentConfirmedByCustomer',
-                                 // cancel fields
-                                 'cancelledAt', 'cancelledByRole',
-                                 // COD / bank transfer fields
-                                 'codConfirmedAt', 'bankTransferMarkedAt'
+                                 'customerDisplayName', 'updatedAt'
+                               ]))
+                           ||
+                           // (3) UPI / bank-transfer claim — committed →
+                           //     awaiting_verification. Mirrors
+                           //     applyCustomerPaymentPatch (UPI) +
+                           //     applyCustomerBankTransferPatch.
+                           //     paymentMethod must be in {upi,bank_transfer};
+                           //     cod has its own same-state branch above.
+                           (request.resource.data.state == 'awaiting_verification'
+                            && isValidProjectStateTransition(
+                                 resource.data.state,
+                                 request.resource.data.state
+                               )
+                            && request.resource.data.paymentMethod in ['upi', 'bank_transfer']
+                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                                 'state', 'paymentMethod', 'customerVpa', 'updatedAt'
+                               ]))
+                           ||
+                           // (4) Cancel — anything reachable → cancelled.
+                           //     Mirrors applyCustomerCancelPatch.
+                           //     Dart writes only {state: 'cancelled'} + repo
+                           //     adds updatedAt. No audit fields today.
+                           (request.resource.data.state == 'cancelled'
+                            && isValidProjectStateTransition(
+                                 resource.data.state,
+                                 request.resource.data.state
+                               )
+                            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                                 'state', 'updatedAt'
                                ]))
                          ))
                         ||
                         // --- Operator updates ---
-                        // Operators can write any operator-partition field
-                        // with valid state transitions.
+                        // Allowed fields: ProjectOperatorPatch + revert fields +
+                        // transitional last-message-preview fields (Phase 3 CF target).
+                        // Identity fields (projectId, customerId, shopId, customerUid) frozen.
+                        //
+                        // lastMessagePreview / lastMessageAt: written client-side by
+                        // shopkeeper_chat_screen.dart after voice-note send until Phase 3
+                        // routes this to a Cloud Function.
+                        //
+                        // updatedAt: written by ProjectRepo.applyOperatorPatch() on every
+                        // write. Stays in allowlist until Phase 4 CF-only timestamp cleanup.
                         (isShopOperator(shopId)
+                         && request.resource.data.shopId == resource.data.shopId
+                         && request.resource.data.customerUid == resource.data.customerUid
+                         && request.resource.data.get('projectId', null) == resource.data.get('projectId', null)
+                         && request.resource.data.get('customerId', null) == resource.data.get('customerId', null)
                          && (
                            request.resource.data.state == resource.data.state
                            || isValidProjectStateTransition(
                                 resource.data.state,
                                 request.resource.data.state
                               )
-                         ))
+                         )
+                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                              // ProjectOperatorPatch fields
+                              'state', 'totalAmount', 'amountReceivedByShop', 'lineItems',
+                              'committedAt', 'paidAt', 'deliveredAt', 'closedAt',
+                              'customerDisplayName', 'customerPhone', 'customerVpa',
+                              'decisionCircleId', 'paymentMethod', 'udhaarLedgerId',
+                              'unreadCountForShopkeeper',
+                              // ProjectOperatorRevertPatch audit fields
+                              'revertedByUid', 'revertReason',
+                              // updatedAt: injected by ProjectRepo.applyOperatorPatch()
+                              'updatedAt',
+                              // Phase 3 migration targets: voice-note preview written client-side
+                              'lastMessagePreview', 'lastMessageAt'
+                            ]))
                       );
 
         // Customers can delete their own DRAFT projects (removing last item).
@@ -491,14 +598,24 @@ service cloud.firestore {
                     && (resource.data.customerUid == request.auth.uid
                         || isShopOperator(shopId));
 
-        // Create: any signed-in user can initiate a thread.
+        // Create: thread owner must be the caller; cross-shop callers blocked.
+        // callerShopMatchesOrUnset allows anonymous pre-OTP customers (no claim).
         allow create: if isSignedIn()
-                      && shopIdMatches(shopId);
+                      && shopIdMatches(shopId)
+                      && shopIsWritable(shopId)
+                      && request.resource.data.customerUid == request.auth.uid
+                      && callerShopMatchesOrUnset(shopId);
 
-        // Update: participant can update (unread counts, last message preview).
+        // Update: participants may update metadata fields only.
+        // shopId/customerUid/threadId are ownership fields — not in allowlist.
         allow update: if isSignedIn()
+                      && shopIsWritable(shopId)
                       && (resource.data.customerUid == request.auth.uid
-                          || isShopOperator(shopId));
+                          || isShopOperator(shopId))
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                           'unreadCountForCustomer', 'unreadCountForOperator',
+                           'lastMessagePreview', 'lastMessageAt', 'updatedAt'
+                         ]);
 
         allow delete: if false;
 
@@ -516,15 +633,22 @@ service cloud.firestore {
                       && (get(/databases/$(database)/documents/shops/$(shopId)/chatThreads/$(threadId)).data.customerUid == request.auth.uid
                           || isShopOperator(shopId));
 
-          // Create: participant can send messages.
-          // authorUid must match the authenticated user.
+          // Create: only the thread's customerUid or a shop operator may post.
+          // authorUid must match the caller. shopIsWritable prevents writes
+          // into deactivated shops. The get() on the parent thread verifies
+          // membership without a separate collection lookup.
           allow create: if isSignedIn()
-                        && request.resource.data.authorUid == request.auth.uid;
+                        && shopIsWritable(shopId)
+                        && request.resource.data.authorUid == request.auth.uid
+                        && (get(/databases/$(database)/documents/shops/$(shopId)/chatThreads/$(threadId)).data.customerUid == request.auth.uid
+                            || isShopOperator(shopId));
 
-          // Update: ONLY readByUids field (read tracking per P2.7).
-          // No other field may change after creation (immutability).
+          // Update: ONLY readByUids (read-tracking). Caller must be the thread
+          // owner or a shop operator — same membership check as create.
           allow update: if isSignedIn()
                         && shopIsWritable(shopId)
+                        && (get(/databases/$(database)/documents/shops/$(shopId)/chatThreads/$(threadId)).data.customerUid == request.auth.uid
+                            || isShopOperator(shopId))
                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readByUids']);
 
           // Messages are immutable — never delete.
@@ -552,12 +676,28 @@ service cloud.firestore {
                       && request.resource.data.customerId == request.auth.uid
                       && shopIsWritable(shopId);
 
-        // Update: self (phone upgrade, profile) OR operator (display name,
-        // previousProjectIds via Cloud Function).
+        // Update: partitioned into customer-self and operator branches.
+        // shopId and customerId are ownership fields — immutable after create.
+        // isPhoneVerified and previousProjectIds are CF-only fields: they must
+        // never be set by clients (Admin SDK from Cloud Functions is the only
+        // authorised writer for those fields).
         allow update: if isSignedIn()
                       && shopIsWritable(shopId)
-                      && (request.auth.uid == customerId
-                          || isShopOperator(shopId));
+                      && request.resource.data.shopId == resource.data.shopId
+                      && request.resource.data.customerId == resource.data.customerId
+                      && (
+                        // Customer self-update: safe profile fields only
+                        (request.auth.uid == customerId
+                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                              'displayName', 'updatedAt'
+                            ]))
+                        ||
+                        // Operator update: display name + timestamp
+                        (isShopOperator(shopId)
+                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                              'displayName', 'updatedAt'
+                            ]))
+                      );
 
         allow delete: if false;
       }
@@ -596,11 +736,22 @@ service cloud.firestore {
         // was able to read shop A's decision circles before this fix.
         allow read: if isShopMember(shopId);
 
-        // Create/Update: any signed-in user can create (customer on draft) or
-        // update (persona toggle adds participant entries).
-        allow create, update: if isSignedIn()
-                              && shopIdMatches(shopId)
-                              && shopIsWritable(shopId);
+        // Create: authenticated users whose shopId claim matches (or is unset
+        // for anonymous pre-OTP customers who haven't received a claim yet).
+        allow create: if isSignedIn()
+                      && shopIdMatches(shopId)
+                      && shopIsWritable(shopId)
+                      && callerShopMatchesOrUnset(shopId);
+
+        // Update: post-OTP shop members only (isShopMember checks claim).
+        // shopId/creatorUid/dcId are ownership fields — not in allowlist.
+        allow update: if isSignedIn()
+                      && shopIdMatches(shopId)
+                      && shopIsWritable(shopId)
+                      && isShopMember(shopId)
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                           'personas', 'updatedAt', 'lastActivityAt', 'inviteState'
+                         ]);
 
         allow delete: if false;
       }
