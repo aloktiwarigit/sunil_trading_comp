@@ -1,14 +1,22 @@
 // =============================================================================
 // PaymentScreen — the C3.5 UPI payment flow UI.
 //
-// Per C3.5:
+// Per C3.5 (Phase 3 reality, 2026-04-30):
 //   AC #1: UPI primary CTA (full width) + "और तरीके" secondary link
 //   AC #2: UPI deep link launched via url_launcher
-//   AC #5: On success → Project.state = paid
+//   AC #5: On submission → controller stage transitions to
+//          PaymentFlowStage.submitted. The actual Project.state depends on
+//          the path: UPI / bank-transfer claims park at
+//          ProjectState.awaitingVerification (operator must verify); COD
+//          self-tag stays in ProjectState.committed (operator marks paid at
+//          cash collection). The success-screen copy branches on the real
+//          project state via _successHeadline — never claims "paid"
+//          unconditionally.
 //   AC #6: On failure → retry screen with "try another way"
 //   AC #8: Triple Zero invariant — amount passed to UPI equals totalAmount
 //
-// Oxblood `shopCommit` color used for payment success state.
+// Oxblood `shopCommit` color used for the customer submission success
+// state, regardless of the underlying project state.
 // COD / bank transfer / udhaar are separate depth stories — shown as
 // disabled placeholders under "और तरीके" for WS completeness.
 // =============================================================================

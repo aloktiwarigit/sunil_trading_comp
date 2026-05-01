@@ -1,12 +1,15 @@
 // =============================================================================
-// PaymentController â€” Riverpod controller managing the C3.5 UPI payment flow.
+// PaymentController — Riverpod controller managing the C3.5 UPI payment flow.
 //
-// State machine: idle â†’ launching â†’ awaitingReturn â†’ recording â†’ paid | error
+// State machine: idle → launching → awaitingReturn → recording → submitted | error
 //
-// Per C3.5:
+// Per C3.5 (Phase 3 reality, 2026-04-30):
 //   AC #1: UPI primary CTA + "other ways" secondary link
 //   AC #2: UPI deep link via url_launcher
-//   AC #5: committed â†’ paid Firestore transaction (Triple Zero re-verified)
+//   AC #5: customer submission parks the project in awaiting_verification for
+//          UPI / bank-transfer claims; COD self-tag remains in committed.
+//          Operator confirms cash/UPI/transfer received via the typed
+//          applyOperatorMarkPaidPatch (operator-only path to ProjectState.paid).
 //   AC #8: Triple Zero UPI invariant (am= == totalAmount, pa= == shop.upiVpa)
 // =============================================================================
 
