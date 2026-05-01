@@ -302,6 +302,20 @@ class ProjectOperatorMarkPaidPatch with _$ProjectOperatorMarkPaidPatch {
   }
 }
 
+/// Operator's typed close patch. Phase 3: re-asserts the Triple Zero
+/// invariant transactionally before writing closedAt. Replaces the generic
+/// applyOperatorPatch(state: closed) callsite.
+@freezed
+class ProjectOperatorClosePatch with _$ProjectOperatorClosePatch {
+  const factory ProjectOperatorClosePatch() = _ProjectOperatorClosePatch;
+
+  const ProjectOperatorClosePatch._();
+
+  Map<String, Object?> toFirestoreMap() => <String, Object?>{
+        'state': 'closed',
+      };
+}
+
 /// Operator cross-partition mutation: reverting a committed Project back to
 /// `draft` (PRD I6.12 edge case #2). Writes an audit log entry to
 /// `shops/{shopId}/audit/{eventId}` as part of the same transaction.

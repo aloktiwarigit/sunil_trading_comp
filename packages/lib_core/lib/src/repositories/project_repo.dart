@@ -212,6 +212,56 @@ class ProjectRepo {
         'method=${patch.paymentMethod}');
   }
 
+  /// Operator's typed close patch. Phase 3 (2026-04-30): re-asserts the
+  /// Triple Zero invariant transactionally before writing closedAt. Replaces
+  /// the generic applyOperatorPatch(state: closed) callsite.
+  ///
+  /// Throws ProjectRepoException with codes:
+  ///   - 'not-found': project does not exist
+  ///   - 'invalid-state-transition': source state ≠ paid/delivering
+  ///   - 'triple-zero-violation': amountReceivedByShop ≠ totalAmount
+  Future<void> applyOperatorClosePatch(
+    String projectId,
+    ProjectOperatorClosePatch patch,
+  ) async {
+    final ref = _projectsCollection().doc(projectId);
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (!snap.exists) {
+        throw const ProjectRepoException('not-found', 'Project does not exist');
+      }
+      final data = snap.data()!;
+      final currentState = data['state'] as String?;
+      if (currentState != 'paid' && currentState != 'delivering') {
+        throw ProjectRepoException(
+          'invalid-state-transition',
+          'Cannot close in state $currentState — '
+              'only paid or delivering allowed',
+        );
+      }
+      final totalAmount = (data['totalAmount'] as num?)?.toInt() ?? 0;
+      final received = (data['amountReceivedByShop'] as num?)?.toInt() ?? 0;
+      if (received != totalAmount) {
+        throw ProjectRepoException(
+          'triple-zero-violation',
+          'Cannot close: amountReceivedByShop ($received) '
+              '!= totalAmount ($totalAmount)',
+        );
+      }
+      final map = patch.toFirestoreMap();
+      map['closedAt'] = FieldValue.serverTimestamp();
+      // Back-fill deliveredAt if the operator closed a paid (not delivering)
+      // project — i.e. the customer picked up at the shop without a
+      // separate delivery leg.
+      if (data['deliveredAt'] == null) {
+        map['deliveredAt'] = FieldValue.serverTimestamp();
+      }
+      map['updatedAt'] = FieldValue.serverTimestamp();
+      txn.set(ref, map, SetOptions(merge: true));
+    });
+    _log.info('operator close: projectId=$projectId');
+  }
+
   /// Customer self-tags the project as cash-on-delivery. Phase 3: state stays
   /// `committed`; the operator advances state when cash is collected at
   /// delivery via `applyOperatorMarkPaidPatch` (committed → paid).
