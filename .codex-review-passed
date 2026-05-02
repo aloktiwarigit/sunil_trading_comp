@@ -1,22 +1,31 @@
 {
-  "timestamp": "2026-05-02T14:21:32Z",
-  "commit": "063a006ebf4883340ac906fa22b9b36fcae33160",
+  "timestamp": "2026-05-02T15:08:23Z",
+  "commit": "fa5af7f59bd38ed3ce62b1715d4360bac2bbc2ac",
   "reviewer": "codex",
   "reviewer_version": "openai/codex-cli 0.125.0",
-  "phase": "5A",
-  "phase_title": "Land Phase 0.1 lint + Phase 1 storage hardening + CI fix + format baseline",
+  "phase": "5B + 5C bundled",
+  "phase_title": "/projects + /decision_circles hardening (customerId, allowlist, lifecycle, OTP-at-commit, DC path+body binding, customer-owned read/update)",
   "review_evidence": [
-    "docs/reviews/codex-phase-5a-r1.md",
-    "docs/reviews/codex-phase-5a-r2.md",
-    "docs/reviews/codex-phase-5a-r3.md",
-    "docs/reviews/codex-phase-5a-r4.md"
+    "docs/reviews/codex-phase-5b-r1.md",
+    "docs/reviews/codex-phase-5b-r2.md",
+    "docs/reviews/codex-phase-5b-r3.md",
+    "docs/reviews/codex-phase-5b-r4.md",
+    "docs/reviews/codex-phase-5b-r5.md",
+    "docs/reviews/codex-phase-5b-r6.md",
+    "docs/reviews/codex-phase-5b-r7.md",
+    "docs/reviews/codex-phase-5b-r8-final.md"
   ],
-  "review_iterations": 4,
+  "review_iterations": 8,
   "iteration_summary": [
-    "r1: P1 — CI ts-rules-test only started firestore emulator; new cross_tenant_storage suite requires storage. Fixed in 5b8814d (manual readiness curl).",
-    "r2: P1 — curl readiness probe on Storage's '/' returns 4xx, never flips ready. Refactored to firebase emulators:exec which owns lifecycle (c813a32).",
-    "r3: clean — no actionable correctness, security, or CI-blocking issues.",
-    "r4: clean — final review on tip 063a006 after format baseline commit. CI update appears consistent with the new test requirements."
+    "r1: P1 — null-claim bypass too broad. Tightened callerShopMatchesOrUnset to gate on isAnonymous().",
+    "r2: P1 — /projects create lacked shopIsWritable(). Added ADR-013 lifecycle freeze gate.",
+    "r3: P1 — customer commit transition lacked isPhoneVerified(). Added Five Truths #2 OTP-at-commit gate.",
+    "r4: P1 — phone-verified-no-claim customers blocked by r2. Widened to (isAnonymous OR isPhoneVerified) without claim.",
+    "r5: P1 — DC create surface widened by r4. Bundled Phase 5C path+body binding.",
+    "r6: P2 — DC read/update gated only on isShopMember; phone-verified customers couldn't use own DCs. Added customer-owned read/update path.",
+    "r7: clean — all hardening goals met.",
+    "r8 (final on rebased tip): clean — no discrete introduced issues."
   ],
-  "verdict": "clean"
+  "verdict": "clean",
+  "rebase_note": "Branch was rebased onto main (post-PR#3 squash) via cherry-pick of 7 work commits to drop the duplicated phase-5a commits already in main."
 }
