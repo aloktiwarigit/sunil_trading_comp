@@ -23,9 +23,11 @@
 // ---- Mocks (must come before importing the CF) ----
 
 const mockBatchSet = jest.fn();
+const mockBatchUpdate = jest.fn();
 const mockBatchCommit = jest.fn().mockResolvedValue(undefined);
 const mockBatch = jest.fn(() => ({
   set: mockBatchSet,
+  update: mockBatchUpdate,
   commit: mockBatchCommit,
 }));
 
@@ -110,9 +112,18 @@ function makeEvent(opts: {
   };
 }
 
-// Helper: scan mockBatchSet calls for a write to a specific path. Returns
-// the merged-update map argument, or undefined if no such write happened.
+// Helper: scan mockBatchUpdate (and mockBatchSet for legacy) calls for a
+// write to a specific path. Returns the update map argument, or undefined
+// if no such write happened. Phase 7a r1 (Codex r1 #1) switched the CF
+// from batch.set+merge to batch.update; this helper looks at both so the
+// helper survives any future tweaks.
 function findWrite(path: string): Record<string, unknown> | undefined {
+  for (const call of mockBatchUpdate.mock.calls) {
+    const ref = call[0] as DocRef;
+    if (ref._path === path) {
+      return call[1] as Record<string, unknown>;
+    }
+  }
   for (const call of mockBatchSet.mock.calls) {
     const ref = call[0] as DocRef;
     if (ref._path === path) {
@@ -124,7 +135,9 @@ function findWrite(path: string): Record<string, unknown> | undefined {
 
 beforeEach(() => {
   mockBatchSet.mockClear();
+  mockBatchUpdate.mockClear();
   mockBatchCommit.mockClear();
+  mockBatchCommit.mockResolvedValue(undefined);
   mockBatch.mockClear();
   mockFirestore.mockClear();
   incrementSpy.mockClear();
@@ -261,6 +274,31 @@ describe('updateMessagePreview — handleMessageCreate', () => {
     expect(findWrite('shops/shop_0/chatThreads/t-99')).toBeDefined();
     expect(findWrite('shops/shop_1/projects/t-99')).toBeUndefined();
     expect(findWrite('shops/shop_1/chatThreads/t-99')).toBeUndefined();
+  });
+
+  test('r1 (Codex r1 #1) parent doc missing → batch fails, function logs warn, does not throw', async () => {
+    // Codex P1: prior to r1 the CF used batch.set+merge, which silently
+    // CREATED a malformed parent doc with only preview/unread fields if
+    // the parent was absent (e.g. operator wrote first message before
+    // customer-app created the chatThread). Switched to batch.update; the
+    // batch.commit rejects with NOT_FOUND, the CF catches it and logs
+    // warn instead of leaving a malformed parent.
+    const notFoundErr = Object.assign(
+      new Error('5 NOT_FOUND: No document to update'),
+      { code: 5 },
+    );
+    mockBatchCommit.mockRejectedValueOnce(notFoundErr);
+
+    // Should not throw — function swallows NOT_FOUND defensively.
+    await expect(
+      handleMessageCreate(
+        makeEvent({
+          data: { type: 'text', textBody: 'orphan message', authorRole: 'bhaiya' },
+        }),
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(mockBatchCommit).toHaveBeenCalledTimes(1);
   });
 
   test('unknown authorRole: preview written, no unread increment, warn logged', async () => {

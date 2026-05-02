@@ -22,6 +22,22 @@
 // processed-events marker doc + transactional create) is queued for
 // Phase 9+.
 //
+// **Preview ordering caveat (Codex r1 #2 — accepted, queued for Phase 9+):**
+// Under concurrent or retried events, an older message's CF can run AFTER
+// a newer message's CF and overwrite the newer preview / lastMessageAt
+// values. The plan accepts this best-effort behavior because it self-heals
+// on the next message (the next CF call writes the actual newest preview).
+// Real ordering guarantees require a transactional read of stored
+// lastMessageAt + compare with message.sentAt before write — same Phase
+// 9+ slice as the idempotency marker.
+//
+// **Parent existence (Codex r1 #1 — fixed):** uses batch.update (NOT
+// batch.set+merge) on both /projects/{id} and /chatThreads/{id}. update
+// fails with NOT_FOUND if the parent doc does not exist, which is caught
+// and logged as a warn. Without this, set+merge would CREATE a malformed
+// chatThread doc (preview/unread fields only, no customerUid / shopId /
+// projectId), causing customer reads to be denied permanently.
+//
 // **Schema:** writes the chatThread.unreadCountForShopkeeper field (per
 // packages/lib_core/lib/src/models/chat_thread.dart:25). Earlier drafts
 // of the rules included a phantom `unreadCountForOperator` field with no
@@ -104,15 +120,14 @@ export async function handleMessageCreate(event: MessageEvent): Promise<void> {
   const batch = db.batch();
   const now = admin.firestore.FieldValue.serverTimestamp();
 
-  batch.set(
-    projectRef,
-    {
-      lastMessagePreview: preview,
-      lastMessageAt: now,
-      updatedAt: now,
-    },
-    { merge: true },
-  );
+  // Codex r1 #1: use batch.update (NOT batch.set+merge). update fails with
+  // NOT_FOUND if the parent doc does not exist, which we catch below. set
+  // with merge:true would silently CREATE a malformed parent doc.
+  batch.update(projectRef, {
+    lastMessagePreview: preview,
+    lastMessageAt: now,
+    updatedAt: now,
+  });
 
   // Recipient-side unread field by authorRole:
   //   'customer'                → shopkeeper-side unread increments
@@ -142,15 +157,59 @@ export async function handleMessageCreate(event: MessageEvent): Promise<void> {
     // NOT idempotent under at-least-once retry. See doc-comment.
     threadUpdate[unreadField] = admin.firestore.FieldValue.increment(1);
   }
-  batch.set(threadRef, threadUpdate, { merge: true });
+  batch.update(threadRef, threadUpdate);
 
-  await batch.commit();
+  try {
+    await batch.commit();
+  } catch (err: unknown) {
+    // Firestore Admin SDK rejects batch.update on a missing doc with a
+    // NOT_FOUND-class error. Treat as a defensive skip: the message is
+    // already written to the messages subcollection, but a parent /projects
+    // or /chatThreads doc is absent (typically because an operator wrote
+    // the first message before the customer-app created the chatThread).
+    // Logging warn (not error) keeps the function's success rate dashboards
+    // clean; the per-shop missing-parent rate should be the actual signal.
+    if (isNotFoundError(err)) {
+      logger.warn(
+        'updateMessagePreview: parent doc missing, skipping preview update',
+        {
+          shopId,
+          threadId,
+          messageId,
+          authorRole,
+          error: errorMessage(err),
+        },
+      );
+      return;
+    }
+    throw err;
+  }
   logger.info('updateMessagePreview: applied', {
     shopId,
     threadId,
     messageId,
     unreadField,
   });
+}
+
+function isNotFoundError(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+  const code = (err as { code?: unknown }).code;
+  if (code === 5 || code === 'NOT_FOUND') return true;
+  const message = (err as { message?: unknown }).message;
+  if (typeof message === 'string' && /NOT_FOUND|No document to update/i.test(message)) {
+    return true;
+  }
+  return false;
+}
+
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object' && err !== null) {
+    const m = (err as { message?: unknown }).message;
+    if (typeof m === 'string') return m;
+  }
+  return String(err);
 }
 
 export const updateMessagePreview = onDocumentCreated(
