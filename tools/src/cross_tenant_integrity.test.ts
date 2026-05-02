@@ -1170,6 +1170,286 @@ describe('Cross-tenant integrity (rules.test)', () => {
           .update({ customerUid: 'op-shop_0-owner', updatedAt: new Date() }),
       );
     });
+
+    // -------------------------------------------------------------------------
+    // Phase 5B — /projects create identity + money-state allowlist
+    //
+    // Adds three negative tests (customerId mismatch, amountReceivedByShop
+    // pre-pollution, settlement-field pre-set) and two green-path tests
+    // (amountReceivedByShop == 0 minimal body, full ProjectRepo.createDraft
+    // body — guards against the rule accidentally rejecting the live customer
+    // flow). See docs/superpowers/plans/2026-05-01-enterprise-hardening-...
+    // -------------------------------------------------------------------------
+
+    test('Phase 5B — project create rejects customerId mismatch', async () => {
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/p1').set({
+          projectId: 'p1',
+          shopId: 'shop_1',
+          customerUid: 'alice', // matches caller
+          customerId: 'mallory', // does NOT match caller — should be rejected
+          state: 'draft',
+          totalAmount: 0,
+          lineItems: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B — project create rejects amountReceivedByShop != 0', async () => {
+      // The Phase 5B rule allows amountReceivedByShop in the keys allowlist
+      // (it is part of the existing ProjectRepo.createDraft body) but
+      // constrains the value to == 0. Any non-zero value at create is
+      // money-state pre-pollution.
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/p2').set({
+          projectId: 'p2',
+          shopId: 'shop_1',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 99999, // non-zero pre-pollution — rejected
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B — project create accepts amountReceivedByShop == 0 (matches existing createDraft)', async () => {
+      // Guards against accidentally tightening the rule to exclude
+      // amountReceivedByShop entirely, which would break the existing
+      // ProjectRepo.createDraft body (which writes 0).
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/projects/p2b').set({
+          projectId: 'p2b',
+          shopId: 'shop_1',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0, // explicitly 0 — must be allowed
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B — project create rejects pre-set paidAt', async () => {
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/p3').set({
+          projectId: 'p3',
+          shopId: 'shop_1',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          paidAt: new Date(), // settlement field — should be rejected at create
+          lineItems: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B r2/r4 (Codex r1 #1, narrowed by r4) — Google-signed user without shopId claim cannot create project (operator pre-claim window)', async () => {
+      // Regression test for the null-claim bypass. The original r1 form
+      // `callerShopId() == null` allowed any missing-claim caller through;
+      // r2 narrowed to isAnonymous() only; r4 widened to also include
+      // isPhoneVerified() (returning customer flow — see the Phase 5B r5
+      // test below). What MUST remain rejected after r4 is the
+      // Google-signed caller without a shopId claim — that's the
+      // operator pre-claim window, where setCustomUserClaims has not yet
+      // been issued or the token has not refreshed. Letting this caller
+      // through would re-open the cross-tenant pollution path on
+      // /projects, /chatThreads, /decision_circles.
+      const ctx = testEnv.authenticatedContext('google-no-claim', {
+        firebase: { sign_in_provider: 'google.com' },
+        // Intentionally NO shopId claim — simulates a Google-signed
+        // operator before provisionNewShop / signupNewOperator finishes
+        // issuing their claim, or a random Google user trying to write.
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/p-noclaim').set({
+          projectId: 'p-noclaim',
+          shopId: 'shop_1',
+          customerUid: 'google-no-claim',
+          customerId: 'google-no-claim',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B r3 (Codex r2 #1) — anonymous user cannot create project when shop is deactivating', async () => {
+      // Regression test for the shopIsWritable() gate. Without it an
+      // anonymous caller could create /projects under a shop whose
+      // shopLifecycle != 'active', bypassing the ADR-013 write-freeze
+      // that the rest of the rule set honours. This test sets shop_2 to
+      // 'deactivating' and verifies the create is denied for an anon
+      // user even though every other Phase 5B condition is satisfied.
+      await setShopLifecycle('shop_2', 'deactivating');
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_2/projects/p-frozen').set({
+          projectId: 'p-frozen',
+          shopId: 'shop_2',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B r4 (Codex r3 #1) — anonymous user cannot commit own draft (Five Truths #2 OTP-at-commit gate)', async () => {
+      // Regression test for the OTP-at-commit gate. Phase 5B r1 enabled
+      // anonymous /projects create; without the isPhoneVerified() gate
+      // on the commit transition, the same anonymous caller could move
+      // draft -> committed via REST and bypass the OTP step that
+      // applyCustomerCommitPatch enforces client-side. Five Truths #2:
+      // "Anon -> Phone OTP at commit -> silent forever".
+      //
+      // Seed a draft project owned by anon uid 'alice', then have anon
+      // 'alice' try to commit it. Rule must reject because the caller is
+      // not phone-verified.
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .doc('shops/shop_1/projects/p-anon-commit')
+          .set({
+            projectId: 'p-anon-commit',
+            shopId: 'shop_1',
+            customerUid: 'alice',
+            customerId: 'alice',
+            state: 'draft',
+            totalAmount: 0,
+            amountReceivedByShop: 0,
+            lineItemsCount: 0,
+            lineItems: [],
+            unreadCountForCustomer: 0,
+            unreadCountForShopkeeper: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+      });
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/p-anon-commit').update({
+          state: 'committed',
+          committedAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B r5 (Codex r4 #1) — phone-verified customer WITHOUT shopId claim can create draft (returning customer flow)', async () => {
+      // Regression test for the r4 customerShopMatchesOrUnset widening.
+      // Customer UIDs (anonymous or phone-verified) never receive a shopId
+      // custom claim — only operators do (provisionNewShop / signupNewOperator).
+      // The Phase 5B r2 form gated null-claim solely on isAnonymous(),
+      // breaking the returning-customer flow: post-OTP the sign_in_provider
+      // changes from 'anonymous' to 'phone' but the shopId claim never
+      // arrives, so create operations would 401. r4 widens the gate to
+      // (isAnonymous() OR isPhoneVerified()) without a claim.
+      const ctx = testEnv.authenticatedContext('returning-customer', {
+        firebase: { sign_in_provider: 'phone' },
+        // Intentionally NO shopId claim — auth flow does not issue one
+        // for customer UIDs. This is the production state for any
+        // customer who signed in via OTP after browsing anonymously.
+      });
+      const db = ctx.firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/projects/p-returning').set({
+          projectId: 'p-returning',
+          shopId: 'shop_1',
+          customerUid: 'returning-customer',
+          customerId: 'returning-customer',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5B — project create succeeds with full ProjectRepo.createDraft body (no false positive)', async () => {
+      // Mirrors the EXACT body that ProjectRepo.createDraft writes
+      // (apps/customer_app + packages/lib_core project_repo.dart). If this
+      // test fails, customer draft creation is broken in production.
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/projects/p4').set({
+          projectId: 'p4',
+          shopId: 'shop_1',
+          customerId: 'alice',
+          customerUid: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItemsCount: 0,
+          lineItems: [],
+          unreadCountForCustomer: 0,
+          unreadCountForShopkeeper: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      );
+    });
   });
 
   describe('Phase 1 — chatThreads: cross-tenant create + field allowlist + lifecycle', () => {
@@ -1380,14 +1660,209 @@ describe('Cross-tenant integrity (rules.test)', () => {
     });
 
     test('same-shop customer can create DC (no false positive)', async () => {
+      // Phase 5C r1 (Codex r5 #1) — updated to match the new path+body
+      // binding rule: dcId must equal an existing project owned by caller,
+      // and body must use the production schema (projectId / shopId /
+      // primaryCustomerUid / participants / createdAt — exactly 5 fields,
+      // matching draft_controller.dart:312-323). The previous form used
+      // legacy `creatorUid` / `personas` field names that did not match
+      // the production flow.
       const uid = 'cust-shop_1-uid';
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .doc('shops/shop_1/projects/dc-greenpath')
+          .set({
+            projectId: 'dc-greenpath',
+            shopId: 'shop_1',
+            customerUid: uid,
+            customerId: uid,
+            state: 'draft',
+            totalAmount: 0,
+            amountReceivedByShop: 0,
+            lineItems: [],
+          });
+      });
       const db = ctxAsCustomer('shop_1', uid).firestore();
       await assertSucceeds(
-        db.collection('shops').doc('shop_1').collection('decision_circles').add({
+        db.doc('shops/shop_1/decision_circles/dc-greenpath').set({
+          projectId: 'dc-greenpath',
           shopId: 'shop_1',
-          creatorUid: uid,
-          personas: [],
+          primaryCustomerUid: uid,
+          participants: [],
           createdAt: new Date(),
+        }),
+      );
+    });
+
+    // -------------------------------------------------------------------------
+    // Phase 5C — DC create path + body binding (Codex r5 #1 bundle)
+    //
+    // Bundled into Phase 5B's PR #4 because Phase 5B's null-claim widening
+    // for phone-verified customers exposed this surface (Codex r5 finding).
+    // Closes orphan/cross-customer DC creation. Anonymous project + matching
+    // DC remains allowed by PRD P2.1; full anonymous-write-surface closure
+    // is Phase 9+ App Check + CF migration.
+    // -------------------------------------------------------------------------
+
+    test('Phase 5C — anon DC create denied when no project owns the dcId', async () => {
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      // No /projects/proj-1 exists. DC create with dcId == 'proj-1' must be denied.
+      await assertFails(
+        db.doc('shops/shop_1/decision_circles/proj-1').set({
+          projectId: 'proj-1',
+          shopId: 'shop_1',
+          primaryCustomerUid: 'alice',
+          participants: [],
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5C — anon DC create denied when project is owned by a different uid', async () => {
+      await testEnv.withSecurityRulesDisabled(async (admCtx) => {
+        await admCtx.firestore().doc('shops/shop_1/projects/proj-2').set({
+          projectId: 'proj-2',
+          shopId: 'shop_1',
+          customerUid: 'bob',
+          customerId: 'bob',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+        });
+      });
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      // Project owned by bob; alice tries to create DC for it. Denied.
+      await assertFails(
+        db.doc('shops/shop_1/decision_circles/proj-2').set({
+          projectId: 'proj-2',
+          shopId: 'shop_1',
+          primaryCustomerUid: 'alice',
+          participants: [],
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5C — anon DC create succeeds when caller owns the matching project (no false positive)', async () => {
+      await testEnv.withSecurityRulesDisabled(async (admCtx) => {
+        await admCtx.firestore().doc('shops/shop_1/projects/proj-3').set({
+          projectId: 'proj-3',
+          shopId: 'shop_1',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+        });
+      });
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/decision_circles/proj-3').set({
+          projectId: 'proj-3',
+          shopId: 'shop_1',
+          primaryCustomerUid: 'alice',
+          participants: [],
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5C r3 — DC body projectId mismatch denied (path bound, body lies)', async () => {
+      await testEnv.withSecurityRulesDisabled(async (admCtx) => {
+        await admCtx.firestore().doc('shops/shop_1/projects/proj-r3a').set({
+          projectId: 'proj-r3a',
+          shopId: 'shop_1',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+        });
+      });
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/decision_circles/proj-r3a').set({
+          projectId: 'someone-elses-project', // body lies about projectId
+          shopId: 'shop_1',
+          primaryCustomerUid: 'alice',
+          participants: [],
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5C r3 — DC body primaryCustomerUid != caller denied', async () => {
+      await testEnv.withSecurityRulesDisabled(async (admCtx) => {
+        await admCtx.firestore().doc('shops/shop_1/projects/proj-r3b').set({
+          projectId: 'proj-r3b',
+          shopId: 'shop_1',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+        });
+      });
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/decision_circles/proj-r3b').set({
+          projectId: 'proj-r3b',
+          shopId: 'shop_1',
+          primaryCustomerUid: 'mallory', // body claims a different primary
+          participants: [],
+          createdAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5C r3 — DC create with extra unexpected field denied', async () => {
+      await testEnv.withSecurityRulesDisabled(async (admCtx) => {
+        await admCtx.firestore().doc('shops/shop_1/projects/proj-r3c').set({
+          projectId: 'proj-r3c',
+          shopId: 'shop_1',
+          customerUid: 'alice',
+          customerId: 'alice',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+        });
+      });
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/decision_circles/proj-r3c').set({
+          projectId: 'proj-r3c',
+          shopId: 'shop_1',
+          primaryCustomerUid: 'alice',
+          participants: [],
+          createdAt: new Date(),
+          // Extra fields not in the create allowlist (these are update-only
+          // fields per the rule above) — keys().hasOnly() must reject.
+          personas: ['somePersona'],
+          inviteState: 'open',
         }),
       );
     });
@@ -1426,6 +1901,118 @@ describe('Cross-tenant integrity (rules.test)', () => {
           .collection('decision_circles')
           .doc('dc-p1')
           .update({ personas: [{ role: 'mummy-ji', uid }], updatedAt: new Date() }),
+      );
+    });
+
+    // -------------------------------------------------------------------------
+    // Phase 5C r2 (Codex r6 #1) — DC read/update by no-claim primary customer
+    //
+    // Phase 5B's null-claim widening lets phone-verified customers (who never
+    // get a shopId claim — only operators do) reach DC create. Without these
+    // companion tests + rules, the same customer could create a DC but
+    // immediately hit permission-denied trying to read or update it. The
+    // following three tests lock in the customer-owned read/update path.
+    // -------------------------------------------------------------------------
+
+    test('Phase 5C r2 (Codex r6 #1) — phone-verified no-claim primary can read own DC', async () => {
+      // Seed a project + DC owned by 'returning-customer' (no shopId claim).
+      await testEnv.withSecurityRulesDisabled(async (admCtx) => {
+        await admCtx.firestore().doc('shops/shop_1/projects/dc-r2-read').set({
+          projectId: 'dc-r2-read',
+          shopId: 'shop_1',
+          customerUid: 'returning-customer',
+          customerId: 'returning-customer',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+        });
+        await admCtx
+          .firestore()
+          .doc('shops/shop_1/decision_circles/dc-r2-read')
+          .set({
+            projectId: 'dc-r2-read',
+            shopId: 'shop_1',
+            primaryCustomerUid: 'returning-customer',
+            participants: [],
+            createdAt: new Date(),
+          });
+      });
+      const ctx = testEnv.authenticatedContext('returning-customer', {
+        firebase: { sign_in_provider: 'phone' },
+      });
+      const db = ctx.firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/decision_circles/dc-r2-read').get(),
+      );
+    });
+
+    test('Phase 5C r2 (Codex r6 #1) — phone-verified no-claim primary can update own DC personas', async () => {
+      await testEnv.withSecurityRulesDisabled(async (admCtx) => {
+        await admCtx.firestore().doc('shops/shop_1/projects/dc-r2-upd').set({
+          projectId: 'dc-r2-upd',
+          shopId: 'shop_1',
+          customerUid: 'returning-customer',
+          customerId: 'returning-customer',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+        });
+        await admCtx
+          .firestore()
+          .doc('shops/shop_1/decision_circles/dc-r2-upd')
+          .set({
+            projectId: 'dc-r2-upd',
+            shopId: 'shop_1',
+            primaryCustomerUid: 'returning-customer',
+            participants: [],
+            createdAt: new Date(),
+          });
+      });
+      const ctx = testEnv.authenticatedContext('returning-customer', {
+        firebase: { sign_in_provider: 'phone' },
+      });
+      const db = ctx.firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/decision_circles/dc-r2-upd').update({
+          personas: [{ role: 'mummy-ji', uid: 'returning-customer' }],
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5C r2 (Codex r6 #1) — no-claim customer cannot read DC owned by different primaryCustomerUid', async () => {
+      await testEnv.withSecurityRulesDisabled(async (admCtx) => {
+        await admCtx.firestore().doc('shops/shop_1/projects/dc-r2-other').set({
+          projectId: 'dc-r2-other',
+          shopId: 'shop_1',
+          customerUid: 'bob',
+          customerId: 'bob',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+        });
+        await admCtx
+          .firestore()
+          .doc('shops/shop_1/decision_circles/dc-r2-other')
+          .set({
+            projectId: 'dc-r2-other',
+            shopId: 'shop_1',
+            primaryCustomerUid: 'bob', // owned by bob
+            participants: [],
+            createdAt: new Date(),
+          });
+      });
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'phone' },
+      });
+      const db = ctx.firestore();
+      // alice (no claim) tries to read bob's DC — must fail (neither
+      // isShopMember nor primaryCustomerUid match holds).
+      await assertFails(
+        db.doc('shops/shop_1/decision_circles/dc-r2-other').get(),
       );
     });
   });

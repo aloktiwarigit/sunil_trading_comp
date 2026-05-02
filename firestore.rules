@@ -33,19 +33,47 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
     }
 
+    // Phase 5B: defensive read of the shopId custom claim.
+    //
+    // Firestore rules `Map.foo` member-access THROWS when the key is absent
+    // (per rules.Map docs); `Map.get('foo', default)` returns the default.
+    // Anonymous customers (pre-OTP) genuinely have no shopId claim, and the
+    // /projects create rule is documented as allowing them. Returning null
+    // here keeps `callerShopMatchesOrUnset(shopId)` evaluating cleanly for
+    // anonymous users instead of erroring and forcing the rule into deny.
+    // No behavior change for authenticated callers (operator + phone-OTP).
     function callerShopId() {
-      return request.auth.token.shopId;
+      return request.auth.token.get('shopId', null);
     }
 
     function callerRole() {
       return request.auth.token.role;
     }
 
-    // True when the caller either has no shopId claim (anonymous pre-OTP) or
-    // their claim matches the target shopId. Prevents authenticated users from
-    // a different shop writing into this shop's namespace.
+    // True when the caller's shopId claim matches the target shopId, OR the
+    // caller is a customer (anonymous OR phone-verified) without a shopId
+    // claim. Customers are the documented missing-claim path: only operators
+    // (bhaiya/beta/munshi) receive a shopId custom claim — issued by
+    // provisionNewShop / signupNewOperator. Customers — both anonymous
+    // pre-OTP (PRD P2.1) and returning phone-verified — never get a claim;
+    // they identify themselves via `customerUid == auth.uid` on the document
+    // itself, enforced by the per-collection rules above this layer.
+    //
+    // Phase 5B r2 (Codex r1 #1): tightened from `callerShopId() == null` to
+    // gate the null-claim branch on isAnonymous(), closing the cross-tenant
+    // pollution path for non-anonymous-non-customer signed-in users.
+    //
+    // Phase 5B r4 (Codex r4 #1): widened to also allow isPhoneVerified()
+    // without a claim. A returning customer who completed phone-OTP has
+    // sign_in_provider='phone' but still no shopId claim (no auth-flow
+    // code path issues one for customer UIDs); without this branch they
+    // were blocked from creating new drafts, chat threads, and decision
+    // circles. Google-signed callers without a shopId claim remain
+    // rejected — operators must have their claim provisioned before they
+    // reach a write rule.
     function callerShopMatchesOrUnset(shopId) {
-      return callerShopId() == null || callerShopId() == shopId;
+      return callerShopId() == shopId
+          || ((isAnonymous() || isPhoneVerified()) && callerShopId() == null);
     }
 
     function isShopMember(shopId) {
@@ -399,13 +427,48 @@ service cloud.firestore {
         // Create: customer creates draft. Anonymous or phone-verified.
         // callerShopMatchesOrUnset: anonymous users (no claim) may create;
         // authenticated users from another shop are blocked.
-        // shopIsWritable intentionally omitted to avoid an extra read that
-        // can fail for anonymous users who lack the shopId claim.
+        //
+        // Phase 5B hardening (PR #4):
+        //   1. customerId == auth.uid   — closes the customerUid/customerId
+        //      mismatch attack via REST API where one identity field bypassed
+        //      the partition check while the other tagged the doc to a victim.
+        //   2. keys().hasOnly([...])    — exact-keys allowlist. Settlement
+        //      timestamps (paidAt / closedAt / committedAt / deliveredAt),
+        //      paymentMethod, customerVpa, decisionCircleId, udhaarLedgerId,
+        //      revertedByUid, revertReason, lastMessagePreview, lastMessageAt,
+        //      upiTransactionId cannot be pre-set at create — they belong to
+        //      operator-update or system-patch flows.
+        //   3. amountReceivedByShop IS allowed at create but constrained to
+        //      == 0 (matches ProjectRepo.createDraft which writes 0). Any
+        //      non-zero value at create is money-state pre-pollution and is
+        //      rejected; the Triple Zero invariant remains enforced at the
+        //      paid/closed state transitions in `allow update` below.
+        //   4. shopIsWritable(shopId) — Phase 5B r3 (Codex r2 #1).
+        //      Honours the ADR-013 lifecycle freeze for anonymous callers
+        //      too. Previously omitted on the (incorrect) premise that
+        //      shopIsWritable's internal get() required the caller's
+        //      shopId claim — it does not. Without this gate, an anonymous
+        //      caller could create projects in a missing or deactivated
+        //      shop, bypassing the documented write-freeze.
         allow create: if isSignedIn()
                       && shopIdMatches(shopId)
                       && callerShopMatchesOrUnset(shopId)
+                      && shopIsWritable(shopId)
                       && request.resource.data.customerUid == request.auth.uid
-                      && request.resource.data.state == 'draft';
+                      && request.resource.data.customerId == request.auth.uid
+                      && request.resource.data.state == 'draft'
+                      && (
+                        !('amountReceivedByShop' in request.resource.data)
+                        || request.resource.data.amountReceivedByShop == 0
+                      )
+                      && request.resource.data.keys().hasOnly([
+                           'projectId', 'shopId', 'customerUid', 'customerId',
+                           'state', 'totalAmount', 'amountReceivedByShop',
+                           'lineItems', 'lineItemsCount',
+                           'unreadCountForCustomer', 'unreadCountForShopkeeper',
+                           'occasion', 'customerDisplayName', 'customerPhone',
+                           'createdAt', 'updatedAt'
+                         ]);
 
         // Update: partitioned by identity + state machine + field restriction.
         // SEC004 fix: customer updates are now field-restricted via
@@ -495,7 +558,19 @@ service cloud.firestore {
                            //     Excludes lineItems (server-authoritative),
                            //     paymentMethod, customerVpa,
                            //     amountReceivedByShop, paidAt.
+                           //
+                           //     Phase 5B r4 (Codex r3 #1): isPhoneVerified()
+                           //     is the OTP-at-commit gate (Five Truths #2 —
+                           //     "Anon → Phone OTP at commit → silent
+                           //     forever"). Without it, an anonymous caller
+                           //     who created a draft via the Phase 5B path
+                           //     could immediately commit it via REST,
+                           //     bypassing the OTP requirement that the Dart
+                           //     applyCustomerCommitPatch enforces
+                           //     client-side. The check is defensive against
+                           //     REST clients that bypass Dart.
                            (request.resource.data.state == 'committed'
+                            && isPhoneVerified()
                             && isValidProjectStateTransition(
                                  resource.data.state,
                                  request.resource.data.state
@@ -728,27 +803,79 @@ service cloud.firestore {
       // ---------------------------------------------------------------------
 
       match /decision_circles/{dcId} {
-        // Read: any member of this shop (shopId token claim must match).
-        // DCs are a post-OTP feature; anonymous users (no shopId claim) do
-        // not need DC reads. isShopMember covers both phone-verified customers
-        // and operators, while blocking cross-tenant reads.
+        // Read:
+        //   (a) operators / claimed shop members — via isShopMember (covers
+        //       Google-signed operators with shopId claim).
+        //   (b) the DC's primaryCustomerUid (the customer who owns it),
+        //       gated through callerShopMatchesOrUnset so the no-claim
+        //       customer branch (anonymous OR phone-verified) can read
+        //       their own DC. Without (b), returning phone-verified
+        //       customers (who never get a shopId claim — only operators
+        //       do) could create a DC but immediately hit
+        //       permission-denied reading it.
+        //
         // WS5.2: replaced bare isSignedIn() — any signed-in user of shop B
         // was able to read shop A's decision circles before this fix.
-        allow read: if isShopMember(shopId);
+        // Phase 5C r2 (Codex r6 #1): added customer-owned read path so the
+        // returning-customer flow surfaced by Phase 5B's null-claim widening
+        // can actually use the DC document it created.
+        allow read: if isShopMember(shopId)
+                    || (resource.data.primaryCustomerUid == request.auth.uid
+                        && callerShopMatchesOrUnset(shopId));
 
-        // Create: authenticated users whose shopId claim matches (or is unset
-        // for anonymous pre-OTP customers who haven't received a claim yet).
+        // Create: authenticated users whose shopId claim matches (or is
+        // unset for anonymous / phone-verified customers who don't receive
+        // a claim — see callerShopMatchesOrUnset for the policy).
+        //
+        // Phase 5C (Codex r5 #1, bundled into PR #4): path + body binding.
+        //   Path: dcId must equal an existing project in this shop, and that
+        //         project must be owned by the caller. Closes orphan
+        //         (no project) and cross-customer (other-uid project) DC
+        //         creation.
+        //   Body: projectId / shopId / primaryCustomerUid match path + caller,
+        //         and keys().hasOnly([...]) restricts to the 5 fields the
+        //         actual create body writes (draft_controller.dart:312-323).
+        //         Closes the variant where path is bound but the body
+        //         internally claims a different identity.
+        //
+        // Cost: one rule get() per DC create — once-per-draft under PRD P2.1
+        // auto-create-on-first-draft, well within 30-read budget.
+        //
+        // OUT OF SCOPE — full anonymous-write-surface closure remains a
+        // Phase 9+ App Check + CF migration concern. This phase only closes
+        // the DC-specific orphan / cross-customer sub-surface.
         allow create: if isSignedIn()
                       && shopIdMatches(shopId)
                       && shopIsWritable(shopId)
-                      && callerShopMatchesOrUnset(shopId);
+                      && callerShopMatchesOrUnset(shopId)
+                      && exists(/databases/$(database)/documents/shops/$(shopId)/projects/$(dcId))
+                      && get(/databases/$(database)/documents/shops/$(shopId)/projects/$(dcId)).data.customerUid == request.auth.uid
+                      && request.resource.data.projectId == dcId
+                      && request.resource.data.shopId == shopId
+                      && request.resource.data.primaryCustomerUid == request.auth.uid
+                      && request.resource.data.keys().hasOnly([
+                           'projectId', 'shopId', 'primaryCustomerUid',
+                           'participants', 'createdAt'
+                         ]);
 
-        // Update: post-OTP shop members only (isShopMember checks claim).
-        // shopId/creatorUid/dcId are ownership fields — not in allowlist.
+        // Update: shop members (operators) OR the DC's primary customer.
+        // shopId / projectId / primaryCustomerUid are ownership fields —
+        // not in allowlist; only personas / updatedAt / lastActivityAt /
+        // inviteState can change post-create.
+        //
+        // Phase 5C r2 (Codex r6 #1): added customer-owned update path so
+        // returning phone-verified customers (no shopId claim) can edit
+        // their own DC's personas/inviteState. Same callerShopMatchesOrUnset
+        // gate as the read rule above, plus the field-level allowlist still
+        // blocks identity rewrites.
         allow update: if isSignedIn()
                       && shopIdMatches(shopId)
                       && shopIsWritable(shopId)
-                      && isShopMember(shopId)
+                      && (
+                        isShopMember(shopId)
+                        || (resource.data.primaryCustomerUid == request.auth.uid
+                            && callerShopMatchesOrUnset(shopId))
+                      )
                       && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                            'personas', 'updatedAt', 'lastActivityAt', 'inviteState'
                          ]);
