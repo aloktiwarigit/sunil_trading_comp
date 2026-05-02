@@ -1,25 +1,14 @@
 {
-  "timestamp": "2026-05-02T15:27:50Z",
-  "commit": "9d0929facaba554b1a8249b1b85d8c4799dba62b",
+  "timestamp": "2026-05-02T15:47:52Z",
+  "commit": "badd4bf2ac97915dadfdf5e93e56e7fff733b011",
   "reviewer": "codex",
   "reviewer_version": "openai/codex-cli 0.125.0",
-  "phase": "6",
-  "phase_title": "Typed operator revert path + best-effort audit subcollection",
-  "review_evidence": [
-    "docs/reviews/codex-phase-6-r1.md",
-    "docs/reviews/codex-phase-6-r2.md",
-    "docs/reviews/codex-phase-6-r3.md",
-    "docs/reviews/codex-phase-6-r4.md",
-    "docs/reviews/codex-phase-6-r5.md"
-  ],
-  "review_iterations": 5,
-  "iteration_summary": [
-    "r1: P2 — cancelled state should not be revertable; audit row create accepted incomplete records. Added explicit revertable source-state set + hasAll keys check + auditId match path.",
-    "r2: P2 — paymentMethod / customerVpa not cleared on revert. Added to nulled set in patch + rule.",
-    "r3: P1 dart format + P2 revertReason validation (null/empty allowed). Formatted; rule now requires .",
-    "r4: P2 — isYugmaAdmin() dot-access threw on missing claim, breaking  short-circuit. Defensive Map.get.",
-    "r5: clean — no actionable correctness, security, or maintainability issues."
-  ],
+  "phase": "7b",
+  "phase_title": "Remove client-side lastMessagePreview write (CF takes over)",
+  "review_evidence": ["docs/reviews/codex-phase-7b-r1.md"],
+  "review_iterations": 1,
+  "iteration_summary": ["r1: clean — no correctness-impacting issues. Simple deletion; CF handles preview server-side."],
   "verdict": "clean",
-  "rebase_note": "Branch rebased onto main (post-PR#3+#4 squashes) via cherry-pick of 5 phase-6 work commits. The cherry-picked patches are byte-identical to the originals reviewed in r1–r5; rebase does not alter patch content. Final pre-merge Codex run timed out internally on dart analyze (120s) before emitting a verdict, but no findings were raised during the partial run."
+  "rebase_note": "Cherry-picked phase-7b's single deletion commit onto main (post-PR#3+#4+#5).",
+  "merge_order_required": "MUST merge AFTER PR #6 (phase-7a CF). Otherwise voice-note previews break in prod between merges. Plan Phase 7 deploy ordering."
 }
