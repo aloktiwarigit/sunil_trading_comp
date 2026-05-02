@@ -750,12 +750,21 @@ service cloud.firestore {
 
         // Update: participants may update metadata fields only.
         // shopId/customerUid/threadId are ownership fields — not in allowlist.
+        //
+        // Phase 7a r3 (Codex r3 #2): the allowlist now uses
+        // `unreadCountForShopkeeper` to match the canonical model field
+        // (chat_thread.dart:25) and the field that the Phase 7a CF
+        // increments. The previous form used `unreadCountForOperator`,
+        // which is a phantom field with no model attribute and no callers.
+        // Without this fix, the shopkeeper controller could not reset the
+        // counter via a rule-allowed update, so unread counts could only
+        // grow.
         allow update: if isSignedIn()
                       && shopIsWritable(shopId)
                       && (resource.data.customerUid == request.auth.uid
                           || isShopOperator(shopId))
                       && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                           'unreadCountForCustomer', 'unreadCountForOperator',
+                           'unreadCountForCustomer', 'unreadCountForShopkeeper',
                            'lastMessagePreview', 'lastMessageAt', 'updatedAt'
                          ]);
 

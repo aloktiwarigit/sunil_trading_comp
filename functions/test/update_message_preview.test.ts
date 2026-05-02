@@ -342,23 +342,26 @@ describe('updateMessagePreview — handleMessageCreate', () => {
     expect(findWrite('shops/shop_1/chatThreads/t-99')).toBeUndefined();
   });
 
-  test('r1 (Codex r1 #1) — chatThread parent missing → return early, no batch commit, warn logged', async () => {
-    // Pre-r1 the CF used batch.set+merge, which silently CREATED a
-    // malformed parent doc when absent. r1 switched to a pre-batch read:
-    // if the chatThread doc is missing, return early without touching
-    // either parent. The `r1 batch fails` test from r1 is now redundant
-    // because we never reach batch.commit when the thread is missing.
+  test('r3 (Codex r3 #1) — chatThread parent missing → project preview still updated, thread write skipped, warn logged', async () => {
+    // Pre-r3 the CF returned early when the thread was missing, dropping
+    // the project preview update too. The result was that the first
+    // operator message would not appear in the project list until the
+    // customer opened the chat (which creates the thread). r3 keeps the
+    // project update flowing and only skips the thread write.
     mockThreadDoc = { exists: false };
-    await expect(
-      handleMessageCreate(
-        makeEvent({
-          data: { type: 'text', textBody: 'orphan', authorUid: 'alice' },
-        }),
-      ),
-    ).resolves.toBeUndefined();
-    // No batch commit because we return early.
-    expect(mockBatchCommit).not.toHaveBeenCalled();
-    expect(mockBatchUpdate).not.toHaveBeenCalled();
+    await handleMessageCreate(
+      makeEvent({
+        data: { type: 'text', textBody: 'first message', authorUid: 'op-1' },
+      }),
+    );
+    // Project preview is written.
+    const projectWrite = findWrite('shops/shop_1/projects/t-1');
+    expect(projectWrite).toBeDefined();
+    expect(projectWrite!.lastMessagePreview).toBe('first message');
+    // Thread write is skipped entirely.
+    expect(findWrite('shops/shop_1/chatThreads/t-1')).toBeUndefined();
+    // Batch.commit still runs (with just the project write).
+    expect(mockBatchCommit).toHaveBeenCalledTimes(1);
   });
 
   test('r1 — project doc missing (thread exists) → batch.commit rejects, function swallows NOT_FOUND', async () => {

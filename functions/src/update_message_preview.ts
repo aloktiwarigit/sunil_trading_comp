@@ -134,17 +134,21 @@ export async function handleMessageCreate(event: MessageEvent): Promise<void> {
   //   (b) Read the trusted `customerUid` for unread routing — Codex
   //       Phase 7a r2 #1. Compared against the message's authorUid to
   //       decide which side's unread counter to increment.
+  // Codex r3 #1: do NOT early-return when the chatThread doc is missing.
+  // The /projects preview should still flow so the project list shows
+  // the first operator message before the customer opens the chat. We
+  // only skip the chatThread write itself when its parent is absent.
   const threadSnap = await threadRef.get();
-  if (!threadSnap.exists) {
+  const threadExists = threadSnap.exists;
+  const threadCustomerUid = threadExists
+    ? (threadSnap.data()?.customerUid as string | undefined)
+    : undefined;
+  if (!threadExists) {
     logger.warn(
-      'updateMessagePreview: chatThread parent missing, skipping',
+      'updateMessagePreview: chatThread parent missing, will update project preview only',
       { shopId, threadId, messageId },
     );
-    return;
   }
-  const threadCustomerUid = threadSnap.data()?.customerUid as
-    | string
-    | undefined;
 
   // Recipient-side unread routing — derived from the rule-bound authorUid
   // and the parent thread's customerUid (trusted comparison). authorRole
@@ -186,16 +190,24 @@ export async function handleMessageCreate(event: MessageEvent): Promise<void> {
     updatedAt: now,
   });
 
-  const threadUpdate: Record<string, unknown> = {
-    lastMessagePreview: preview,
-    lastMessageAt: now,
-    updatedAt: now,
-  };
-  if (unreadField !== null) {
-    // NOT idempotent under at-least-once retry. See doc-comment.
-    threadUpdate[unreadField] = admin.firestore.FieldValue.increment(1);
+  // Codex r3 #1: only enqueue the thread update if the thread doc exists.
+  // Skipping the thread write when missing avoids the batch-NOT_FOUND
+  // (which would also drop the project write because batch is atomic);
+  // the project write proceeds independently so the project/order list
+  // shows the first operator message even before the customer opens the
+  // chat (and creates the thread doc).
+  if (threadExists) {
+    const threadUpdate: Record<string, unknown> = {
+      lastMessagePreview: preview,
+      lastMessageAt: now,
+      updatedAt: now,
+    };
+    if (unreadField !== null) {
+      // NOT idempotent under at-least-once retry. See doc-comment.
+      threadUpdate[unreadField] = admin.firestore.FieldValue.increment(1);
+    }
+    batch.update(threadRef, threadUpdate);
   }
-  batch.update(threadRef, threadUpdate);
 
   try {
     await batch.commit();

@@ -132,7 +132,9 @@ beforeEach(async () => {
           customerUid: `cust-${shopId}-uid`,
           participantUids: [`cust-${shopId}-uid`, `op-${shopId}-owner`],
           unreadCountForCustomer: 0,
-          unreadCountForOperator: 1,
+          // Phase 7a r3 (Codex r3 #2): canonical field is
+          // unreadCountForShopkeeper per chat_thread.dart:25.
+          unreadCountForShopkeeper: 1,
           lastMessagePreview: 'नमस्ते',
           createdAt: new Date(),
         });
@@ -1515,6 +1517,8 @@ describe('Cross-tenant integrity (rules.test)', () => {
     });
 
     test('chatThread update is frozen when shop is deactivating', async () => {
+      // Phase 7a r3 (Codex r3 #2): allowlist field is now
+      // unreadCountForShopkeeper (matches chat_thread.dart:25).
       await setShopLifecycle('shop_1', 'deactivating');
       const db = ctxAsShopOperator('shop_1').firestore();
       await assertFails(
@@ -1523,11 +1527,16 @@ describe('Cross-tenant integrity (rules.test)', () => {
           .doc('shop_1')
           .collection('chatThreads')
           .doc('thread-p1')
-          .update({ unreadCountForOperator: 0 }),
+          .update({ unreadCountForShopkeeper: 0 }),
       );
     });
 
     test('chatThread update of allowed field succeeds (no false positive)', async () => {
+      // Phase 7a r3 (Codex r3 #2): operator can now reset
+      // unreadCountForShopkeeper (was unreadCountForOperator, a phantom
+      // field with no model attribute). Without this allowlist entry,
+      // the unread counter that the Phase 7a CF increments could only
+      // grow and never reset.
       const db = ctxAsShopOperator('shop_1').firestore();
       await assertSucceeds(
         db
@@ -1535,7 +1544,7 @@ describe('Cross-tenant integrity (rules.test)', () => {
           .doc('shop_1')
           .collection('chatThreads')
           .doc('thread-p1')
-          .update({ unreadCountForOperator: 0, updatedAt: new Date() }),
+          .update({ unreadCountForShopkeeper: 0, updatedAt: new Date() }),
       );
     });
   });
