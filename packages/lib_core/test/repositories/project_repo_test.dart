@@ -1,4 +1,4 @@
-﻿// =============================================================================
+// =============================================================================
 // ProjectRepo tests â€” commit transaction + Triple Zero invariant (C3.4 AC #4).
 //
 // Tests applyCustomerCommitPatch against fake_cloud_firestore to verify:
@@ -427,7 +427,8 @@ void main() {
       return ref.id;
     }
 
-    test('committed → paid sets state, paidAt, amountReceivedByShop, paymentMethod',
+    test(
+        'committed → paid sets state, paidAt, amountReceivedByShop, paymentMethod',
         () async {
       final projectId = await seedProject(state: 'committed');
 
@@ -537,8 +538,7 @@ void main() {
         'totalAmount': totalAmount,
         'amountReceivedByShop': amountReceivedByShop,
         'lineItems': <Map<String, dynamic>>[],
-        if (deliveredAt != null)
-          'deliveredAt': Timestamp.fromDate(deliveredAt),
+        if (deliveredAt != null) 'deliveredAt': Timestamp.fromDate(deliveredAt),
         'createdAt': Timestamp.fromDate(DateTime(2026, 4, 12)),
       });
       return ref.id;
@@ -650,7 +650,9 @@ void main() {
           const ProjectOperatorPatch(state: ProjectState.paid),
         ),
         throwsA(isA<ProjectRepoException>().having(
-          (e) => e.code, 'code', 'use-typed-method',
+          (e) => e.code,
+          'code',
+          'use-typed-method',
         )),
       );
     });
@@ -663,7 +665,9 @@ void main() {
           const ProjectOperatorPatch(state: ProjectState.closed),
         ),
         throwsA(isA<ProjectRepoException>().having(
-          (e) => e.code, 'code', 'use-typed-method',
+          (e) => e.code,
+          'code',
+          'use-typed-method',
         )),
       );
     });
@@ -677,7 +681,9 @@ void main() {
           const ProjectOperatorPatch(amountReceivedByShop: 1000),
         ),
         throwsA(isA<ProjectRepoException>().having(
-          (e) => e.code, 'code', 'use-typed-method',
+          (e) => e.code,
+          'code',
+          'use-typed-method',
         )),
       );
     });
@@ -690,7 +696,9 @@ void main() {
           ProjectOperatorPatch(paidAt: DateTime(2026, 4, 30)),
         ),
         throwsA(isA<ProjectRepoException>().having(
-          (e) => e.code, 'code', 'use-typed-method',
+          (e) => e.code,
+          'code',
+          'use-typed-method',
         )),
       );
     });
@@ -703,7 +711,9 @@ void main() {
           ProjectOperatorPatch(closedAt: DateTime(2026, 4, 30)),
         ),
         throwsA(isA<ProjectRepoException>().having(
-          (e) => e.code, 'code', 'use-typed-method',
+          (e) => e.code,
+          'code',
+          'use-typed-method',
         )),
       );
     });
@@ -716,7 +726,9 @@ void main() {
           const ProjectOperatorPatch(paymentMethod: 'cash'),
         ),
         throwsA(isA<ProjectRepoException>().having(
-          (e) => e.code, 'code', 'use-typed-method',
+          (e) => e.code,
+          'code',
+          'use-typed-method',
         )),
       );
     });
@@ -788,7 +800,8 @@ void main() {
     // applyCustomerDraftLineItemPatch
     // -------------------------------------------------------------------------
 
-    test('applyCustomerDraftLineItemPatch updates lineItems and totalAmount on draft',
+    test(
+        'applyCustomerDraftLineItemPatch updates lineItems and totalAmount on draft',
         () async {
       final id = await repo.createDraft(
         customerUid: customerUid,
@@ -835,7 +848,8 @@ void main() {
       );
     });
 
-    test('applyCustomerDraftLineItemPatch throws on non-draft (paid)', () async {
+    test('applyCustomerDraftLineItemPatch throws on non-draft (paid)',
+        () async {
       await projectsCol.doc('p-paid').set({
         'projectId': 'p-paid',
         'shopId': shopId,
@@ -892,7 +906,8 @@ void main() {
     // applyCustomerPriceAcceptancePatch
     // -------------------------------------------------------------------------
 
-    test('applyCustomerPriceAcceptancePatch updates finalPrice, totalAmount, and state',
+    test(
+        'applyCustomerPriceAcceptancePatch updates finalPrice, totalAmount, and state',
         () async {
       await projectsCol.doc('p-negotiate').set({
         'projectId': 'p-negotiate',
@@ -935,7 +950,8 @@ void main() {
       );
     });
 
-    test('applyCustomerPriceAcceptancePatch throws on non-draft/negotiating state',
+    test(
+        'applyCustomerPriceAcceptancePatch throws on non-draft/negotiating state',
         () async {
       await projectsCol.doc('p-neg-committed').set({
         'projectId': 'p-neg-committed',

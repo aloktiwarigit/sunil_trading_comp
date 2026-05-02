@@ -379,7 +379,8 @@ class ProjectRepo {
       // Note: NO paidAt write here — payment is not confirmed yet.
       txn.set(ref, map, SetOptions(merge: true));
     });
-    _log.info('customer UPI claim recorded (awaiting_verification): $projectId');
+    _log.info(
+        'customer UPI claim recorded (awaiting_verification): $projectId');
   }
 
   /// Typed customer cross-partition commit — the draft/negotiating → committed

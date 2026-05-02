@@ -72,7 +72,8 @@ class PaymentScreen extends ConsumerWidget {
             PaymentFlowStage.awaitingReturn =>
               _buildAwaitingReturn(context, ref, theme, flowState),
             PaymentFlowStage.recording => _buildLoading(theme, strings),
-            PaymentFlowStage.submitted => _buildSuccess(context, theme, flowState),
+            PaymentFlowStage.submitted =>
+              _buildSuccess(context, theme, flowState),
             PaymentFlowStage.error =>
               _buildError(context, ref, theme, flowState),
           };

@@ -125,8 +125,7 @@ void main() {
           reason: 'mark-paid must preserve customer-claimed paymentMethod');
       expect(data['amountReceivedByShop'], 18000,
           reason: 'Triple Zero: amountReceivedByShop = totalAmount');
-      expect(data['paidAt'], isNotNull,
-          reason: 'mark-paid must stamp paidAt');
+      expect(data['paidAt'], isNotNull, reason: 'mark-paid must stamp paidAt');
     },
     timeout: const Timeout(Duration(seconds: 30)),
   );
