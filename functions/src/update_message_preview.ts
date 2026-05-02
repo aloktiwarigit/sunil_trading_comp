@@ -38,6 +38,18 @@
 // chatThread doc (preview/unread fields only, no customerUid / shopId /
 // projectId), causing customer reads to be denied permanently.
 //
+// **Trusted unread routing (Codex r2 #1 — fixed):** the recipient-side
+// unread field is derived by comparing the trust-bound authorUid (the
+// message-create rule binds `request.resource.data.authorUid ==
+// request.auth.uid` per firestore.rules:784) with the parent thread's
+// `customerUid`. The previous form used the message's `authorRole` field,
+// which is NOT securely bound by the message-create rule and which the
+// price-acceptance flow legitimately writes as `'system'` with the
+// customer's authorUid — both cases would have routed the unread to the
+// wrong side. The new derivation is symmetric: authorUid == customerUid
+// → customer message → shopkeeper unread; otherwise → operator message
+// → customer unread.
+//
 // **Schema:** writes the chatThread.unreadCountForShopkeeper field (per
 // packages/lib_core/lib/src/models/chat_thread.dart:25). Earlier drafts
 // of the rules included a phantom `unreadCountForOperator` field with no
@@ -61,12 +73,6 @@ import {
 import { logger } from 'firebase-functions/v2';
 
 const PREVIEW_MAX_CHARS = 80;
-
-/// Canonical authorRole values per
-/// packages/lib_core/lib/src/models/* MessageAuthorRole enum.
-/// Operator-side roles (any non-customer message increments the
-/// customer-side unread counter on the chatThread).
-const NON_CUSTOMER_ROLES = new Set(['bhaiya', 'beta', 'munshi']);
 
 type MessageEvent = FirestoreEvent<
   QueryDocumentSnapshot | undefined,
@@ -109,13 +115,64 @@ export async function handleMessageCreate(event: MessageEvent): Promise<void> {
   const { shopId, threadId, messageId } = event.params;
 
   const preview = derivePreview(message);
-  const authorRole = message.authorRole as string | undefined;
+  // Trust anchor: rule layer binds `request.resource.data.authorUid ==
+  // request.auth.uid` on message create (firestore.rules:784).
+  const authorUid = message.authorUid as string | undefined;
 
   const db = admin.firestore();
   const shopRef = db.collection('shops').doc(shopId);
   // threadId == projectId (1:1 chat per project per PRD P2.4).
   const projectRef = shopRef.collection('projects').doc(threadId);
   const threadRef = shopRef.collection('chatThreads').doc(threadId);
+
+  // Pre-batch read of the chatThread doc, for two reasons:
+  //   (a) Verify it exists — Codex Phase 7a r1 #1. If the thread parent
+  //       is absent, return early so we don't even try to write a preview
+  //       (the batch.update on a missing parent would NOT_FOUND below
+  //       anyway, but reading first lets us also guard the project doc
+  //       which lives under the same conceptual session).
+  //   (b) Read the trusted `customerUid` for unread routing — Codex
+  //       Phase 7a r2 #1. Compared against the message's authorUid to
+  //       decide which side's unread counter to increment.
+  const threadSnap = await threadRef.get();
+  if (!threadSnap.exists) {
+    logger.warn(
+      'updateMessagePreview: chatThread parent missing, skipping',
+      { shopId, threadId, messageId },
+    );
+    return;
+  }
+  const threadCustomerUid = threadSnap.data()?.customerUid as
+    | string
+    | undefined;
+
+  // Recipient-side unread routing — derived from the rule-bound authorUid
+  // and the parent thread's customerUid (trusted comparison). authorRole
+  // is intentionally ignored; see the doc-comment above.
+  let unreadField:
+    | 'unreadCountForShopkeeper'
+    | 'unreadCountForCustomer'
+    | null = null;
+  if (authorUid && threadCustomerUid) {
+    if (authorUid === threadCustomerUid) {
+      // Customer wrote the message — shopkeeper-side unread increments.
+      unreadField = 'unreadCountForShopkeeper';
+    } else {
+      // Anyone other than the thread's customer (operator) — customer-side.
+      unreadField = 'unreadCountForCustomer';
+    }
+  } else {
+    logger.warn(
+      'updateMessagePreview: cannot derive unread field — authorUid or thread.customerUid missing',
+      {
+        shopId,
+        threadId,
+        messageId,
+        authorUidPresent: authorUid != null,
+        threadCustomerUidPresent: threadCustomerUid != null,
+      },
+    );
+  }
 
   const batch = db.batch();
   const now = admin.firestore.FieldValue.serverTimestamp();
@@ -128,25 +185,6 @@ export async function handleMessageCreate(event: MessageEvent): Promise<void> {
     lastMessageAt: now,
     updatedAt: now,
   });
-
-  // Recipient-side unread field by authorRole:
-  //   'customer'                → shopkeeper-side unread increments
-  //   bhaiya / beta / munshi    → customer-side unread increments
-  //   anything else / missing   → log warn, do NOT increment.
-  let unreadField:
-    | 'unreadCountForShopkeeper'
-    | 'unreadCountForCustomer'
-    | null = null;
-  if (authorRole === 'customer') {
-    unreadField = 'unreadCountForShopkeeper';
-  } else if (authorRole && NON_CUSTOMER_ROLES.has(authorRole)) {
-    unreadField = 'unreadCountForCustomer';
-  } else {
-    logger.warn(
-      'updateMessagePreview: unknown authorRole, skipping unread increment',
-      { shopId, threadId, messageId, authorRole },
-    );
-  }
 
   const threadUpdate: Record<string, unknown> = {
     lastMessagePreview: preview,
@@ -176,7 +214,7 @@ export async function handleMessageCreate(event: MessageEvent): Promise<void> {
           shopId,
           threadId,
           messageId,
-          authorRole,
+          authorUid,
           error: errorMessage(err),
         },
       );
