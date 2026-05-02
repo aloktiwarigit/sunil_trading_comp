@@ -1018,8 +1018,48 @@ void main() {
       expect(data['deliveredAt'], isNull);
       expect(data['closedAt'], isNull);
       expect(data['amountReceivedByShop'], 0);
+      // Phase 6 r2 (Codex r2 #1): payment metadata must also be cleared
+      // so the next mark-paid flow's `?? 'cash'` fallback does not apply
+      // a stale method.
+      expect(data['paymentMethod'], isNull);
+      expect(data['customerVpa'], isNull);
       expect(data['revertedByUid'], 'op-alice');
       expect(data['revertReason'], 'Customer disputed payment');
+    });
+
+    test(
+        'r2 (Codex r2 #1) clears paymentMethod and customerVpa on revert (paid → draft)',
+        () async {
+      // Seed a paid project with full payment metadata that a subsequent
+      // re-commit + mark-paid flow could read via `?? 'cash'` fallback.
+      await projectsCol.doc('p-revert-paymeta').set({
+        'projectId': 'p-revert-paymeta',
+        'shopId': shopId,
+        'customerUid': 'alice',
+        'customerId': 'alice',
+        'state': 'paid',
+        'totalAmount': 1000,
+        'amountReceivedByShop': 1000,
+        'paidAt': Timestamp.now(),
+        'committedAt': Timestamp.now(),
+        'paymentMethod': 'upi',
+        'customerVpa': 'alice@upi',
+      });
+
+      await repo.applyOperatorRevertPatch(
+        'p-revert-paymeta',
+        const ProjectOperatorRevertPatch(
+          revertedByUid: 'op-alice',
+          reason: 'wrong customer',
+        ),
+      );
+
+      final snap = await projectsCol.doc('p-revert-paymeta').get();
+      final data = snap.data()!;
+      expect(data['paymentMethod'], isNull,
+          reason: 'paymentMethod must be null on a draft, not "upi"');
+      expect(data['customerVpa'], isNull,
+          reason: 'customerVpa must be null on a draft, not "alice@upi"');
     });
 
     test(

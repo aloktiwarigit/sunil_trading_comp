@@ -670,7 +670,15 @@ service cloud.firestore {
                             && request.resource.data.paidAt == null
                             && request.resource.data.committedAt == null
                             && request.resource.data.deliveredAt == null
-                            && request.resource.data.closedAt == null)
+                            && request.resource.data.closedAt == null
+                            // Phase 6 r2 (Codex r2 #1): customer-payment
+                            // metadata must also be cleared. Without this,
+                            // a draft inherits a stale paymentMethod /
+                            // customerVpa from a previous paid lifecycle
+                            // and the mark-paid flow's `?? 'cash'` fallback
+                            // applies it to a new payment.
+                            && request.resource.data.paymentMethod == null
+                            && request.resource.data.customerVpa == null)
                          )
                          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                               // ProjectOperatorPatch fields

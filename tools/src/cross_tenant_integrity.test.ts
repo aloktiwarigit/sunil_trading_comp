@@ -2410,6 +2410,9 @@ describe('Cross-tenant integrity (rules.test)', () => {
             deliveredAt: null,
             closedAt: null,
             amountReceivedByShop: 0,
+            // Phase 6 r2 (Codex r2 #1): null payment metadata too.
+            paymentMethod: null,
+            customerVpa: null,
             revertedByUid: 'op-shop_1-owner',
             revertReason: 'Customer changed mind',
             updatedAt: new Date(),
@@ -3127,6 +3130,9 @@ describe('Cross-tenant integrity (rules.test)', () => {
           committedAt: null,
           deliveredAt: null,
           closedAt: null,
+          // Phase 6 r2 (Codex r2 #1): null payment metadata too.
+          paymentMethod: null,
+          customerVpa: null,
           revertedByUid: 'op-shop_1-owner',
           revertReason: 'Customer disputed payment',
           updatedAt: new Date(),
@@ -3174,6 +3180,35 @@ describe('Cross-tenant integrity (rules.test)', () => {
         db
           .doc('shops/shop_1/system/project_reverts/history/audit-2')
           .update({ reason: 'tampered reason' }),
+      );
+    });
+
+    test('Phase 6 r2 (Codex r2 #1) — operator revert leaving paymentMethod set is denied', async () => {
+      // The revert sub-branch now requires paymentMethod / customerVpa to
+      // be nulled too. Without it, a draft inherits stale payment metadata
+      // and the next mark-paid flow misuses the `?? "cash"` fallback.
+      await seedProject('shop_1', 'r-paymeta', 'paid');
+      // Add stale payment metadata to the seed.
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .doc('shops/shop_1/projects/r-paymeta')
+          .update({ paymentMethod: 'upi', customerVpa: 'alice@upi' });
+      });
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r-paymeta').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          // paymentMethod intentionally NOT nulled — must reject.
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: 'should fail',
+          updatedAt: new Date(),
+        }),
       );
     });
 
