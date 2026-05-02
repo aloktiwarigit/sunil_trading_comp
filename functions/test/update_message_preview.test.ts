@@ -232,6 +232,40 @@ describe('updateMessagePreview — derivePreview pure helper', () => {
     expect(derivePreview({ type: 'text', textBody: '' })).toBe('नया संदेश');
     expect(derivePreview({ type: 'text' })).toBe('नया संदेश');
   });
+
+  test('r5 (Codex r5 #1) — non-string textBody falls back to placeholder, never crashes', () => {
+    // Message docs are client-created; the create rule does not validate
+    // textBody's type. A malformed write that sets textBody to a map or
+    // number must NOT crash substring nor write a non-string into the
+    // project preview. After r5 the helper guards typeof.
+    expect(
+      derivePreview({ type: 'text', textBody: { length: 200 } as unknown }),
+    ).toBe('नया संदेश');
+    expect(
+      derivePreview({ type: 'text', textBody: 12345 as unknown as string }),
+    ).toBe('नया संदेश');
+  });
+
+  test('r5 (Codex r5 #1) — non-number proposedPrice falls back to bare label', () => {
+    expect(
+      derivePreview({
+        type: 'price_proposal',
+        proposedPrice: 'NaN' as unknown as number,
+      }),
+    ).toBe('मूल्य प्रस्ताव');
+    // NaN itself is technically a number but not finite; should also fall back.
+    expect(
+      derivePreview({ type: 'price_proposal', proposedPrice: Number.NaN }),
+    ).toBe('मूल्य प्रस्ताव');
+  });
+
+  test('r5 (Codex r5 #1) — non-string type defaults to text branch', () => {
+    // type might be missing or a non-string. Falls through to the
+    // text/system default branch and uses textBody if present.
+    expect(
+      derivePreview({ type: 42 as unknown as string, textBody: 'hello' }),
+    ).toBe('hello');
+  });
 });
 
 describe('updateMessagePreview — handleMessageCreate', () => {

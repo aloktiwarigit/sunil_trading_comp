@@ -80,21 +80,31 @@ type MessageEvent = FirestoreEvent<
 >;
 
 /// Pure helper — exposed for unit testing.
+///
+/// Phase 7a r5 (Codex r5 #1): guards every read against the message
+/// document with typeof checks. Message docs are client-created and the
+/// create rule only enforces authorUid + thread membership — fields like
+/// `textBody`, `type`, `proposedPrice` are NOT shape-validated by the
+/// rule layer. A malformed write (e.g. textBody set to a Map) would
+/// previously have either crashed `substring` or written a non-string
+/// preview into the project doc via the Admin SDK.
 export function derivePreview(message: Record<string, unknown>): string {
-  const type = message.type as string | undefined;
+  const type = typeof message.type === 'string' ? message.type : undefined;
   switch (type) {
     case 'voice_note':
       return '🎤 आवाज़ नोट';
     case 'price_proposal': {
-      const price = message.proposedPrice as number | undefined;
-      return price != null
-        ? `मूल्य प्रस्ताव: ₹${price.toLocaleString('en-IN')}`
-        : 'मूल्य प्रस्ताव';
+      const rawPrice = message.proposedPrice;
+      if (typeof rawPrice === 'number' && Number.isFinite(rawPrice)) {
+        return `मूल्य प्रस्ताव: ₹${rawPrice.toLocaleString('en-IN')}`;
+      }
+      return 'मूल्य प्रस्ताव';
     }
     case 'text':
     case 'system':
     default: {
-      const text = (message.textBody as string | undefined) ?? '';
+      const text =
+        typeof message.textBody === 'string' ? message.textBody : '';
       if (text.length > PREVIEW_MAX_CHARS) {
         return `${text.substring(0, PREVIEW_MAX_CHARS)}…`;
       }
