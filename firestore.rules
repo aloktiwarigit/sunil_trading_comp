@@ -811,12 +811,40 @@ service cloud.firestore {
         // was able to read shop A's decision circles before this fix.
         allow read: if isShopMember(shopId);
 
-        // Create: authenticated users whose shopId claim matches (or is unset
-        // for anonymous pre-OTP customers who haven't received a claim yet).
+        // Create: authenticated users whose shopId claim matches (or is
+        // unset for anonymous / phone-verified customers who don't receive
+        // a claim — see callerShopMatchesOrUnset for the policy).
+        //
+        // Phase 5C (Codex r5 #1, bundled into PR #4): path + body binding.
+        //   Path: dcId must equal an existing project in this shop, and that
+        //         project must be owned by the caller. Closes orphan
+        //         (no project) and cross-customer (other-uid project) DC
+        //         creation.
+        //   Body: projectId / shopId / primaryCustomerUid match path + caller,
+        //         and keys().hasOnly([...]) restricts to the 5 fields the
+        //         actual create body writes (draft_controller.dart:312-323).
+        //         Closes the variant where path is bound but the body
+        //         internally claims a different identity.
+        //
+        // Cost: one rule get() per DC create — once-per-draft under PRD P2.1
+        // auto-create-on-first-draft, well within 30-read budget.
+        //
+        // OUT OF SCOPE — full anonymous-write-surface closure remains a
+        // Phase 9+ App Check + CF migration concern. This phase only closes
+        // the DC-specific orphan / cross-customer sub-surface.
         allow create: if isSignedIn()
                       && shopIdMatches(shopId)
                       && shopIsWritable(shopId)
-                      && callerShopMatchesOrUnset(shopId);
+                      && callerShopMatchesOrUnset(shopId)
+                      && exists(/databases/$(database)/documents/shops/$(shopId)/projects/$(dcId))
+                      && get(/databases/$(database)/documents/shops/$(shopId)/projects/$(dcId)).data.customerUid == request.auth.uid
+                      && request.resource.data.projectId == dcId
+                      && request.resource.data.shopId == shopId
+                      && request.resource.data.primaryCustomerUid == request.auth.uid
+                      && request.resource.data.keys().hasOnly([
+                           'projectId', 'shopId', 'primaryCustomerUid',
+                           'participants', 'createdAt'
+                         ]);
 
         // Update: post-OTP shop members only (isShopMember checks claim).
         // shopId/creatorUid/dcId are ownership fields — not in allowlist.
