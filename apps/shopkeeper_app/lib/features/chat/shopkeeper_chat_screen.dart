@@ -255,21 +255,18 @@ class _ProposePriceBar extends ConsumerWidget {
               'sentAt': FieldValue.serverTimestamp(),
             });
 
-            // B1.7 AC #6: update Project lastMessagePreview.
-            // Phase 3 migration target: these are system-owned fields written
-            // client-side pending a Cloud Function that triggers on new messages.
-            // lastMessagePreview/lastMessageAt are in the operator firestore.rules
-            // allowlist transitionally until the CF migration lands.
-            await FirebaseFirestore.instance
-                .collection('shops')
-                .doc(shopId)
-                .collection('projects')
-                .doc(projectId)
-                .set(<String, dynamic>{
-              'lastMessagePreview': '🎤 आवाज़ नोट',
-              'lastMessageAt': FieldValue.serverTimestamp(),
-              'updatedAt': FieldValue.serverTimestamp(),
-            }, SetOptions(merge: true));
+            // Phase 7b (post-deploy of updateMessagePreview CF): the
+            // project-level lastMessagePreview / lastMessageAt fields are
+            // now updated by the Firestore-trigger Cloud Function that
+            // fires on message create. Client no longer writes these
+            // fields directly. The CF also updates the chatThread doc and
+            // increments the recipient-side unread counter; see
+            // functions/src/update_message_preview.ts.
+            //
+            // Phase 7c will tighten the operator allowlist in
+            // firestore.rules to remove `lastMessagePreview` /
+            // `lastMessageAt` once this code is shipped and the staging
+            // smoke test confirms the CF takes over.
 
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
