@@ -2410,6 +2410,9 @@ describe('Cross-tenant integrity (rules.test)', () => {
             deliveredAt: null,
             closedAt: null,
             amountReceivedByShop: 0,
+            // Phase 6 r2 (Codex r2 #1): null payment metadata too.
+            paymentMethod: null,
+            customerVpa: null,
             revertedByUid: 'op-shop_1-owner',
             revertReason: 'Customer changed mind',
             updatedAt: new Date(),
@@ -3039,6 +3042,338 @@ describe('Cross-tenant integrity (rules.test)', () => {
             paymentMethod: 'upi',
             updatedAt: new Date(),
           }),
+      );
+    });
+  });
+
+  // ===========================================================================
+  // Phase 6 — operator revert path (rule + best-effort audit subcollection)
+  //
+  // Tightens the /projects update operator branch's revert sub-branch to
+  // require revertedByUid==caller, revertReason present, and all downstream
+  // timestamps + amountReceivedByShop nulled/zeroed. Adds a new append-only
+  // /shops/{shopId}/system/project_reverts/history/{auditId} subcollection.
+  // ===========================================================================
+
+  describe('Phase 6 — operator revert path', () => {
+    async function seedProject(
+      shopId: string,
+      projectId: string,
+      state: string,
+    ): Promise<void> {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx.firestore().doc(`shops/${shopId}/projects/${projectId}`).set({
+          projectId,
+          shopId,
+          customerUid: `cust-${shopId}-uid`,
+          customerId: `cust-${shopId}-uid`,
+          state,
+          totalAmount: 100,
+          amountReceivedByShop: state === 'paid' ? 100 : 0,
+          committedAt: new Date(),
+          paidAt: state === 'paid' ? new Date() : null,
+          paymentMethod: state === 'paid' ? 'upi' : null,
+          lineItems: [],
+          createdAt: new Date(),
+        });
+      });
+    }
+
+    test('Phase 6 — operator revert without revertedByUid is denied', async () => {
+      await seedProject('shop_1', 'r1', 'paid');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r1').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          // revertedByUid intentionally absent
+          revertReason: 'wrong customer',
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 — operator revert that does not null paidAt is denied', async () => {
+      await seedProject('shop_1', 'r2', 'paid');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r2').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          // paidAt left non-null — must be denied
+          paidAt: new Date(),
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: 'wrong customer',
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 — operator can revert from paid (any reachable post-draft state, no false positive)', async () => {
+      // Pre-Phase-6, paid → draft was blocked by isValidProjectStateTransition
+      // (only paid → delivering/closed allowed). Phase 6 lifts that for the
+      // revert path.
+      await seedProject('shop_1', 'r2-paid', 'paid');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/projects/r2-paid').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          // Phase 6 r2 (Codex r2 #1): null payment metadata too.
+          paymentMethod: null,
+          customerVpa: null,
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: 'Customer disputed payment',
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 — operator revert audit row create succeeds when caller is operator', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .doc('shops/shop_1/system/project_reverts/history/audit-1')
+          .set({
+            auditId: 'audit-1',
+            projectId: 'r4',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            reason: 'Customer disputed payment',
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          }),
+      );
+    });
+
+    test('Phase 6 — operator revert audit row update is denied (append-only)', async () => {
+      // Seed an audit row (with rules disabled), then attempt to mutate it.
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .doc('shops/shop_1/system/project_reverts/history/audit-2')
+          .set({
+            auditId: 'audit-2',
+            projectId: 'r5',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            reason: 'original reason',
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          });
+      });
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db
+          .doc('shops/shop_1/system/project_reverts/history/audit-2')
+          .update({ reason: 'tampered reason' }),
+      );
+    });
+
+    test('Phase 6 r3 (Codex r3 #2) — operator revert with null revertReason is denied', async () => {
+      // The original 'revertReason' in body check accepted null values.
+      // r3 tightened to `is string && size() > 0`.
+      await seedProject('shop_1', 'r-null-reason', 'paid');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r-null-reason').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          paymentMethod: null,
+          customerVpa: null,
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: null, // null value — must be denied
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 r3 (Codex r3 #2) — operator revert with empty-string revertReason is denied', async () => {
+      await seedProject('shop_1', 'r-empty-reason', 'paid');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r-empty-reason').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          paymentMethod: null,
+          customerVpa: null,
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: '', // empty string — must be denied
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 r2 (Codex r2 #1) — operator revert leaving paymentMethod set is denied', async () => {
+      // The revert sub-branch now requires paymentMethod / customerVpa to
+      // be nulled too. Without it, a draft inherits stale payment metadata
+      // and the next mark-paid flow misuses the `?? "cash"` fallback.
+      await seedProject('shop_1', 'r-paymeta', 'paid');
+      // Add stale payment metadata to the seed.
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .doc('shops/shop_1/projects/r-paymeta')
+          .update({ paymentMethod: 'upi', customerVpa: 'alice@upi' });
+      });
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r-paymeta').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          // paymentMethod intentionally NOT nulled — must reject.
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: 'should fail',
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 r1 (Codex r1 #1) — operator cannot revert a cancelled project (terminal state)', async () => {
+      // cancelled is excluded from the explicit revertable source-state set
+      // because it is a terminal state with no outgoing transition. Without
+      // the explicit enumeration, the previous predicate (state != "draft")
+      // would have allowed cancelled → draft, silently resurrecting the
+      // project.
+      await seedProject('shop_1', 'r-cancelled', 'cancelled');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r-cancelled').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: 'should not work',
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 r1 (Codex r1 #2) — audit row create with missing required field denied', async () => {
+      // hasOnly restricts the SET of keys but does not require their
+      // presence. After r1 the create rule combines hasAll + hasOnly, so
+      // omitting any required field rejects the write.
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db
+          .doc('shops/shop_1/system/project_reverts/history/audit-incomplete')
+          .set({
+            auditId: 'audit-incomplete',
+            projectId: 'rX',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            // reason intentionally absent
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          }),
+      );
+    });
+
+    test('Phase 6 r1 (Codex r1 #2) — audit row create with auditId mismatch to path denied', async () => {
+      // After r1 the create rule requires request.resource.data.auditId ==
+      // {auditId} from the path. Otherwise an operator could write a
+      // body-claims-A document at path-B and confuse later audit readers.
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db
+          .doc('shops/shop_1/system/project_reverts/history/audit-path-X')
+          .set({
+            auditId: 'audit-body-Y', // body lies about its audit identity
+            projectId: 'rY',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            reason: 'mismatched',
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          }),
+      );
+    });
+
+    test('Phase 6 r4 (Codex r4 #1) — operator without yugmaAdmin claim CAN read audit row', async () => {
+      // Locks in the isYugmaAdmin() helper fix. Pre-r4, dot-access on the
+      // missing yugmaAdmin claim threw and short-circuited the
+      // `isYugmaAdmin() || isShopOperator(shopId)` predicate, denying the
+      // very operators who are supposed to be able to read their own
+      // shop's revert history.
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .doc('shops/shop_1/system/project_reverts/history/audit-op-read')
+          .set({
+            auditId: 'audit-op-read',
+            projectId: 'r-op-read',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            reason: 'op read test',
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          });
+      });
+      // Regular bhaiya operator — has shopId='shop_1' + role='bhaiya' but
+      // NO yugmaAdmin claim (auth provisioning does not issue it).
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .doc('shops/shop_1/system/project_reverts/history/audit-op-read')
+          .get(),
+      );
+    });
+
+    test('Phase 6 — audit row read by anonymous user is denied', async () => {
+      // Seed an audit row, then try to read as anonymous (no shopId claim,
+      // not yugmaAdmin).
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .doc('shops/shop_1/system/project_reverts/history/audit-3')
+          .set({
+            auditId: 'audit-3',
+            projectId: 'r6',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            reason: 'r',
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          });
+      });
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/system/project_reverts/history/audit-3').get(),
       );
     });
   });

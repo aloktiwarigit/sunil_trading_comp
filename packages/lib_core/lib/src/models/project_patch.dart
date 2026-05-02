@@ -350,6 +350,14 @@ class ProjectOperatorRevertPatch with _$ProjectOperatorRevertPatch {
         // the `paid` state is no longer reachable from `draft` without
         // going through C3.5 UPI payment flow again.
         'amountReceivedByShop': 0,
+        // Phase 6 r2 (Codex r2 #1): null the customer-payment metadata too.
+        // Without this, a paid project reverted to draft retains
+        // paymentMethod ('upi'/'cod'/'bank_transfer') and customerVpa, and
+        // when the customer re-commits the mark-paid flow falls back via
+        // `project.paymentMethod ?? 'cash'` — applying a stale method to
+        // a new payment. paymentMethod is documented as null for drafts.
+        'paymentMethod': null,
+        'customerVpa': null,
         // Audit trail — who reverted and why (written alongside the
         // transaction that modifies the Project doc).
         'revertedByUid': revertedByUid,

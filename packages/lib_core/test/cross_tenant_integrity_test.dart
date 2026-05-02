@@ -292,6 +292,62 @@ void main() {
         );
       });
 
+      test(
+          'applyOperatorRevertPatch writes audit row scoped to caller shopId (Phase 6)',
+          () async {
+        // Cross-tenant shape invariant: the audit row written by
+        // applyOperatorRevertPatch must live under the SAME shopId path
+        // that the project does. Proves the new method respects the
+        // tenant scoping that the rest of ProjectRepo enforces.
+        const shopId = 'sunil-trading-company';
+        await fakeFirestore
+            .collection('shops')
+            .doc(shopId)
+            .collection('projects')
+            .doc('p-revert-shape')
+            .set(<String, Object?>{
+          'projectId': 'p-revert-shape',
+          'shopId': shopId,
+          'customerUid': 'alice',
+          'customerId': 'alice',
+          'state': 'committed',
+          'totalAmount': 500,
+          'amountReceivedByShop': 0,
+          'committedAt': DateTime.now(),
+        });
+
+        await repo.applyOperatorRevertPatch(
+          'p-revert-shape',
+          const ProjectOperatorRevertPatch(
+            revertedByUid: 'op-shape',
+            reason: 'shape test',
+          ),
+        );
+
+        // Audit row must exist in this tenant's namespace.
+        final ownAudits = await fakeFirestore
+            .collection('shops')
+            .doc(shopId)
+            .collection('system')
+            .doc('project_reverts')
+            .collection('history')
+            .get();
+        expect(ownAudits.docs.length, equals(1));
+        expect(ownAudits.docs.first.data()['shopId'], equals(shopId));
+        expect(
+            ownAudits.docs.first.data()['projectId'], equals('p-revert-shape'));
+
+        // No audit row leaks into a foreign tenant's namespace.
+        final foreignAudits = await fakeFirestore
+            .collection('shops')
+            .doc('shop_intruder')
+            .collection('system')
+            .doc('project_reverts')
+            .collection('history')
+            .get();
+        expect(foreignAudits.docs, isEmpty);
+      });
+
       test('applyCustomerPatch only writes customer-owned fields', () async {
         // Seed a project first.
         await fakeFirestore

@@ -141,8 +141,17 @@ service cloud.firestore {
     // Yugma Labs platform admin — issued only via Admin SDK to Yugma engineers.
     // Never issued to shop-level operators (bhaiya/beta/munshi).
     // Required for cross-shop audit reads at /system/*.
+    //
+    // Phase 6 r4 (Codex r4 #1): same dot-access bug class as
+    // Phase 5B's callerShopId — `request.auth.token.yugmaAdmin` THROWS on
+    // missing claim, which broke the `isYugmaAdmin() || isShopOperator(shopId)`
+    // short-circuit on the new project-revert audit read rule and on the
+    // pre-existing /system/audit_results read rules. Defensive Map.get()
+    // returns false safely for tokens without the claim. No behavior change
+    // for admins (their claim still resolves to true).
     function isYugmaAdmin() {
-      return isSignedIn() && request.auth.token.yugmaAdmin == true;
+      return isSignedIn()
+          && request.auth.token.get('yugmaAdmin', false) == true;
     }
 
     // isBhaiyaOf(shopId) helper is intentionally NOT defined until a rule
@@ -628,11 +637,69 @@ service cloud.firestore {
                          && request.resource.data.get('projectId', null) == resource.data.get('projectId', null)
                          && request.resource.data.get('customerId', null) == resource.data.get('customerId', null)
                          && (
+                           // Same-state OR forward state transition through the
+                           // canonical state machine (excluding any → draft).
                            request.resource.data.state == resource.data.state
-                           || isValidProjectStateTransition(
-                                resource.data.state,
-                                request.resource.data.state
-                              )
+                           || (isValidProjectStateTransition(
+                                 resource.data.state,
+                                 request.resource.data.state
+                               )
+                               && request.resource.data.state != 'draft')
+                           ||
+                           // Phase 6 revert path. Target state is 'draft'. Source
+                           // is enumerated explicitly — only states with semantic
+                           // operator-revertability. `cancelled` is terminal and
+                           // is intentionally excluded (Codex Phase 6 r1 #1):
+                           // a cancelled project that has no outgoing state-
+                           // machine transition should not be implicitly
+                           // resurrected via revert. Lifts the
+                           // isValidProjectStateTransition restriction so the
+                           // operator may revert from paid / delivering / closed
+                           // / awaiting_verification (which the helper alone
+                           // would block).
+                           //
+                           // Strict required fields:
+                           //   - revertedByUid == caller (audit identity)
+                           //   - revertReason present
+                           //   - amountReceivedByShop == 0   (Triple Zero reset)
+                           //   - paidAt / committedAt / deliveredAt / closedAt
+                           //     all == null
+                           // The audit row at /shops/{shopId}/system/
+                           // project_reverts/history/{auditId} is best-effort
+                           // (see that rule); rules cannot force its creation.
+                           (request.resource.data.state == 'draft'
+                            && resource.data.state in [
+                                 'negotiating', 'committed', 'paid',
+                                 'delivering', 'closed',
+                                 'awaiting_verification'
+                               ]
+                            && request.resource.data.revertedByUid == request.auth.uid
+                            // Phase 6 r3 (Codex r3 #2): revertReason must be a
+                            // non-empty string, not just present. The previous
+                            // `'revertReason' in request.resource.data` accepted
+                            // a null value AND let a stale revertReason from a
+                            // prior revert/recommit cycle satisfy the check
+                            // without the operator writing a fresh reason.
+                            // Rules cannot enforce "freshly written" cleanly,
+                            // but requiring `is string` + `size() > 0` rules
+                            // out null/empty/wrong-type values from REST
+                            // bypassers and matches what the Dart layer already
+                            // writes (always a non-empty string).
+                            && request.resource.data.revertReason is string
+                            && request.resource.data.revertReason.size() > 0
+                            && request.resource.data.amountReceivedByShop == 0
+                            && request.resource.data.paidAt == null
+                            && request.resource.data.committedAt == null
+                            && request.resource.data.deliveredAt == null
+                            && request.resource.data.closedAt == null
+                            // Phase 6 r2 (Codex r2 #1): customer-payment
+                            // metadata must also be cleared. Without this,
+                            // a draft inherits a stale paymentMethod /
+                            // customerVpa from a previous paid lifecycle
+                            // and the mark-paid flow's `?? 'cash'` fallback
+                            // applies it to a new payment.
+                            && request.resource.data.paymentMethod == null
+                            && request.resource.data.customerVpa == null)
                          )
                          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                               // ProjectOperatorPatch fields
@@ -916,6 +983,53 @@ service cloud.firestore {
         allow create, update: if isShopOperator(shopId)
                               && shopIsWritable(shopId);
         allow delete: if false;
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/system/project_reverts/history/{auditId} — Phase 6
+      //
+      // Append-only audit trail for operator revert events. Written
+      // client-side by ProjectRepo.applyOperatorRevertPatch in the same
+      // transaction as the project state change.
+      //
+      // BEST-EFFORT defense-in-depth — NOT authoritative. A cooperating
+      // operator using applyOperatorRevertPatch produces both the project
+      // state change AND the audit row atomically. A hostile operator
+      // reaching the REST API directly can write the project state change
+      // without writing the audit row — rules cannot force creation of a
+      // sibling document. Append-only protections (`update, delete: if
+      // false`) make tampering with existing rows impossible. Authoritative
+      // audit requires a Firestore-trigger Cloud Function on /projects
+      // onDocumentUpdated; queued for Phase 9+.
+      // ---------------------------------------------------------------------
+
+      match /system/project_reverts {
+        allow read, write: if false;
+
+        match /history/{auditId} {
+          allow read: if isYugmaAdmin() || isShopOperator(shopId);
+          // Codex Phase 6 r1 #2: hasOnly restricts the SET of keys but does
+          // not require presence; combine with hasAll to require the full
+          // 8-field shape, and verify auditId matches the path. Append-only
+          // means malformed rows cannot be repaired, so reject incomplete
+          // writes at create time.
+          allow create: if isShopOperator(shopId)
+                        && shopIsWritable(shopId)
+                        && request.resource.data.auditId == auditId
+                        && request.resource.data.shopId == shopId
+                        && request.resource.data.revertedByUid == request.auth.uid
+                        && request.resource.data.keys().hasAll([
+                             'auditId', 'projectId', 'shopId', 'revertedByUid',
+                             'reason', 'previousState',
+                             'previousAmountReceivedByShop', 'revertedAt'
+                           ])
+                        && request.resource.data.keys().hasOnly([
+                             'auditId', 'projectId', 'shopId', 'revertedByUid',
+                             'reason', 'previousState',
+                             'previousAmountReceivedByShop', 'revertedAt'
+                           ]);
+          allow update, delete: if false;
+        }
       }
     }
 

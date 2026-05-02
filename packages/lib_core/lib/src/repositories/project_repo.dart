@@ -292,6 +292,90 @@ class ProjectRepo {
     _log.info('operator close: projectId=$projectId');
   }
 
+  /// Operator's typed revert: any reachable post-draft state → draft.
+  ///
+  /// Phase 6: replaces the implicit "operator can write {state, revertedByUid,
+  /// revertReason} via applyOperatorPatch" path with a transactional method
+  /// that nulls every downstream timestamp + the Triple Zero field, and
+  /// writes a best-effort audit row to
+  /// `/shops/{shopId}/system/project_reverts/history/{auditId}` in the SAME
+  /// transaction as the project state change.
+  ///
+  /// Audit subcollection scope: BEST-EFFORT defense-in-depth, NOT
+  /// authoritative. A cooperating operator using this method produces both
+  /// writes atomically. A hostile operator reaching the Firestore REST API
+  /// directly can write the project state change without writing the audit
+  /// row — security rules cannot force creation of a sibling document.
+  /// Append-only protections (`update, delete: if false` on the history
+  /// collection) make tampering with existing rows impossible. If
+  /// authoritative audit is required, plan a Firestore-trigger Cloud
+  /// Function on `/projects` `onDocumentUpdated` (Phase 9+).
+  ///
+  /// Throws [ProjectRepoException] with codes:
+  ///   - 'not-found': project does not exist
+  ///   - 'invalid-state-transition': source state is already draft
+  Future<void> applyOperatorRevertPatch(
+    String projectId,
+    ProjectOperatorRevertPatch patch,
+  ) async {
+    final ref = _projectsCollection().doc(projectId);
+    final auditRef = _firestore
+        .collection('shops')
+        .doc(_shopIdProvider.shopId)
+        .collection('system')
+        .doc('project_reverts')
+        .collection('history')
+        .doc();
+
+    String? previousState;
+    await _firestore.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      if (!snap.exists) {
+        throw const ProjectRepoException('not-found', 'Project does not exist');
+      }
+      final data = snap.data()!;
+      final currentState = data['state'] as String?;
+      // Codex Phase 6 r1 #1: enumerate revertable source states explicitly.
+      // `cancelled` is terminal — no outgoing transition in the state
+      // machine — and must not be silently resurrected via revert. `draft`
+      // is the target state; reverting from draft is a no-op.
+      const revertableSourceStates = <String>{
+        'negotiating',
+        'committed',
+        'paid',
+        'delivering',
+        'closed',
+        'awaiting_verification',
+      };
+      if (!revertableSourceStates.contains(currentState)) {
+        throw ProjectRepoException(
+          'invalid-state-transition',
+          'Cannot revert from $currentState — '
+              'allowed source states: ${revertableSourceStates.join(", ")}',
+        );
+      }
+      previousState = currentState;
+
+      final revertMap = patch.toFirestoreMap();
+      revertMap['updatedAt'] = FieldValue.serverTimestamp();
+      txn.set(ref, revertMap, SetOptions(merge: true));
+
+      txn.set(auditRef, <String, dynamic>{
+        'auditId': auditRef.id,
+        'projectId': projectId,
+        'shopId': _shopIdProvider.shopId,
+        'revertedByUid': patch.revertedByUid,
+        'reason': patch.reason,
+        'previousState': currentState,
+        'previousAmountReceivedByShop':
+            (data['amountReceivedByShop'] as num?)?.toInt() ?? 0,
+        'revertedAt': FieldValue.serverTimestamp(),
+      });
+    });
+    _log.info('operator revert: projectId=$projectId '
+        'previousState=$previousState by=${patch.revertedByUid}');
+  }
+
   /// Customer self-tags the project as cash-on-delivery. Phase 3: state stays
   /// `committed`; the operator advances state when cash is collected at
   /// delivery via `applyOperatorMarkPaidPatch` (committed → paid).
