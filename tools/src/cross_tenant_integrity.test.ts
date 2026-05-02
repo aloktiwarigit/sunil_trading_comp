@@ -3042,4 +3042,166 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
   });
+
+  // ===========================================================================
+  // Phase 6 — operator revert path (rule + best-effort audit subcollection)
+  //
+  // Tightens the /projects update operator branch's revert sub-branch to
+  // require revertedByUid==caller, revertReason present, and all downstream
+  // timestamps + amountReceivedByShop nulled/zeroed. Adds a new append-only
+  // /shops/{shopId}/system/project_reverts/history/{auditId} subcollection.
+  // ===========================================================================
+
+  describe('Phase 6 — operator revert path', () => {
+    async function seedProject(
+      shopId: string,
+      projectId: string,
+      state: string,
+    ): Promise<void> {
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx.firestore().doc(`shops/${shopId}/projects/${projectId}`).set({
+          projectId,
+          shopId,
+          customerUid: `cust-${shopId}-uid`,
+          customerId: `cust-${shopId}-uid`,
+          state,
+          totalAmount: 100,
+          amountReceivedByShop: state === 'paid' ? 100 : 0,
+          committedAt: new Date(),
+          paidAt: state === 'paid' ? new Date() : null,
+          paymentMethod: state === 'paid' ? 'upi' : null,
+          lineItems: [],
+          createdAt: new Date(),
+        });
+      });
+    }
+
+    test('Phase 6 — operator revert without revertedByUid is denied', async () => {
+      await seedProject('shop_1', 'r1', 'paid');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r1').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          // revertedByUid intentionally absent
+          revertReason: 'wrong customer',
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 — operator revert that does not null paidAt is denied', async () => {
+      await seedProject('shop_1', 'r2', 'paid');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r2').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          // paidAt left non-null — must be denied
+          paidAt: new Date(),
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: 'wrong customer',
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 — operator can revert from paid (any reachable post-draft state, no false positive)', async () => {
+      // Pre-Phase-6, paid → draft was blocked by isValidProjectStateTransition
+      // (only paid → delivering/closed allowed). Phase 6 lifts that for the
+      // revert path.
+      await seedProject('shop_1', 'r2-paid', 'paid');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/projects/r2-paid').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: 'Customer disputed payment',
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 — operator revert audit row create succeeds when caller is operator', async () => {
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .doc('shops/shop_1/system/project_reverts/history/audit-1')
+          .set({
+            auditId: 'audit-1',
+            projectId: 'r4',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            reason: 'Customer disputed payment',
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          }),
+      );
+    });
+
+    test('Phase 6 — operator revert audit row update is denied (append-only)', async () => {
+      // Seed an audit row (with rules disabled), then attempt to mutate it.
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .doc('shops/shop_1/system/project_reverts/history/audit-2')
+          .set({
+            auditId: 'audit-2',
+            projectId: 'r5',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            reason: 'original reason',
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          });
+      });
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db
+          .doc('shops/shop_1/system/project_reverts/history/audit-2')
+          .update({ reason: 'tampered reason' }),
+      );
+    });
+
+    test('Phase 6 — audit row read by anonymous user is denied', async () => {
+      // Seed an audit row, then try to read as anonymous (no shopId claim,
+      // not yugmaAdmin).
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .doc('shops/shop_1/system/project_reverts/history/audit-3')
+          .set({
+            auditId: 'audit-3',
+            projectId: 'r6',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            reason: 'r',
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          });
+      });
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'anonymous' },
+      });
+      const db = ctx.firestore();
+      await assertFails(
+        db.doc('shops/shop_1/system/project_reverts/history/audit-3').get(),
+      );
+    });
+  });
 });

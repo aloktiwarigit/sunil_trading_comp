@@ -974,4 +974,135 @@ void main() {
       );
     });
   });
+
+  // ===========================================================================
+  // applyOperatorRevertPatch — Phase 6 (operator's typed revert + audit row)
+  //
+  // Reverts any reachable post-draft state back to draft, nulling every
+  // downstream timestamp and the Triple Zero field, and writes a best-effort
+  // audit row to /shops/{shopId}/system/project_reverts/history/{auditId} in
+  // the same transaction. The audit subcollection is best-effort
+  // defense-in-depth — a hostile operator using the REST API directly can
+  // skip the audit row; rules cannot force creation of a sibling document.
+  // ===========================================================================
+
+  group('applyOperatorRevertPatch', () {
+    test('reverts a paid project to draft, nulling all downstream timestamps',
+        () async {
+      await projectsCol.doc('p-revert-paid').set({
+        'projectId': 'p-revert-paid',
+        'shopId': shopId,
+        'customerUid': 'alice',
+        'customerId': 'alice',
+        'state': 'paid',
+        'totalAmount': 1000,
+        'amountReceivedByShop': 1000,
+        'paidAt': Timestamp.now(),
+        'paymentMethod': 'upi',
+        'committedAt': Timestamp.now(),
+      });
+
+      await repo.applyOperatorRevertPatch(
+        'p-revert-paid',
+        const ProjectOperatorRevertPatch(
+          revertedByUid: 'op-alice',
+          reason: 'Customer disputed payment',
+        ),
+      );
+
+      final snap = await projectsCol.doc('p-revert-paid').get();
+      final data = snap.data()!;
+      expect(data['state'], 'draft');
+      expect(data['paidAt'], isNull);
+      expect(data['committedAt'], isNull);
+      expect(data['deliveredAt'], isNull);
+      expect(data['closedAt'], isNull);
+      expect(data['amountReceivedByShop'], 0);
+      expect(data['revertedByUid'], 'op-alice');
+      expect(data['revertReason'], 'Customer disputed payment');
+    });
+
+    test(
+        'writes audit row to /system/project_reverts/history/* in same transaction',
+        () async {
+      await projectsCol.doc('p-revert-audit').set({
+        'projectId': 'p-revert-audit',
+        'shopId': shopId,
+        'customerUid': 'alice',
+        'customerId': 'alice',
+        'state': 'committed',
+        'totalAmount': 500,
+        'amountReceivedByShop': 0,
+        'committedAt': Timestamp.now(),
+      });
+
+      await repo.applyOperatorRevertPatch(
+        'p-revert-audit',
+        const ProjectOperatorRevertPatch(
+          revertedByUid: 'op-bob',
+          reason: 'wrong customer',
+        ),
+      );
+
+      final auditQuery = await firestore
+          .collection('shops')
+          .doc(shopId)
+          .collection('system')
+          .doc('project_reverts')
+          .collection('history')
+          .get();
+      expect(auditQuery.docs.length, 1);
+      final audit = auditQuery.docs.first.data();
+      expect(audit['projectId'], 'p-revert-audit');
+      expect(audit['shopId'], shopId);
+      expect(audit['revertedByUid'], 'op-bob');
+      expect(audit['reason'], 'wrong customer');
+      expect(audit['previousState'], 'committed');
+      expect(audit['previousAmountReceivedByShop'], 0);
+    });
+
+    test('throws ProjectRepoException("not-found") when project does not exist',
+        () async {
+      expect(
+        () => repo.applyOperatorRevertPatch(
+          'missing',
+          const ProjectOperatorRevertPatch(
+            revertedByUid: 'op-x',
+            reason: 'r',
+          ),
+        ),
+        throwsA(
+          isA<ProjectRepoException>()
+              .having((e) => e.code, 'code', 'not-found'),
+        ),
+      );
+    });
+
+    test(
+        'throws ProjectRepoException("invalid-state-transition") when project is already in draft',
+        () async {
+      await projectsCol.doc('p-already-draft').set({
+        'projectId': 'p-already-draft',
+        'shopId': shopId,
+        'customerUid': 'alice',
+        'state': 'draft',
+        'totalAmount': 0,
+        'amountReceivedByShop': 0,
+        'lineItems': <Map<String, dynamic>>[],
+      });
+      expect(
+        () => repo.applyOperatorRevertPatch(
+          'p-already-draft',
+          const ProjectOperatorRevertPatch(
+            revertedByUid: 'op-y',
+            reason: 'r',
+          ),
+        ),
+        throwsA(
+          isA<ProjectRepoException>()
+              .having((e) => e.code, 'code', 'invalid-state-transition'),
+        ),
+      );
+    });
+  });
 }

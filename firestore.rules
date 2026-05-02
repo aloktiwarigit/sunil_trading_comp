@@ -628,11 +628,38 @@ service cloud.firestore {
                          && request.resource.data.get('projectId', null) == resource.data.get('projectId', null)
                          && request.resource.data.get('customerId', null) == resource.data.get('customerId', null)
                          && (
+                           // Same-state OR forward state transition through the
+                           // canonical state machine (excluding any → draft).
                            request.resource.data.state == resource.data.state
-                           || isValidProjectStateTransition(
-                                resource.data.state,
-                                request.resource.data.state
-                              )
+                           || (isValidProjectStateTransition(
+                                 resource.data.state,
+                                 request.resource.data.state
+                               )
+                               && request.resource.data.state != 'draft')
+                           ||
+                           // Phase 6 revert path. Target state is 'draft', source
+                           // is anything else (any reachable post-draft state).
+                           // Lifts the isValidProjectStateTransition restriction —
+                           // operator may revert from paid / delivering / closed /
+                           // awaiting_verification, not only negotiating /
+                           // committed. Strict required fields:
+                           //   - revertedByUid == caller (audit identity)
+                           //   - revertReason present
+                           //   - amountReceivedByShop == 0   (Triple Zero reset)
+                           //   - paidAt / committedAt / deliveredAt / closedAt
+                           //     all == null
+                           // The audit row at /shops/{shopId}/system/
+                           // project_reverts/history/{auditId} is best-effort
+                           // (see that rule); rules cannot force its creation.
+                           (request.resource.data.state == 'draft'
+                            && resource.data.state != 'draft'
+                            && request.resource.data.revertedByUid == request.auth.uid
+                            && 'revertReason' in request.resource.data
+                            && request.resource.data.amountReceivedByShop == 0
+                            && request.resource.data.paidAt == null
+                            && request.resource.data.committedAt == null
+                            && request.resource.data.deliveredAt == null
+                            && request.resource.data.closedAt == null)
                          )
                          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                               // ProjectOperatorPatch fields
@@ -916,6 +943,42 @@ service cloud.firestore {
         allow create, update: if isShopOperator(shopId)
                               && shopIsWritable(shopId);
         allow delete: if false;
+      }
+
+      // ---------------------------------------------------------------------
+      // /shops/{shopId}/system/project_reverts/history/{auditId} — Phase 6
+      //
+      // Append-only audit trail for operator revert events. Written
+      // client-side by ProjectRepo.applyOperatorRevertPatch in the same
+      // transaction as the project state change.
+      //
+      // BEST-EFFORT defense-in-depth — NOT authoritative. A cooperating
+      // operator using applyOperatorRevertPatch produces both the project
+      // state change AND the audit row atomically. A hostile operator
+      // reaching the REST API directly can write the project state change
+      // without writing the audit row — rules cannot force creation of a
+      // sibling document. Append-only protections (`update, delete: if
+      // false`) make tampering with existing rows impossible. Authoritative
+      // audit requires a Firestore-trigger Cloud Function on /projects
+      // onDocumentUpdated; queued for Phase 9+.
+      // ---------------------------------------------------------------------
+
+      match /system/project_reverts {
+        allow read, write: if false;
+
+        match /history/{auditId} {
+          allow read: if isYugmaAdmin() || isShopOperator(shopId);
+          allow create: if isShopOperator(shopId)
+                        && shopIsWritable(shopId)
+                        && request.resource.data.shopId == shopId
+                        && request.resource.data.revertedByUid == request.auth.uid
+                        && request.resource.data.keys().hasOnly([
+                             'auditId', 'projectId', 'shopId', 'revertedByUid',
+                             'reason', 'previousState',
+                             'previousAmountReceivedByShop', 'revertedAt'
+                           ]);
+          allow update, delete: if false;
+        }
       }
     }
 
