@@ -336,10 +336,23 @@ class ProjectRepo {
       }
       final data = snap.data()!;
       final currentState = data['state'] as String?;
-      if (currentState == 'draft') {
+      // Codex Phase 6 r1 #1: enumerate revertable source states explicitly.
+      // `cancelled` is terminal — no outgoing transition in the state
+      // machine — and must not be silently resurrected via revert. `draft`
+      // is the target state; reverting from draft is a no-op.
+      const revertableSourceStates = <String>{
+        'negotiating',
+        'committed',
+        'paid',
+        'delivering',
+        'closed',
+        'awaiting_verification',
+      };
+      if (!revertableSourceStates.contains(currentState)) {
         throw ProjectRepoException(
           'invalid-state-transition',
-          'Cannot revert from $currentState — project is already in draft',
+          'Cannot revert from $currentState — '
+              'allowed source states: ${revertableSourceStates.join(", ")}',
         );
       }
       previousState = currentState;

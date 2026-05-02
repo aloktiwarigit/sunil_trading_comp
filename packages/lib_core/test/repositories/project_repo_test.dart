@@ -1104,5 +1104,35 @@ void main() {
         ),
       );
     });
+
+    test(
+        'r1 (Codex Phase 6 r1 #1) throws ProjectRepoException("invalid-state-transition") when project is cancelled (terminal state, not revertable)',
+        () async {
+      // cancelled has no outgoing state-machine transition; reverting it
+      // back to draft would silently resurrect a terminal project. Mirror
+      // the rule-layer enumeration of revertable source states.
+      await projectsCol.doc('p-cancelled').set({
+        'projectId': 'p-cancelled',
+        'shopId': shopId,
+        'customerUid': 'alice',
+        'state': 'cancelled',
+        'totalAmount': 0,
+        'amountReceivedByShop': 0,
+        'lineItems': <Map<String, dynamic>>[],
+      });
+      expect(
+        () => repo.applyOperatorRevertPatch(
+          'p-cancelled',
+          const ProjectOperatorRevertPatch(
+            revertedByUid: 'op-z',
+            reason: 'r',
+          ),
+        ),
+        throwsA(
+          isA<ProjectRepoException>()
+              .having((e) => e.code, 'code', 'invalid-state-transition'),
+        ),
+      );
+    });
   });
 }

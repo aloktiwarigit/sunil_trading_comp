@@ -3177,6 +3177,71 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
 
+    test('Phase 6 r1 (Codex r1 #1) — operator cannot revert a cancelled project (terminal state)', async () => {
+      // cancelled is excluded from the explicit revertable source-state set
+      // because it is a terminal state with no outgoing transition. Without
+      // the explicit enumeration, the previous predicate (state != "draft")
+      // would have allowed cancelled → draft, silently resurrecting the
+      // project.
+      await seedProject('shop_1', 'r-cancelled', 'cancelled');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r-cancelled').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: 'should not work',
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 r1 (Codex r1 #2) — audit row create with missing required field denied', async () => {
+      // hasOnly restricts the SET of keys but does not require their
+      // presence. After r1 the create rule combines hasAll + hasOnly, so
+      // omitting any required field rejects the write.
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db
+          .doc('shops/shop_1/system/project_reverts/history/audit-incomplete')
+          .set({
+            auditId: 'audit-incomplete',
+            projectId: 'rX',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            // reason intentionally absent
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          }),
+      );
+    });
+
+    test('Phase 6 r1 (Codex r1 #2) — audit row create with auditId mismatch to path denied', async () => {
+      // After r1 the create rule requires request.resource.data.auditId ==
+      // {auditId} from the path. Otherwise an operator could write a
+      // body-claims-A document at path-B and confuse later audit readers.
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db
+          .doc('shops/shop_1/system/project_reverts/history/audit-path-X')
+          .set({
+            auditId: 'audit-body-Y', // body lies about its audit identity
+            projectId: 'rY',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            reason: 'mismatched',
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          }),
+      );
+    });
+
     test('Phase 6 — audit row read by anonymous user is denied', async () => {
       // Seed an audit row, then try to read as anonymous (no shopId claim,
       // not yugmaAdmin).

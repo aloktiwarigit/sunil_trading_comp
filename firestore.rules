@@ -637,12 +637,19 @@ service cloud.firestore {
                                )
                                && request.resource.data.state != 'draft')
                            ||
-                           // Phase 6 revert path. Target state is 'draft', source
-                           // is anything else (any reachable post-draft state).
-                           // Lifts the isValidProjectStateTransition restriction —
-                           // operator may revert from paid / delivering / closed /
-                           // awaiting_verification, not only negotiating /
-                           // committed. Strict required fields:
+                           // Phase 6 revert path. Target state is 'draft'. Source
+                           // is enumerated explicitly — only states with semantic
+                           // operator-revertability. `cancelled` is terminal and
+                           // is intentionally excluded (Codex Phase 6 r1 #1):
+                           // a cancelled project that has no outgoing state-
+                           // machine transition should not be implicitly
+                           // resurrected via revert. Lifts the
+                           // isValidProjectStateTransition restriction so the
+                           // operator may revert from paid / delivering / closed
+                           // / awaiting_verification (which the helper alone
+                           // would block).
+                           //
+                           // Strict required fields:
                            //   - revertedByUid == caller (audit identity)
                            //   - revertReason present
                            //   - amountReceivedByShop == 0   (Triple Zero reset)
@@ -652,7 +659,11 @@ service cloud.firestore {
                            // project_reverts/history/{auditId} is best-effort
                            // (see that rule); rules cannot force its creation.
                            (request.resource.data.state == 'draft'
-                            && resource.data.state != 'draft'
+                            && resource.data.state in [
+                                 'negotiating', 'committed', 'paid',
+                                 'delivering', 'closed',
+                                 'awaiting_verification'
+                               ]
                             && request.resource.data.revertedByUid == request.auth.uid
                             && 'revertReason' in request.resource.data
                             && request.resource.data.amountReceivedByShop == 0
@@ -968,10 +979,21 @@ service cloud.firestore {
 
         match /history/{auditId} {
           allow read: if isYugmaAdmin() || isShopOperator(shopId);
+          // Codex Phase 6 r1 #2: hasOnly restricts the SET of keys but does
+          // not require presence; combine with hasAll to require the full
+          // 8-field shape, and verify auditId matches the path. Append-only
+          // means malformed rows cannot be repaired, so reject incomplete
+          // writes at create time.
           allow create: if isShopOperator(shopId)
                         && shopIsWritable(shopId)
+                        && request.resource.data.auditId == auditId
                         && request.resource.data.shopId == shopId
                         && request.resource.data.revertedByUid == request.auth.uid
+                        && request.resource.data.keys().hasAll([
+                             'auditId', 'projectId', 'shopId', 'revertedByUid',
+                             'reason', 'previousState',
+                             'previousAmountReceivedByShop', 'revertedAt'
+                           ])
                         && request.resource.data.keys().hasOnly([
                              'auditId', 'projectId', 'shopId', 'revertedByUid',
                              'reason', 'previousState',
