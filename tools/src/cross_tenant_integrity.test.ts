@@ -132,7 +132,9 @@ beforeEach(async () => {
           customerUid: `cust-${shopId}-uid`,
           participantUids: [`cust-${shopId}-uid`, `op-${shopId}-owner`],
           unreadCountForCustomer: 0,
-          unreadCountForOperator: 1,
+          // Phase 7a r3 (Codex r3 #2): canonical field is
+          // unreadCountForShopkeeper per chat_thread.dart:25.
+          unreadCountForShopkeeper: 1,
           lastMessagePreview: 'नमस्ते',
           createdAt: new Date(),
         });
@@ -1515,6 +1517,8 @@ describe('Cross-tenant integrity (rules.test)', () => {
     });
 
     test('chatThread update is frozen when shop is deactivating', async () => {
+      // Phase 7a r3 (Codex r3 #2): allowlist field is now
+      // unreadCountForShopkeeper (matches chat_thread.dart:25).
       await setShopLifecycle('shop_1', 'deactivating');
       const db = ctxAsShopOperator('shop_1').firestore();
       await assertFails(
@@ -1523,11 +1527,16 @@ describe('Cross-tenant integrity (rules.test)', () => {
           .doc('shop_1')
           .collection('chatThreads')
           .doc('thread-p1')
-          .update({ unreadCountForOperator: 0 }),
+          .update({ unreadCountForShopkeeper: 0 }),
       );
     });
 
     test('chatThread update of allowed field succeeds (no false positive)', async () => {
+      // Phase 7a r3 (Codex r3 #2): operator can now reset
+      // unreadCountForShopkeeper (was unreadCountForOperator, a phantom
+      // field with no model attribute). Without this allowlist entry,
+      // the unread counter that the Phase 7a CF increments could only
+      // grow and never reset.
       const db = ctxAsShopOperator('shop_1').firestore();
       await assertSucceeds(
         db
@@ -1535,7 +1544,64 @@ describe('Cross-tenant integrity (rules.test)', () => {
           .doc('shop_1')
           .collection('chatThreads')
           .doc('thread-p1')
-          .update({ unreadCountForOperator: 0, updatedAt: new Date() }),
+          .update({ unreadCountForShopkeeper: 0, updatedAt: new Date() }),
+      );
+    });
+
+    test('Phase 7a r4 (Codex r4 #2) — customer cannot write unreadCountForShopkeeper (operator-owned counter)', async () => {
+      // Pre-r4 the chatThread allowlist was shared by the
+      // `customerUid == auth.uid || isShopOperator` predicate, so the
+      // thread's customer could write the operator-owned shopkeeper
+      // counter — and after the CF starts incrementing it on customer
+      // messages, a malicious customer could clear or spoof their own
+      // shopkeeper unread badge.
+      const uid = 'cust-shop_1-uid';
+      const db = ctxAsCustomer('shop_1', uid).firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .update({ unreadCountForShopkeeper: 0, updatedAt: new Date() }),
+      );
+    });
+
+    test('Phase 7a r4 (Codex r4 #2) — operator cannot write unreadCountForCustomer (customer-owned counter)', async () => {
+      // Symmetric guard: operators cannot write the customer-side
+      // counter. Customer self-resets via ChatThreadParticipantPatch
+      // (unreadCountForCustomer: 0) when they open the thread; operators
+      // bumping or clearing it would defeat that contract.
+      //
+      // Note: setting unreadCountForCustomer to a value DIFFERENT from
+      // the seed (which is 0) so the field actually appears in
+      // affectedKeys(). Setting it to the same value would not be an
+      // affected key and the rule would pass via the no-op path.
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .update({ unreadCountForCustomer: 5, updatedAt: new Date() }),
+      );
+    });
+
+    test('Phase 7a r4 (Codex r4 #2) — customer can write own unreadCountForCustomer (no false positive)', async () => {
+      // Lock in the customer-owned-counter branch of the split allowlist.
+      // Seed has unreadCountForCustomer: 0; setting to 5 ensures the field
+      // is actually in affectedKeys (otherwise the rule would pass via a
+      // no-op path that bypasses the allowlist comparison).
+      const uid = 'cust-shop_1-uid';
+      const db = ctxAsCustomer('shop_1', uid).firestore();
+      await assertSucceeds(
+        db
+          .collection('shops')
+          .doc('shop_1')
+          .collection('chatThreads')
+          .doc('thread-p1')
+          .update({ unreadCountForCustomer: 5, updatedAt: new Date() }),
       );
     });
   });

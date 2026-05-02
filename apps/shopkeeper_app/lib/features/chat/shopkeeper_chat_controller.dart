@@ -97,6 +97,33 @@ class ShopkeeperChatController
     // Fetch initial messages.
     final messages = await _fetchMessages(firestore, shopId);
 
+    // Phase 7a r6 (Codex r6 #1): reset the shopkeeper-side unread counter
+    // on chat open. The Phase 7a updateMessagePreview Cloud Function
+    // increments `chatThreads/{threadId}.unreadCountForShopkeeper` on
+    // customer messages; without this reset the badge grows unboundedly
+    // because the counter is never cleared anywhere else. Symmetric with
+    // the customer-side reset that ChatScreen drives via
+    // ChatThreadParticipantPatch(unreadCountForCustomer: 0).
+    //
+    // Wrapped in try/catch so a transient failure (network blip, rule
+    // change in flight) does NOT block the chat from opening. The next
+    // open attempt is idempotent and will succeed.
+    try {
+      final chatThreadRepo = ChatThreadRepo(
+        firestore: firestore,
+        shopIdProvider: ref.read(shopIdProviderProvider),
+      );
+      await chatThreadRepo.applyOperatorPatch(
+        arg, // projectId == threadId per PRD P2.4 (1:1 chat per project)
+        const ChatThreadOperatorPatch(unreadCountForShopkeeper: 0),
+      );
+    } catch (e, stack) {
+      // Never block chat open. Log via the package logger if it surfaces;
+      // operator can re-open the chat to retry.
+      // ignore: avoid_print
+      print('shopkeeper_chat_controller: unread reset failed: $e\n$stack');
+    }
+
     return ShopkeeperChatState(
       messages: messages,
       pendingMessageIds: const {},

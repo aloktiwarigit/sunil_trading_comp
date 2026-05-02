@@ -42,3 +42,4 @@ export { mediaCostMonitor } from './media_cost_monitor';
 export { generateWaMeLink } from './generate_wa_me_link';
 export { provisionNewShop } from './provision_new_shop';
 export { aggregateCostAttribution } from './aggregate_cost_attribution';
+export { updateMessagePreview } from './update_message_preview';
