@@ -1903,6 +1903,118 @@ describe('Cross-tenant integrity (rules.test)', () => {
           .update({ personas: [{ role: 'mummy-ji', uid }], updatedAt: new Date() }),
       );
     });
+
+    // -------------------------------------------------------------------------
+    // Phase 5C r2 (Codex r6 #1) — DC read/update by no-claim primary customer
+    //
+    // Phase 5B's null-claim widening lets phone-verified customers (who never
+    // get a shopId claim — only operators do) reach DC create. Without these
+    // companion tests + rules, the same customer could create a DC but
+    // immediately hit permission-denied trying to read or update it. The
+    // following three tests lock in the customer-owned read/update path.
+    // -------------------------------------------------------------------------
+
+    test('Phase 5C r2 (Codex r6 #1) — phone-verified no-claim primary can read own DC', async () => {
+      // Seed a project + DC owned by 'returning-customer' (no shopId claim).
+      await testEnv.withSecurityRulesDisabled(async (admCtx) => {
+        await admCtx.firestore().doc('shops/shop_1/projects/dc-r2-read').set({
+          projectId: 'dc-r2-read',
+          shopId: 'shop_1',
+          customerUid: 'returning-customer',
+          customerId: 'returning-customer',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+        });
+        await admCtx
+          .firestore()
+          .doc('shops/shop_1/decision_circles/dc-r2-read')
+          .set({
+            projectId: 'dc-r2-read',
+            shopId: 'shop_1',
+            primaryCustomerUid: 'returning-customer',
+            participants: [],
+            createdAt: new Date(),
+          });
+      });
+      const ctx = testEnv.authenticatedContext('returning-customer', {
+        firebase: { sign_in_provider: 'phone' },
+      });
+      const db = ctx.firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/decision_circles/dc-r2-read').get(),
+      );
+    });
+
+    test('Phase 5C r2 (Codex r6 #1) — phone-verified no-claim primary can update own DC personas', async () => {
+      await testEnv.withSecurityRulesDisabled(async (admCtx) => {
+        await admCtx.firestore().doc('shops/shop_1/projects/dc-r2-upd').set({
+          projectId: 'dc-r2-upd',
+          shopId: 'shop_1',
+          customerUid: 'returning-customer',
+          customerId: 'returning-customer',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+        });
+        await admCtx
+          .firestore()
+          .doc('shops/shop_1/decision_circles/dc-r2-upd')
+          .set({
+            projectId: 'dc-r2-upd',
+            shopId: 'shop_1',
+            primaryCustomerUid: 'returning-customer',
+            participants: [],
+            createdAt: new Date(),
+          });
+      });
+      const ctx = testEnv.authenticatedContext('returning-customer', {
+        firebase: { sign_in_provider: 'phone' },
+      });
+      const db = ctx.firestore();
+      await assertSucceeds(
+        db.doc('shops/shop_1/decision_circles/dc-r2-upd').update({
+          personas: [{ role: 'mummy-ji', uid: 'returning-customer' }],
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 5C r2 (Codex r6 #1) — no-claim customer cannot read DC owned by different primaryCustomerUid', async () => {
+      await testEnv.withSecurityRulesDisabled(async (admCtx) => {
+        await admCtx.firestore().doc('shops/shop_1/projects/dc-r2-other').set({
+          projectId: 'dc-r2-other',
+          shopId: 'shop_1',
+          customerUid: 'bob',
+          customerId: 'bob',
+          state: 'draft',
+          totalAmount: 0,
+          amountReceivedByShop: 0,
+          lineItems: [],
+        });
+        await admCtx
+          .firestore()
+          .doc('shops/shop_1/decision_circles/dc-r2-other')
+          .set({
+            projectId: 'dc-r2-other',
+            shopId: 'shop_1',
+            primaryCustomerUid: 'bob', // owned by bob
+            participants: [],
+            createdAt: new Date(),
+          });
+      });
+      const ctx = testEnv.authenticatedContext('alice', {
+        firebase: { sign_in_provider: 'phone' },
+      });
+      const db = ctx.firestore();
+      // alice (no claim) tries to read bob's DC — must fail (neither
+      // isShopMember nor primaryCustomerUid match holds).
+      await assertFails(
+        db.doc('shops/shop_1/decision_circles/dc-r2-other').get(),
+      );
+    });
   });
 
   // -------------------------------------------------------------------------

@@ -803,13 +803,25 @@ service cloud.firestore {
       // ---------------------------------------------------------------------
 
       match /decision_circles/{dcId} {
-        // Read: any member of this shop (shopId token claim must match).
-        // DCs are a post-OTP feature; anonymous users (no shopId claim) do
-        // not need DC reads. isShopMember covers both phone-verified customers
-        // and operators, while blocking cross-tenant reads.
+        // Read:
+        //   (a) operators / claimed shop members — via isShopMember (covers
+        //       Google-signed operators with shopId claim).
+        //   (b) the DC's primaryCustomerUid (the customer who owns it),
+        //       gated through callerShopMatchesOrUnset so the no-claim
+        //       customer branch (anonymous OR phone-verified) can read
+        //       their own DC. Without (b), returning phone-verified
+        //       customers (who never get a shopId claim — only operators
+        //       do) could create a DC but immediately hit
+        //       permission-denied reading it.
+        //
         // WS5.2: replaced bare isSignedIn() — any signed-in user of shop B
         // was able to read shop A's decision circles before this fix.
-        allow read: if isShopMember(shopId);
+        // Phase 5C r2 (Codex r6 #1): added customer-owned read path so the
+        // returning-customer flow surfaced by Phase 5B's null-claim widening
+        // can actually use the DC document it created.
+        allow read: if isShopMember(shopId)
+                    || (resource.data.primaryCustomerUid == request.auth.uid
+                        && callerShopMatchesOrUnset(shopId));
 
         // Create: authenticated users whose shopId claim matches (or is
         // unset for anonymous / phone-verified customers who don't receive
@@ -846,12 +858,24 @@ service cloud.firestore {
                            'participants', 'createdAt'
                          ]);
 
-        // Update: post-OTP shop members only (isShopMember checks claim).
-        // shopId/creatorUid/dcId are ownership fields — not in allowlist.
+        // Update: shop members (operators) OR the DC's primary customer.
+        // shopId / projectId / primaryCustomerUid are ownership fields —
+        // not in allowlist; only personas / updatedAt / lastActivityAt /
+        // inviteState can change post-create.
+        //
+        // Phase 5C r2 (Codex r6 #1): added customer-owned update path so
+        // returning phone-verified customers (no shopId claim) can edit
+        // their own DC's personas/inviteState. Same callerShopMatchesOrUnset
+        // gate as the read rule above, plus the field-level allowlist still
+        // blocks identity rewrites.
         allow update: if isSignedIn()
                       && shopIdMatches(shopId)
                       && shopIsWritable(shopId)
-                      && isShopMember(shopId)
+                      && (
+                        isShopMember(shopId)
+                        || (resource.data.primaryCustomerUid == request.auth.uid
+                            && callerShopMatchesOrUnset(shopId))
+                      )
                       && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                            'personas', 'updatedAt', 'lastActivityAt', 'inviteState'
                          ]);
