@@ -3319,6 +3319,37 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
 
+    test('Phase 6 r4 (Codex r4 #1) — operator without yugmaAdmin claim CAN read audit row', async () => {
+      // Locks in the isYugmaAdmin() helper fix. Pre-r4, dot-access on the
+      // missing yugmaAdmin claim threw and short-circuited the
+      // `isYugmaAdmin() || isShopOperator(shopId)` predicate, denying the
+      // very operators who are supposed to be able to read their own
+      // shop's revert history.
+      await testEnv.withSecurityRulesDisabled(async (ctx) => {
+        await ctx
+          .firestore()
+          .doc('shops/shop_1/system/project_reverts/history/audit-op-read')
+          .set({
+            auditId: 'audit-op-read',
+            projectId: 'r-op-read',
+            shopId: 'shop_1',
+            revertedByUid: 'op-shop_1-owner',
+            reason: 'op read test',
+            previousState: 'paid',
+            previousAmountReceivedByShop: 100,
+            revertedAt: new Date(),
+          });
+      });
+      // Regular bhaiya operator — has shopId='shop_1' + role='bhaiya' but
+      // NO yugmaAdmin claim (auth provisioning does not issue it).
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertSucceeds(
+        db
+          .doc('shops/shop_1/system/project_reverts/history/audit-op-read')
+          .get(),
+      );
+    });
+
     test('Phase 6 — audit row read by anonymous user is denied', async () => {
       // Seed an audit row, then try to read as anonymous (no shopId claim,
       // not yugmaAdmin).
