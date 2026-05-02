@@ -17,6 +17,8 @@
 //  12. Constant-time comparison: tampered hex of WRONG length is rejected
 // =============================================================================
 
+import * as crypto from 'crypto';
+
 const TEST_SECRET = '0123456789abcdef0123456789abcdef'; // 32 chars, OK for tests
 const TEST_SECRET_ALT =
   'ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ_alternate_secret_value';
@@ -35,7 +37,7 @@ describe('hmac_join_token', () => {
     } else {
       process.env.JOIN_TOKEN_HMAC_SECRET = secret;
     }
-    const mod = require('../src/lib/hmac_join_token');
+    const mod = jest.requireActual('../src/lib/hmac_join_token') as typeof import('../src/lib/hmac_join_token');
     mintJoinToken = mod.mintJoinToken;
     verifyJoinToken = mod.verifyJoinToken;
     DEFAULT_JOIN_TOKEN_TTL_MS = mod.DEFAULT_JOIN_TOKEN_TTL_MS;
@@ -221,7 +223,6 @@ describe('hmac_join_token', () => {
     // Hand-craft a token with a base64url payload that isn't valid JSON
     // but produces a valid HMAC for the test secret. We sign a non-JSON
     // payload and check the verifier reports payload_invalid.
-    const crypto = require('crypto');
     const nonJsonPayload = Buffer.from('not-json-at-all', 'utf8')
       .toString('base64')
       .replace(/\+/g, '-')
@@ -237,7 +238,6 @@ describe('hmac_join_token', () => {
   });
 
   test('verify rejects payload missing required fields', () => {
-    const crypto = require('crypto');
     // Valid JSON, but missing originalCustomerUid + expiresAt.
     const incomplete = Buffer.from(
       JSON.stringify({ shopId: 's', projectId: 'p' }),

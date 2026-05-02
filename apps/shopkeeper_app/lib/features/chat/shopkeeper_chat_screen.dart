@@ -256,6 +256,10 @@ class _ProposePriceBar extends ConsumerWidget {
             });
 
             // B1.7 AC #6: update Project lastMessagePreview.
+            // Phase 3 migration target: these are system-owned fields written
+            // client-side pending a Cloud Function that triggers on new messages.
+            // lastMessagePreview/lastMessageAt are in the operator firestore.rules
+            // allowlist transitionally until the CF migration lands.
             await FirebaseFirestore.instance
                 .collection('shops')
                 .doc(shopId)

@@ -64,7 +64,7 @@ export const provisionNewShop = onCall(
     if (!SLUG_REGEX.test(data.slug)) {
       throw new HttpsError(
         'invalid-argument',
-        `slug must match /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.`,
+        'slug must match /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.',
       );
     }
     if (!data.brandName || typeof data.brandName !== 'string') {
