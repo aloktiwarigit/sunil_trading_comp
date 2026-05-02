@@ -2317,12 +2317,15 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
 
-    test('operator CAN write lastMessagePreview (transitional — Phase 3 CF target)', async () => {
-      // shopkeeper_chat_screen.dart writes this client-side after voice-note send.
-      // Included in allowlist until Phase 3 CF migration. This assertSucceeds
-      // documents the current intentional policy.
+    test('Phase 7c — operator client-side lastMessagePreview write is now DENIED (CF-only field)', async () => {
+      // Pre-Phase-7c, lastMessagePreview was in the operator allowlist as
+      // a "Phase 3 migration target" — shopkeeper_chat_screen.dart wrote
+      // it directly after voice-note send. Phase 7a deployed the
+      // updateMessagePreview Cloud Function to take over; Phase 7b
+      // removed the client write; Phase 7c locks the field down so only
+      // the Admin SDK (CF) path can update it.
       const db = ctxAsShopOperator('shop_0').firestore();
-      await assertSucceeds(
+      await assertFails(
         db
           .collection('shops')
           .doc('shop_0')
@@ -2332,9 +2335,9 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
 
-    test('operator CAN write lastMessageAt (transitional — Phase 3 CF target)', async () => {
+    test('Phase 7c — operator client-side lastMessageAt write is now DENIED (CF-only field)', async () => {
       const db = ctxAsShopOperator('shop_0').firestore();
-      await assertSucceeds(
+      await assertFails(
         db
           .collection('shops')
           .doc('shop_0')

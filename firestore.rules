@@ -446,7 +446,9 @@ service cloud.firestore {
         //      paymentMethod, customerVpa, decisionCircleId, udhaarLedgerId,
         //      revertedByUid, revertReason, lastMessagePreview, lastMessageAt,
         //      upiTransactionId cannot be pre-set at create — they belong to
-        //      operator-update or system-patch flows.
+        //      operator-update or system-patch flows. (Phase 7c additionally
+        //      locked lastMessagePreview/lastMessageAt out of operator
+        //      *update* — they are now writable only via the Admin SDK CF.)
         //   3. amountReceivedByShop IS allowed at create but constrained to
         //      == 0 (matches ProjectRepo.createDraft which writes 0). Any
         //      non-zero value at create is money-state pre-pollution and is
@@ -621,13 +623,15 @@ service cloud.firestore {
                          ))
                         ||
                         // --- Operator updates ---
-                        // Allowed fields: ProjectOperatorPatch + revert fields +
-                        // transitional last-message-preview fields (Phase 3 CF target).
+                        // Allowed fields: ProjectOperatorPatch + revert fields.
                         // Identity fields (projectId, customerId, shopId, customerUid) frozen.
                         //
-                        // lastMessagePreview / lastMessageAt: written client-side by
-                        // shopkeeper_chat_screen.dart after voice-note send until Phase 3
-                        // routes this to a Cloud Function.
+                        // Phase 7c: lastMessagePreview / lastMessageAt are NO LONGER
+                        // in this allowlist. Those fields are system-owned and
+                        // written exclusively by the updateMessagePreview Cloud
+                        // Function via the Admin SDK (Phase 7a). The
+                        // shopkeeper_chat_screen.dart client write was removed
+                        // in Phase 7b.
                         //
                         // updatedAt: written by ProjectRepo.applyOperatorPatch() on every
                         // write. Stays in allowlist until Phase 4 CF-only timestamp cleanup.
@@ -711,9 +715,17 @@ service cloud.firestore {
                               // ProjectOperatorRevertPatch audit fields
                               'revertedByUid', 'revertReason',
                               // updatedAt: injected by ProjectRepo.applyOperatorPatch()
-                              'updatedAt',
-                              // Phase 3 migration targets: voice-note preview written client-side
-                              'lastMessagePreview', 'lastMessageAt'
+                              'updatedAt'
+                              // Phase 7c: lastMessagePreview / lastMessageAt
+                              // REMOVED from the operator allowlist. Those
+                              // fields are now system-owned and written
+                              // exclusively by the updateMessagePreview
+                              // Cloud Function via the Admin SDK (which
+                              // bypasses rules). PR 7a added the CF; PR 7b
+                              // removed the last client-side write in
+                              // shopkeeper_chat_screen.dart; this
+                              // tightening locks the rule layer to match
+                              // the new client trust surface.
                             ]))
                       );
 
