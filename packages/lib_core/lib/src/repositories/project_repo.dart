@@ -331,8 +331,7 @@ class ProjectRepo {
     await _firestore.runTransaction((txn) async {
       final snap = await txn.get(ref);
       if (!snap.exists) {
-        throw const ProjectRepoException(
-            'not-found', 'Project does not exist');
+        throw const ProjectRepoException('not-found', 'Project does not exist');
       }
       final data = snap.data()!;
       final currentState = data['state'] as String?;

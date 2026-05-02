@@ -665,7 +665,19 @@ service cloud.firestore {
                                  'awaiting_verification'
                                ]
                             && request.resource.data.revertedByUid == request.auth.uid
-                            && 'revertReason' in request.resource.data
+                            // Phase 6 r3 (Codex r3 #2): revertReason must be a
+                            // non-empty string, not just present. The previous
+                            // `'revertReason' in request.resource.data` accepted
+                            // a null value AND let a stale revertReason from a
+                            // prior revert/recommit cycle satisfy the check
+                            // without the operator writing a fresh reason.
+                            // Rules cannot enforce "freshly written" cleanly,
+                            // but requiring `is string` + `size() > 0` rules
+                            // out null/empty/wrong-type values from REST
+                            // bypassers and matches what the Dart layer already
+                            // writes (always a non-empty string).
+                            && request.resource.data.revertReason is string
+                            && request.resource.data.revertReason.size() > 0
                             && request.resource.data.amountReceivedByShop == 0
                             && request.resource.data.paidAt == null
                             && request.resource.data.committedAt == null

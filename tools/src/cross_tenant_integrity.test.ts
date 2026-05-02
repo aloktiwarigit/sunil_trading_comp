@@ -3183,6 +3183,48 @@ describe('Cross-tenant integrity (rules.test)', () => {
       );
     });
 
+    test('Phase 6 r3 (Codex r3 #2) — operator revert with null revertReason is denied', async () => {
+      // The original 'revertReason' in body check accepted null values.
+      // r3 tightened to `is string && size() > 0`.
+      await seedProject('shop_1', 'r-null-reason', 'paid');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r-null-reason').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          paymentMethod: null,
+          customerVpa: null,
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: null, // null value — must be denied
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
+    test('Phase 6 r3 (Codex r3 #2) — operator revert with empty-string revertReason is denied', async () => {
+      await seedProject('shop_1', 'r-empty-reason', 'paid');
+      const db = ctxAsShopOperator('shop_1').firestore();
+      await assertFails(
+        db.doc('shops/shop_1/projects/r-empty-reason').update({
+          state: 'draft',
+          amountReceivedByShop: 0,
+          paidAt: null,
+          committedAt: null,
+          deliveredAt: null,
+          closedAt: null,
+          paymentMethod: null,
+          customerVpa: null,
+          revertedByUid: 'op-shop_1-owner',
+          revertReason: '', // empty string — must be denied
+          updatedAt: new Date(),
+        }),
+      );
+    });
+
     test('Phase 6 r2 (Codex r2 #1) — operator revert leaving paymentMethod set is denied', async () => {
       // The revert sub-branch now requires paymentMethod / customerVpa to
       // be nulled too. Without it, a draft inherits stale payment metadata

@@ -292,7 +292,9 @@ void main() {
         );
       });
 
-      test('applyOperatorRevertPatch writes audit row scoped to caller shopId (Phase 6)', () async {
+      test(
+          'applyOperatorRevertPatch writes audit row scoped to caller shopId (Phase 6)',
+          () async {
         // Cross-tenant shape invariant: the audit row written by
         // applyOperatorRevertPatch must live under the SAME shopId path
         // that the project does. Proves the new method respects the
@@ -332,7 +334,8 @@ void main() {
             .get();
         expect(ownAudits.docs.length, equals(1));
         expect(ownAudits.docs.first.data()['shopId'], equals(shopId));
-        expect(ownAudits.docs.first.data()['projectId'], equals('p-revert-shape'));
+        expect(
+            ownAudits.docs.first.data()['projectId'], equals('p-revert-shape'));
 
         // No audit row leaks into a foreign tenant's namespace.
         final foreignAudits = await fakeFirestore
