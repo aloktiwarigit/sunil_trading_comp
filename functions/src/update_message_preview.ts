@@ -134,15 +134,60 @@ export async function handleMessageCreate(event: MessageEvent): Promise<void> {
   //   (b) Read the trusted `customerUid` for unread routing — Codex
   //       Phase 7a r2 #1. Compared against the message's authorUid to
   //       decide which side's unread counter to increment.
-  // Codex r3 #1: do NOT early-return when the chatThread doc is missing.
-  // The /projects preview should still flow so the project list shows
-  // the first operator message before the customer opens the chat. We
-  // only skip the chatThread write itself when its parent is absent.
-  const threadSnap = await threadRef.get();
+  // Read project + chatThread parents in parallel.
+  //   - Project doc verified (a) to exist, (b) Codex r4 #1: to actually be
+  //     owned by the same customer the thread claims. The chatThread
+  //     create rule only enforces `customerUid == auth.uid`, NOT that the
+  //     threadId resolves to a project owned by that customer. So a
+  //     malicious customer could create chatThreads/{victimProjectId},
+  //     post a message, and trigger this Admin-SDK CF to overwrite the
+  //     victim's project preview. Verifying project.customerUid ==
+  //     thread.customerUid here closes that path defensively from the CF
+  //     side (the rule layer fix is queued for Phase 9+).
+  //   - chatThread doc read for the trusted customerUid (Codex r2 #1)
+  //     and for parent-existence (Codex r1 #1). If absent, project
+  //     update still flows (Codex r3 #1) so the first operator message
+  //     appears in the project list.
+  const [projectSnap, threadSnap] = await Promise.all([
+    projectRef.get(),
+    threadRef.get(),
+  ]);
+
+  if (!projectSnap.exists) {
+    // Without a project, we can neither verify ownership nor write a
+    // project preview. Skip entirely.
+    logger.warn(
+      'updateMessagePreview: project parent missing, skipping',
+      { shopId, threadId, messageId },
+    );
+    return;
+  }
+
   const threadExists = threadSnap.exists;
   const threadCustomerUid = threadExists
     ? (threadSnap.data()?.customerUid as string | undefined)
     : undefined;
+  const projectCustomerUid = projectSnap.data()?.customerUid as
+    | string
+    | undefined;
+
+  // Codex r4 #1: refuse to update the project preview when the thread's
+  // customerUid does not match the project's customerUid. This is the
+  // cross-customer thread-spoofing defense.
+  if (threadExists && threadCustomerUid !== projectCustomerUid) {
+    logger.warn(
+      'updateMessagePreview: thread.customerUid does not match project.customerUid — refusing to update preview (cross-customer spoof attempt)',
+      {
+        shopId,
+        threadId,
+        messageId,
+        threadCustomerUid,
+        projectCustomerUid,
+      },
+    );
+    return;
+  }
+
   if (!threadExists) {
     logger.warn(
       'updateMessagePreview: chatThread parent missing, will update project preview only',

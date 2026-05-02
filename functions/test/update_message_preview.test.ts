@@ -39,10 +39,19 @@ interface DocRef {
   }>;
 }
 
-// Test-controlled chatThread doc shape. Each test sets this before invoking
-// handleMessageCreate to control whether the parent thread exists and what
-// customerUid is stored on it (for trusted unread routing — Codex r2 #1).
+// Test-controlled doc shapes. Each test sets these before invoking
+// handleMessageCreate to control:
+//   - thread existence + customerUid (trusted unread routing — Codex r2 #1)
+//   - project existence + customerUid (cross-customer ownership check —
+//     Codex r4 #1)
 let mockThreadDoc: {
+  exists: boolean;
+  data?: Record<string, unknown>;
+} = {
+  exists: true,
+  data: { customerUid: 'cust-default' },
+};
+let mockProjectDoc: {
   exists: boolean;
   data?: Record<string, unknown>;
 } = {
@@ -60,9 +69,14 @@ function makeDocRef(path: string): DocRef {
           data: () => mockThreadDoc.data,
         };
       }
-      // Project / other doc reads are not exercised by the current CF, but
-      // return a benign default so any future read-path additions don't
-      // silently throw.
+      if (path.includes('/projects/')) {
+        return {
+          exists: mockProjectDoc.exists,
+          data: () => mockProjectDoc.data,
+        };
+      }
+      // Other doc reads are not exercised by the current CF, but return a
+      // benign default so any future read-path additions don't silently throw.
       return { exists: true, data: () => ({}) };
     },
   };
@@ -174,10 +188,15 @@ beforeEach(() => {
   mockBatch.mockClear();
   mockFirestore.mockClear();
   incrementSpy.mockClear();
-  // Default: thread exists, customer is 'cust-default'. Tests override.
+  // Default: thread + project both exist, customerUid 'alice' on both
+  // (matching, so ownership check passes). Tests override per scenario.
   mockThreadDoc = {
     exists: true,
-    data: { customerUid: 'cust-default' },
+    data: { customerUid: 'alice' },
+  };
+  mockProjectDoc = {
+    exists: true,
+    data: { customerUid: 'alice' },
   };
 });
 
@@ -403,18 +422,53 @@ describe('updateMessagePreview — handleMessageCreate', () => {
     expect(incrementSpy).not.toHaveBeenCalled();
   });
 
-  test('thread missing customerUid → preview written, no unread increment, warn logged', async () => {
-    // The thread doc exists but lacks customerUid (a malformed thread doc
-    // — defensive default). Preview still flows; unread routing skipped.
+  test('r4 (Codex r4 #1) — project parent missing → skip entirely (cannot verify ownership)', async () => {
+    // Without a project doc, neither preview write nor ownership check
+    // is meaningful. The CF returns early.
+    mockProjectDoc = { exists: false };
+    await handleMessageCreate(
+      makeEvent({
+        data: { type: 'text', textBody: 'orphan', authorUid: 'alice' },
+      }),
+    );
+    // No project or thread write because we returned before queuing batch.
+    expect(findWrite('shops/shop_1/projects/t-1')).toBeUndefined();
+    expect(findWrite('shops/shop_1/chatThreads/t-1')).toBeUndefined();
+    expect(mockBatchCommit).not.toHaveBeenCalled();
+  });
+
+  test('r4 (Codex r4 #1) — thread.customerUid != project.customerUid → refuse to update (cross-customer spoof attempt)', async () => {
+    // The chatThread create rule only checks `customerUid == auth.uid`,
+    // not that threadId resolves to a project owned by that customer. A
+    // malicious customer 'mallory' could create chatThreads/{victimsProj},
+    // post a message, and trigger this CF to overwrite the victim's
+    // project preview. The CF defends by reading the project + thread
+    // and refusing to update when their customerUids disagree.
+    mockProjectDoc = { exists: true, data: { customerUid: 'alice' } };
+    mockThreadDoc = { exists: true, data: { customerUid: 'mallory' } };
+    await handleMessageCreate(
+      makeEvent({
+        data: { type: 'text', textBody: 'spoof', authorUid: 'mallory' },
+      }),
+    );
+    expect(findWrite('shops/shop_1/projects/t-1')).toBeUndefined();
+    expect(findWrite('shops/shop_1/chatThreads/t-1')).toBeUndefined();
+    expect(mockBatchCommit).not.toHaveBeenCalled();
+  });
+
+  test('thread missing customerUid → ownership check refuses (project has customerUid, thread does not)', async () => {
+    // After r4 the CF rejects when thread.customerUid != project.customerUid.
+    // A thread without customerUid cannot be proven to belong to the
+    // project's owner, so the preview update is refused.
+    mockProjectDoc = { exists: true, data: { customerUid: 'alice' } };
     mockThreadDoc = { exists: true, data: {} };
     await handleMessageCreate(
       makeEvent({
         data: { type: 'text', textBody: 'data', authorUid: 'alice' },
       }),
     );
-    const threadWrite = findWrite('shops/shop_1/chatThreads/t-1');
-    expect(threadWrite!.lastMessagePreview).toBe('data');
-    expect(threadWrite!.unreadCountForShopkeeper).toBeUndefined();
-    expect(threadWrite!.unreadCountForCustomer).toBeUndefined();
+    expect(findWrite('shops/shop_1/projects/t-1')).toBeUndefined();
+    expect(findWrite('shops/shop_1/chatThreads/t-1')).toBeUndefined();
+    expect(mockBatchCommit).not.toHaveBeenCalled();
   });
 });

@@ -748,25 +748,44 @@ service cloud.firestore {
                       && request.resource.data.customerUid == request.auth.uid
                       && callerShopMatchesOrUnset(shopId);
 
-        // Update: participants may update metadata fields only.
-        // shopId/customerUid/threadId are ownership fields — not in allowlist.
+        // Update: participants may update metadata fields only — split
+        // by actor so each side can only mutate its OWN unread counter.
+        // shopId / customerUid / threadId are ownership fields — never
+        // in any branch's allowlist.
         //
-        // Phase 7a r3 (Codex r3 #2): the allowlist now uses
-        // `unreadCountForShopkeeper` to match the canonical model field
-        // (chat_thread.dart:25) and the field that the Phase 7a CF
-        // increments. The previous form used `unreadCountForOperator`,
-        // which is a phantom field with no model attribute and no callers.
-        // Without this fix, the shopkeeper controller could not reset the
-        // counter via a rule-allowed update, so unread counts could only
-        // grow.
+        // Phase 7a r3 (Codex r3 #2): renamed `unreadCountForOperator`
+        // (phantom — no model attribute, no callers) to the canonical
+        // `unreadCountForShopkeeper` per chat_thread.dart:25.
+        //
+        // Phase 7a r4 (Codex r4 #2): partitioned by actor. Previously a
+        // shared allowlist let the thread customer write
+        // `unreadCountForShopkeeper` (the operator-owned counter), which
+        // would have allowed customers to spoof / clear the shopkeeper
+        // unread badge. Now:
+        //   - customer (resource.data.customerUid == auth.uid)
+        //     may write only `unreadCountForCustomer` + the preview
+        //     metadata fields.
+        //   - shop operator may write only `unreadCountForShopkeeper`
+        //     + the preview metadata fields.
+        // The CF (Admin SDK) bypasses rules and writes both sides as
+        // designed.
         allow update: if isSignedIn()
                       && shopIsWritable(shopId)
-                      && (resource.data.customerUid == request.auth.uid
-                          || isShopOperator(shopId))
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                           'unreadCountForCustomer', 'unreadCountForShopkeeper',
-                           'lastMessagePreview', 'lastMessageAt', 'updatedAt'
-                         ]);
+                      && (
+                        // Customer branch — owns unreadCountForCustomer.
+                        (resource.data.customerUid == request.auth.uid
+                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                              'unreadCountForCustomer',
+                              'lastMessagePreview', 'lastMessageAt', 'updatedAt'
+                            ]))
+                        ||
+                        // Operator branch — owns unreadCountForShopkeeper.
+                        (isShopOperator(shopId)
+                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                              'unreadCountForShopkeeper',
+                              'lastMessagePreview', 'lastMessageAt', 'updatedAt'
+                            ]))
+                      );
 
         allow delete: if false;
 
